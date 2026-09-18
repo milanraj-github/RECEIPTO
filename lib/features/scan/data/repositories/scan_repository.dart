@@ -145,48 +145,73 @@ class ScanRepository {
     };
   }
 
-  /// Extracts the ReceiptModel from the file and uploads it to storage.
+  /// Extracts the ReceiptModel from the file and uploads it to storage in parallel for maximum speed.
   Future<Map<String, dynamic>> extractReceiptAndUpload({
     required File imageFile,
     required String userId,
   }) async {
     final String extension = p.extension(imageFile.path).toLowerCase().replaceAll('.', '');
-
-    // 1. Upload original file to Supabase Storage
-    final String publicUrl = await _storageService.uploadReceiptFile(
-      file: imageFile,
-      userId: userId,
-    );
-
+    String publicUrl = '';
     ReceiptModel receipt;
 
-    // 2. Format branch
     if (['jpg', 'jpeg', 'png', 'webp', 'heic'].contains(extension)) {
-      // Image: Analyze directly via Gemini Vision
-      receipt = await _geminiService.analyzeReceipt(imageUrl: publicUrl);
+      // 1. Read bytes directly from local file
+      final bytes = await imageFile.readAsBytes();
+      final mimeType = extension == 'png'
+          ? 'image/png'
+          : extension == 'webp'
+              ? 'image/webp'
+              : 'image/jpeg';
+
+      // 2. Parallel execution: Storage Upload + Gemini AI Vision
+      final uploadFuture = _storageService.uploadReceiptFile(
+        file: imageFile,
+        userId: userId,
+      );
+
+      final analyzeFuture = _geminiService.analyzeReceiptBytes(
+        imageBytes: bytes,
+        mimeType: mimeType,
+      );
+
+      final results = await Future.wait([uploadFuture, analyzeFuture]);
+      publicUrl = results[0] as String;
+      receipt = results[1] as ReceiptModel;
     } else if (extension == 'pdf') {
-      // PDF: Render each page to image, run OCR, and merge
+      // PDF: Launch upload and parallel page rendering/analysis
+      final uploadFuture = _storageService.uploadReceiptFile(
+        file: imageFile,
+        userId: userId,
+      );
+
       final List<File> pageImages = await _fileProcessorService.convertPdfToImages(imageFile);
       if (pageImages.isEmpty) {
         throw Exception('Failed to render pages from PDF file.');
       }
-      
-      final List<ReceiptModel> pageReceipts = [];
-      for (final img in pageImages) {
-        // Upload temporary page image
-        final String pageUrl = await _storageService.uploadReceipt(image: img, userId: userId);
-        final ReceiptModel pageReceipt = await _geminiService.analyzeReceipt(imageUrl: pageUrl);
-        pageReceipts.add(pageReceipt);
-        
-        // Clean up local temp file
+
+      final pageAnalyzeFutures = pageImages.map((img) async {
+        final bytes = await img.readAsBytes();
+        final pageReceipt = await _geminiService.analyzeReceiptBytes(
+          imageBytes: bytes,
+          mimeType: 'image/jpeg',
+        );
         try {
           await img.delete();
         } catch (_) {}
-      }
+        return pageReceipt;
+      }).toList();
 
+      final results = await Future.wait([uploadFuture, Future.wait(pageAnalyzeFutures)]);
+      publicUrl = results[0] as String;
+      final List<ReceiptModel> pageReceipts = results[1] as List<ReceiptModel>;
       receipt = _mergeReceiptModels(pageReceipts);
     } else if (['doc', 'docx', 'xls', 'xlsx', 'txt', 'csv'].contains(extension)) {
-      // Documents: Parse text and analyze via Gemini Text
+      // Documents: Process text and upload in parallel
+      final uploadFuture = _storageService.uploadReceiptFile(
+        file: imageFile,
+        userId: userId,
+      );
+
       final Map<String, dynamic> result = await _fileProcessorService.processFile(imageFile);
       final String extractedText = result['extractedText'] as String? ?? '';
       if (extractedText.trim().isEmpty) {
@@ -195,7 +220,11 @@ class ScanRepository {
       if (extractedText == 'This document format is not supported') {
         throw Exception('This document format is not supported');
       }
-      receipt = await _geminiService.analyzeReceiptText(text: extractedText);
+
+      final analyzeFuture = _geminiService.analyzeReceiptText(text: extractedText);
+      final results = await Future.wait([uploadFuture, analyzeFuture]);
+      publicUrl = results[0] as String;
+      receipt = results[1] as ReceiptModel;
     } else {
       throw Exception('Unsupported file format: .$extension');
     }
