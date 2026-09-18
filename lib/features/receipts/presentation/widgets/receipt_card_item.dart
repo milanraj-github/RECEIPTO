@@ -173,16 +173,20 @@ class ReceiptCardItemState extends State<ReceiptCardItem> with SingleTickerProvi
                                           ),
                                         ),
                                         const SizedBox(width: 6),
-                                        Text(
-                                          widget.item.warrantyLabel ?? 'Product Protected',
-                                          style: GoogleFonts.inter(
-                                            color: widget.item.warrantyStatus == 'EXPIRED'
-                                                ? Colors.redAccent
-                                                : (widget.item.warrantyStatus == 'EXPIRING SOON' || widget.item.warrantyStatus == 'EXPIRING_SOON'
-                                                    ? Colors.orangeAccent
-                                                    : Colors.greenAccent),
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.bold,
+                                        Expanded(
+                                          child: Text(
+                                            widget.item.warrantyLabel ?? 'Product Protected',
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: GoogleFonts.inter(
+                                              color: widget.item.warrantyStatus == 'EXPIRED'
+                                                  ? Colors.redAccent
+                                                  : (widget.item.warrantyStatus == 'EXPIRING SOON' || widget.item.warrantyStatus == 'EXPIRING_SOON'
+                                                      ? Colors.orangeAccent
+                                                      : Colors.greenAccent),
+                                              fontSize: 11,
+                                              fontWeight: FontWeight.bold,
+                                            ),
                                           ),
                                         ),
                                       ],
@@ -195,18 +199,24 @@ class ReceiptCardItemState extends State<ReceiptCardItem> with SingleTickerProvi
                         ),
                       ),
 
+                      const SizedBox(width: 8),
+
                       // Amount and match indicator
                       Padding(
                         padding: const EdgeInsets.only(right: 28),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.end,
                           children: [
-                            Text(
-                              CurrencyFormatter.format(widget.item.amount, currency: widget.item.currency),
-                              style: GoogleFonts.hankenGrotesk(
-                                color: AppColors.onSurface,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
+                            FittedBox(
+                              fit: BoxFit.scaleDown,
+                              alignment: Alignment.centerRight,
+                              child: Text(
+                                CurrencyFormatter.format(widget.item.amount, currency: widget.item.currency),
+                                style: GoogleFonts.hankenGrotesk(
+                                  color: AppColors.onSurface,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                             const SizedBox(height: 4),
