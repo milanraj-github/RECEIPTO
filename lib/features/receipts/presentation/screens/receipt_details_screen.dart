@@ -8,6 +8,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/core/services/pdf_invoice_service.dart';
 import 'package:receipto/core/services/receipt_database_service.dart';
+import 'package:receipto/core/services/firebase_auth_service.dart';
 import 'package:receipto/core/utils/currency_formatter.dart';
 import 'package:receipto/core/widgets/glass_card.dart';
 import 'package:receipto/core/widgets/gradient_button.dart';
@@ -24,7 +25,12 @@ import 'package:receipto/features/warranty/presentation/providers/warranty_provi
 
 final receiptDetailsProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, id) async {
   final dbService = ref.watch(receiptDatabaseServiceProvider);
-  return await dbService.fetchReceipt(id);
+  final authService = ref.watch(firebaseAuthServiceProvider);
+  final userId = authService.currentUser?.uid;
+  if (userId == null || userId.isEmpty) {
+    throw Exception('Unauthorized: No active user session.');
+  }
+  return await dbService.fetchReceipt(id, userId: userId);
 });
 
 class ReceiptDetailsScreen extends ConsumerStatefulWidget {
@@ -157,18 +163,29 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
     return dbAsync.when(
       data: (dbData) {
         try {
-          final receiptMap = dbData['receipt'] as Map<String, dynamic>;
-          final itemsList = dbData['items'] as List<dynamic>;
+          final receiptMap = Map<String, dynamic>.from(dbData['receipt'] as Map);
+          final itemsList = dbData['items'] as List<dynamic>? ?? [];
 
           final imageUrl = receiptMap['image_url'] as String?;
-          if (kDebugMode) print('=== Image URL loaded in Details screen (DB): $imageUrl ===');
+          final userUid = receiptMap['user_id'] as String?;
+          final rawText = receiptMap['raw_text'] as String?;
+
+          if (kDebugMode) {
+            print('=== [ReceiptDetailsScreen Loaded] ===');
+            print('Receipt ID: ${receiptMap['id']}');
+            print('User UID: $userUid');
+            print('Merchant Name: ${receiptMap['merchant_name']}');
+            print('Storage Image URL: ${imageUrl ?? "None"}');
+            print('OCR Text Status: ${rawText != null && rawText.isNotEmpty ? "Saved (${rawText.length} chars)" : "None"}');
+            print('Products Loaded: ${itemsList.length}');
+          }
 
           final parsedTotal = ReceiptModel.parseDouble(receiptMap['grand_total']) ?? 
                               ReceiptModel.parseDouble(receiptMap['total']);
 
           final receipt = ReceiptModel(
             merchantName: receiptMap['merchant_name'] as String?,
-            invoiceNumber: receiptMap['invoice_number'] as String?,
+            invoiceNumber: (receiptMap['invoice_number'] ?? receiptMap['receipt_number']) as String?,
             date: receiptMap['date'] as String?,
             time: receiptMap['time'] as String?,
             gstNumber: receiptMap['gst_number'] as String?,
@@ -181,13 +198,15 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
             category: receiptMap['category'] as String?,
             merchantAddress: receiptMap['merchant_address'] as String?,
             merchantPhone: receiptMap['merchant_phone'] as String?,
+            rawText: rawText,
+            confidenceScore: ReceiptModel.parseDouble(receiptMap['confidence_score']),
             items: itemsList.map((itemMap) {
-              final m = itemMap as Map<String, dynamic>;
+              final m = Map<String, dynamic>.from(itemMap as Map);
               return ReceiptItemModel(
                 name: m['name'] as String? ?? 'Unknown Item',
                 quantity: ReceiptItemModel.parseInt(m['quantity']),
                 unitPrice: ReceiptItemModel.parseDouble(m['unit_price']),
-                totalPrice: ReceiptItemModel.parseDouble(m['total_price']),
+                totalPrice: ReceiptItemModel.parseDouble(m['total_price'] ?? m['price']),
               );
             }).toList(),
           );
@@ -196,7 +215,13 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
           final detailModel = _mapReceiptToDetail(receipt, resolvedId, imageUrl, null);
 
           return _buildDetailsContent(context, detailModel);
-        } catch (e) {
+        } catch (e, stack) {
+          if (kDebugMode) {
+            print('=== [ReceiptDetailsScreen Parse Exception] ===');
+            print('Receipt ID: ${widget.receiptId}');
+            print('Error: $e');
+            print('StackTrace: $stack');
+          }
           return _buildErrorScreen(context, 'Failed to parse database receipt: $e');
         }
       },
@@ -206,7 +231,15 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
           child: CircularProgressIndicator(color: AppColors.secondary),
         ),
       ),
-      error: (err, stack) => _buildErrorScreen(context, err.toString().replaceAll('Exception: ', '')),
+      error: (err, stack) {
+        if (kDebugMode) {
+          print('=== [ReceiptDetailsScreen Async Error] ===');
+          print('Receipt ID: ${widget.receiptId}');
+          print('Error: $err');
+          print('StackTrace: $stack');
+        }
+        return _buildErrorScreen(context, err.toString().replaceAll('Exception: ', ''));
+      },
     );
   }
 
@@ -233,7 +266,7 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
                     AppColors.background.withValues(alpha: 0.4),
                     AppColors.background.withValues(alpha: 0.8),
                   ],
-                  stops: const [0.0, 0.6, 1.0],
+                  stops: const [0.6, 0.85, 1.0],
                 ),
               ),
             ),
@@ -249,7 +282,8 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
                 // Details Scrollable Body
                 Expanded(
                   child: SingleChildScrollView(
-                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.gutter, vertical: AppSpacing.base),
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.all(16.0),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
@@ -318,7 +352,7 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
                           const Icon(Icons.error_outline_rounded, color: AppColors.error, size: 48),
                           const SizedBox(height: 16),
                           Text(
-                            'Extraction Failed',
+                            'Unable to Load Receipt',
                             style: GoogleFonts.hankenGrotesk(
                               color: AppColors.onSurface,
                               fontSize: 18,

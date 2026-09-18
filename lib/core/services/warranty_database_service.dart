@@ -17,25 +17,39 @@ class WarrantyDatabaseService {
       final payload = warranty.toJson();
       payload.remove('id');
 
-      final response = await _supabase
-          .from('warranties')
-          .insert(payload)
-          .select('id')
-          .single();
+      try {
+        final response = await _supabase
+            .from('warranties')
+            .insert(payload)
+            .select('id')
+            .single();
 
-      return response['id'].toString();
+        return response['id'].toString();
+      } on PostgrestException catch (pe) {
+        if (pe.message.contains('is_manual') || pe.code == 'PGRST204' || pe.code == '42703') {
+          payload.remove('is_manual');
+          final response = await _supabase
+              .from('warranties')
+              .insert(payload)
+              .select('id')
+              .single();
+          return response['id'].toString();
+        }
+        rethrow;
+      }
     } catch (e) {
       throw Exception('Supabase saveWarranty failed: $e');
     }
   }
 
-  /// Fetches a single warranty by ID.
-  Future<WarrantyModel?> fetchWarranty(String id) async {
+  /// Fetches a single warranty by ID for a specific user.
+  Future<WarrantyModel?> fetchWarranty(String id, {required String userId}) async {
     try {
       final response = await _supabase
           .from('warranties')
           .select()
           .eq('id', int.tryParse(id) ?? id)
+          .eq('user_id', userId)
           .maybeSingle();
 
       if (response == null) return null;
@@ -61,30 +75,45 @@ class WarrantyDatabaseService {
     }
   }
 
-  /// Updates an existing warranty record.
-  Future<void> updateWarranty(WarrantyModel warranty) async {
+  /// Updates an existing warranty record for a specific user.
+  Future<void> updateWarranty(WarrantyModel warranty, {required String userId}) async {
     try {
       if (warranty.id == null) throw Exception('Cannot update warranty without an ID.');
       
       final payload = warranty.toJson();
       payload.remove('id');
 
-      await _supabase
-          .from('warranties')
-          .update(payload)
-          .eq('id', int.tryParse(warranty.id!) ?? warranty.id!);
+      try {
+        await _supabase
+            .from('warranties')
+            .update(payload)
+            .eq('id', int.tryParse(warranty.id!) ?? warranty.id!)
+            .eq('user_id', userId);
+      } on PostgrestException catch (pe) {
+        if (pe.message.contains('is_manual') || pe.code == 'PGRST204' || pe.code == '42703') {
+          payload.remove('is_manual');
+          await _supabase
+              .from('warranties')
+              .update(payload)
+              .eq('id', int.tryParse(warranty.id!) ?? warranty.id!)
+              .eq('user_id', userId);
+        } else {
+          rethrow;
+        }
+      }
     } catch (e) {
       throw Exception('Supabase updateWarranty failed: $e');
     }
   }
 
-  /// Deletes an existing warranty record by ID.
-  Future<void> deleteWarranty(String id) async {
+  /// Deletes an existing warranty record by ID for a specific user.
+  Future<void> deleteWarranty(String id, {required String userId}) async {
     try {
       await _supabase
           .from('warranties')
           .delete()
-          .eq('id', int.tryParse(id) ?? id);
+          .eq('id', int.tryParse(id) ?? id)
+          .eq('user_id', userId);
     } catch (e) {
       throw Exception('Supabase deleteWarranty failed: $e');
     }

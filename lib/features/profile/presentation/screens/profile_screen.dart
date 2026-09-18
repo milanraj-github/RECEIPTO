@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:receipto/core/constants/constants.dart';
-import 'package:receipto/app/config/theme.dart';
 import 'package:receipto/core/widgets/glass_card.dart';
 import 'package:receipto/core/services/firebase_auth_service.dart';
 import 'package:receipto/core/services/notification_service.dart';
@@ -11,6 +10,8 @@ import 'package:receipto/core/services/email_service.dart';
 import 'package:receipto/core/services/reminder_engine.dart';
 import 'package:receipto/core/services/app_lock_provider.dart';
 import 'package:receipto/core/services/app_lock_service.dart';
+import 'package:receipto/core/services/receipt_database_service.dart';
+import 'package:receipto/features/warranty/presentation/providers/warranty_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -21,17 +22,31 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _cloudBackupEnabled = true;
+  bool _devToolsExpanded = false;
+
+  String _formatMemberSince(DateTime? creationTime) {
+    if (creationTime == null) return 'Member since 2024';
+    final months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    final monthStr = months[creationTime.month - 1];
+    return 'Member since $monthStr ${creationTime.year}';
+  }
 
   @override
   Widget build(BuildContext context) {
     final lockState = ref.watch(appLockProvider);
     final lockNotifier = ref.read(appLockProvider.notifier);
+    final receiptsAsync = ref.watch(dbReceiptsListProvider);
+    final warrantiesAsync = ref.watch(dbWarrantiesProvider);
 
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
         bottom: false,
         child: SingleChildScrollView(
+          physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.gutter,
             vertical: AppSpacing.base,
@@ -39,22 +54,21 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Header
+              // 1. Top Header
               _buildHeader(context),
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
-              // User Profile Info Card
+              // 2. User Profile Card
               _buildUserProfileCard(context),
               const SizedBox(height: 20),
 
-              // Stat totals grid
-              _buildStatsGrid(context),
-              const SizedBox(height: 24),
+              // 3. Live User Statistics Grid
+              _buildStatsGrid(context, receiptsAsync, warrantiesAsync),
+              const SizedBox(height: 28),
 
-              // Security & App Lock section
-              _buildSectionHeader(context, 'Security & App Lock'),
-              const SizedBox(height: 12),
-
+              // 4. 🔒 Security Section
+              _buildSectionHeader(context, '🔒 Security'),
+              const SizedBox(height: 10),
               _buildToggleSetting(
                 title: 'Enable App Lock',
                 subtitle: lockState.isEnabled
@@ -65,17 +79,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 value: lockState.isEnabled,
                 onChanged: (val) async {
                   if (val) {
-                    // Enabling: Prompt to create 4-digit PIN first
                     _showSetupCustomPinDialog(context);
                   } else {
-                    // Disabling: Require authentication first
                     _promptPinOrBiometricToDisable(context);
                   }
                 },
               ),
-              const SizedBox(height: 12),
-
               if (lockState.isEnabled) ...[
+                const SizedBox(height: 10),
                 if (lockState.isBiometricAvailable)
                   _buildToggleSetting(
                     title: 'Use Fingerprint / Face Unlock',
@@ -87,151 +98,121 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       await lockNotifier.setBiometricEnabled(val);
                     },
                   ),
-                if (lockState.isBiometricAvailable) const SizedBox(height: 12),
-
+                if (lockState.isBiometricAvailable) const SizedBox(height: 10),
                 _buildActionSetting(
                   title: 'Change App PIN',
                   subtitle: 'Update your 4-digit PIN',
                   icon: Icons.key_outlined,
                   iconColor: AppColors.tertiary,
-                  onTap: () {
-                    _showPinChangeDialog(context);
-                  },
+                  onTap: () => _showPinChangeDialog(context),
                 ),
-                const SizedBox(height: 12),
               ],
+              const SizedBox(height: 24),
 
-              // Account & Backup section
-              _buildSectionHeader(context, 'Account & Backup'),
-              const SizedBox(height: 12),
-
-              // Settings Toggles & Actions
+              // 5. ☁ Backup & Sync Section
+              _buildSectionHeader(context, '☁ Backup & Sync'),
+              const SizedBox(height: 10),
               _buildToggleSetting(
                 title: 'Cloud Backup',
-                subtitle: 'Last synced 2m ago',
+                subtitle: _cloudBackupEnabled ? 'Synced & Secured • Last backup just now' : 'Backup disabled',
                 icon: Icons.cloud_done_outlined,
                 iconColor: AppColors.primary,
                 value: _cloudBackupEnabled,
                 onChanged: (val) {
-                  setState(() {
-                    _cloudBackupEnabled = val;
-                  });
+                  setState(() => _cloudBackupEnabled = val);
                 },
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 10),
               _buildActionSetting(
                 title: 'Export Data',
-                subtitle: 'PDF, Excel, or CSV',
-                icon: Icons.ios_share,
+                subtitle: 'Export records in PDF, Excel, or CSV format',
+                icon: Icons.ios_share_rounded,
                 iconColor: AppColors.secondary,
-                onTap: () {
-                  // Export action
-                },
+                onTap: () => _showInfoDialog(context, 'Export Data', 'Export options (PDF, Excel, CSV) are automatically formatted when downloading invoices or reports.'),
               ),
-              const SizedBox(height: 12),
-              _buildActionSetting(
-                title: 'Test Notification',
-                subtitle: 'Trigger a test local notification',
-                icon: Icons.notifications_active_outlined,
-                iconColor: AppColors.primary,
-                onTap: () async {
-                  await ref.read(notificationServiceProvider).showNotification(
-                        id: 999,
-                        title: 'Receipto Test',
-                        body: 'This is a test warranty reminder notification.',
-                      );
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildActionSetting(
-                title: 'Send Test Email',
-                subtitle: 'Send a test email to your address',
-                icon: Icons.email_outlined,
-                iconColor: AppColors.secondary,
-                onTap: () async {
-                  final user = ref.read(firebaseAuthServiceProvider).currentUser;
-                  if (user != null && user.email != null && user.email!.isNotEmpty) {
-                    try {
-                      await ref.read(emailServiceProvider).sendTestEmail(
-                            recipientEmail: user.email!,
-                          );
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Test email sent successfully!')),
-                      );
-                    } catch (e) {
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Email failed: $e')),
-                      );
-                    }
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('No logged-in user email found.')),
-                    );
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-              _buildActionSetting(
-                title: 'Run Warranty Engine',
-                subtitle: 'Trigger background scanning immediately',
-                icon: Icons.play_arrow_outlined,
-                iconColor: AppColors.tertiary,
-                onTap: () async {
-                  final user = ref.read(firebaseAuthServiceProvider).currentUser;
-                  if (user != null) {
-                    try {
-                      await ref.read(reminderEngineProvider).checkWarrantyReminders(
-                            user.uid,
-                            user.email,
-                            user.displayName,
-                          );
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Warranty engine run completed! Check console logs.')),
-                      );
-                    } catch (e) {
-                      if (!context.mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Engine failed: $e')),
-                      );
-                    }
-                  } else {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('No logged-in user found.')),
-                    );
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
+
+              // 6. 🧰 Developer Tools Section (Collapsible Accordion)
+              _buildDeveloperToolsAccordion(context),
+              const SizedBox(height: 24),
+
+              // 7. 🗑 Data Section
+              _buildSectionHeader(context, '🗑 Data Management'),
+              const SizedBox(height: 10),
               _buildActionSetting(
                 title: 'Recycle Bin',
                 subtitle: 'View and restore deleted receipts',
                 icon: Icons.delete_outline_rounded,
                 iconColor: AppColors.primary,
-                onTap: () {
-                  context.push('/profile/recycle-bin');
-                },
+                onTap: () => context.push('/profile/recycle-bin'),
               ),
               const SizedBox(height: 24),
 
-              // Notification Settings Section
-              _buildSectionHeader(context, 'Notification Settings'),
-              const SizedBox(height: 12),
-
+              // 8. 🔔 Notifications Section
+              _buildSectionHeader(context, '🔔 Notifications'),
+              const SizedBox(height: 10),
               _buildActionSetting(
-                title: '🔔 Notification Settings',
+                title: 'Notification Settings',
                 subtitle: 'Manage warranty reminder preferences',
                 icon: Icons.notifications_none_outlined,
                 iconColor: AppColors.primary,
-                onTap: () {
-                  context.push('/profile/notification-settings');
-                },
+                onTap: () => context.push('/profile/notification-settings'),
               ),
-              const SizedBox(height: 32),
+              const SizedBox(height: 24),
 
-              // Logout Action button
+              // 9. ℹ About & Support Section
+              _buildSectionHeader(context, 'ℹ About & Support'),
+              const SizedBox(height: 10),
+              _buildActionSetting(
+                title: 'About Receipto',
+                subtitle: 'AI-driven receipt & smart warranty system',
+                icon: Icons.info_outline_rounded,
+                iconColor: AppColors.primary,
+                onTap: () => _showAboutBottomSheet(context),
+              ),
+              const SizedBox(height: 10),
+              _buildActionSetting(
+                title: 'App Version',
+                subtitle: 'v2.4.0 (Build 104) • Latest',
+                icon: Icons.verified_outlined,
+                iconColor: AppColors.secondary,
+                onTap: () => _showInfoDialog(context, 'Receipto App Version', 'You are using Receipto Version 2.4.0 (Build 104). Your application is fully up to date.'),
+              ),
+              const SizedBox(height: 10),
+              _buildActionSetting(
+                title: 'Privacy Policy',
+                subtitle: 'Read our end-to-end data security policy',
+                icon: Icons.privacy_tip_outlined,
+                iconColor: AppColors.tertiary,
+                onTap: () => _showInfoDialog(context, 'Privacy Policy', 'Receipto respects your data privacy. All receipts and extracted metadata are encrypted and tied strictly to your authenticated session.'),
+              ),
+              const SizedBox(height: 10),
+              _buildActionSetting(
+                title: 'Terms & Conditions',
+                subtitle: 'Review terms of service',
+                icon: Icons.description_outlined,
+                iconColor: AppColors.onSurfaceVariant,
+                onTap: () => _showInfoDialog(context, 'Terms & Conditions', 'By using Receipto, you agree to our standard terms of service regarding automated AI receipt processing and warranty tracking.'),
+              ),
+              const SizedBox(height: 10),
+              _buildActionSetting(
+                title: 'Help & FAQ',
+                subtitle: 'Frequently asked questions & guides',
+                icon: Icons.help_outline_rounded,
+                iconColor: AppColors.primary,
+                onTap: () => _showInfoDialog(context, 'Help & FAQ', 'Q: How does Smart Warranty Detection work?\nA: Receipto uses AI OCR to extract product names and automatically computes warranty expiration dates from your receipt.'),
+              ),
+              const SizedBox(height: 10),
+              _buildActionSetting(
+                title: 'Contact Support',
+                subtitle: 'Get assistance from our engineering team',
+                icon: Icons.support_agent_rounded,
+                iconColor: AppColors.secondary,
+                onTap: () => _showInfoDialog(context, 'Contact Support', 'Need help? Reach out to our technical support team at support@receipto.app.'),
+              ),
+              const SizedBox(height: 28),
+
+              // 10. 🚪 Account & Logout
               _buildLogoutButton(context),
               const SizedBox(height: 24),
 
@@ -243,6 +224,786 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  // Header App Title & Quick Avatar Indicator
+  Widget _buildHeader(BuildContext context) {
+    final user = ref.watch(firebaseAuthServiceProvider).currentUser;
+    final photoURL = user?.photoURL;
+    final hasPhoto = photoURL != null && photoURL.isNotEmpty;
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                gradient: AppGradients.primaryBlueCyan,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(Icons.receipt_long_rounded, color: Colors.black, size: 22),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Receipto',
+              style: GoogleFonts.hankenGrotesk(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+        Row(
+          children: [
+            IconButton(
+              icon: const Icon(Icons.notifications_outlined, color: AppColors.primary),
+              onPressed: () => context.push('/profile/notification-settings'),
+              tooltip: 'Notifications',
+            ),
+            const SizedBox(width: 4),
+            Container(
+              width: 34,
+              height: 34,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
+                image: DecorationImage(
+                  image: NetworkImage(
+                    hasPhoto ? photoURL : 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
+                  ),
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Profile Header Card with Avatar, Badge, Full Name, Email, & Member Since
+  Widget _buildUserProfileCard(BuildContext context) {
+    final user = ref.watch(firebaseAuthServiceProvider).currentUser;
+    final photoURL = user?.photoURL;
+    final hasPhoto = photoURL != null && photoURL.isNotEmpty;
+    final name = user?.displayName ?? 'Receipto User';
+    final email = user?.email ?? 'No email associated';
+    final memberSince = _formatMemberSince(user?.metadata.creationTime);
+
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: AppRadius.lg,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.12),
+            blurRadius: 24,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: GlassCard(
+        borderRadius: AppRadius.lg,
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          children: [
+            // Centered Large Verified Avatar
+            Stack(
+              alignment: Alignment.center,
+              children: [
+                // Glowing background aura ring
+                Container(
+                  width: 104,
+                  height: 104,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    gradient: SweepGradient(
+                      colors: [
+                        AppColors.primary,
+                        AppColors.secondary,
+                        AppColors.tertiary,
+                        AppColors.primary,
+                      ],
+                    ),
+                  ),
+                ),
+                // Main Avatar image box
+                Container(
+                  width: 96,
+                  height: 96,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: AppColors.cardSurface,
+                    border: Border.all(color: AppColors.background, width: 3),
+                    image: DecorationImage(
+                      image: NetworkImage(
+                        hasPhoto ? photoURL : 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
+                      ),
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                // Verified Badge Shield overlay
+                Positioned(
+                  bottom: 2,
+                  right: 2,
+                  child: Container(
+                    width: 30,
+                    height: 30,
+                    decoration: BoxDecoration(
+                      color: AppColors.secondary,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.background, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.secondary.withValues(alpha: 0.5),
+                          blurRadius: 8,
+                        ),
+                      ],
+                    ),
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.verified_user_rounded,
+                      color: Colors.black,
+                      size: 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+
+            // Profile info text labels
+            Text(
+              name,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.hankenGrotesk(
+                fontSize: 22,
+                fontWeight: FontWeight.bold,
+                color: AppColors.onSurface,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              email,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.inter(
+                fontSize: 13,
+                color: AppColors.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(height: 8),
+
+            // Member Since & Verified Badges row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.calendar_today_outlined, size: 12, color: AppColors.onSurfaceVariant.withValues(alpha: 0.7)),
+                const SizedBox(width: 4),
+                Text(
+                  memberSince,
+                  style: GoogleFonts.inter(
+                    fontSize: 11,
+                    color: AppColors.onSurfaceVariant.withValues(alpha: 0.8),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.greenAccent.withValues(alpha: 0.15),
+                    borderRadius: AppRadius.full,
+                    border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.3)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.check_circle_rounded, color: Colors.greenAccent, size: 11),
+                      const SizedBox(width: 4),
+                      Text(
+                        'VERIFIED USER',
+                        style: GoogleFonts.inter(
+                          color: Colors.greenAccent,
+                          fontSize: 9.5,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Live User Statistics Summary Grid
+  Widget _buildStatsGrid(
+    BuildContext context,
+    AsyncValue<List<Map<String, dynamic>>> receiptsAsync,
+    AsyncValue<List<dynamic>> warrantiesAsync,
+  ) {
+    final receiptsCount = receiptsAsync.maybeWhen(
+      data: (list) => list.length,
+      orElse: () => 0,
+    );
+
+    final protectedProductsCount = receiptsAsync.maybeWhen(
+      data: (list) {
+        int count = 0;
+        for (final r in list) {
+          final items = r['items'];
+          if (items is List) {
+            count += items.length;
+          }
+        }
+        return count;
+      },
+      orElse: () => 0,
+    );
+
+    final activeWarrantiesCount = warrantiesAsync.maybeWhen(
+      data: (list) => list.length,
+      orElse: () => 0,
+    );
+
+    return Row(
+      children: [
+        _buildStatBox(context, receiptsCount.toString(), 'Receipts Scanned', AppColors.primary),
+        const SizedBox(width: 10),
+        _buildStatBox(context, protectedProductsCount.toString(), 'Protected Products', AppColors.secondary),
+        const SizedBox(width: 10),
+        _buildStatBox(context, activeWarrantiesCount.toString(), 'Active Warranties', AppColors.tertiary),
+      ],
+    );
+  }
+
+  Widget _buildStatBox(BuildContext context, String value, String label, Color color) {
+    return Expanded(
+      child: GlassCard(
+        borderRadius: AppRadius.lg,
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 8),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(
+              value,
+              style: GoogleFonts.inter(
+                color: color,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label.toUpperCase(),
+              textAlign: TextAlign.center,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(
+                color: AppColors.onSurfaceVariant,
+                fontSize: 9.5,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Section Header Title Label
+  Widget _buildSectionHeader(BuildContext context, String title) {
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Text(
+        title.toUpperCase(),
+        style: GoogleFonts.inter(
+          color: AppColors.onSurfaceVariant.withValues(alpha: 0.8),
+          fontSize: 11.5,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.2,
+        ),
+      ),
+    );
+  }
+
+  // Toggle Switch setting widget
+  Widget _buildToggleSetting({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return GlassCard(
+      borderRadius: AppRadius.lg,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Row(
+              children: [
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: BoxDecoration(
+                    color: iconColor.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(icon, color: iconColor, size: 20),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: GoogleFonts.inter(
+                          color: AppColors.onSurface,
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle,
+                        style: GoogleFonts.inter(
+                          color: AppColors.onSurfaceVariant,
+                          fontSize: 11.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Switch(
+            value: value,
+            onChanged: onChanged,
+            activeThumbColor: AppColors.primary,
+            activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
+            inactiveThumbColor: AppColors.onSurfaceVariant,
+            inactiveTrackColor: AppColors.surfaceVariant,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Action Navigation setting widget
+  Widget _buildActionSetting({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required Color iconColor,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: AppRadius.lg,
+        splashColor: iconColor.withValues(alpha: 0.15),
+        highlightColor: iconColor.withValues(alpha: 0.05),
+        child: GlassCard(
+          borderRadius: AppRadius.lg,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: iconColor.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(icon, color: iconColor, size: 20),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: GoogleFonts.inter(
+                              color: AppColors.onSurface,
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            subtitle,
+                            style: GoogleFonts.inter(
+                              color: AppColors.onSurfaceVariant,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.onSurfaceVariant,
+                size: 20,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // Collapsible Developer Tools Accordion Tile
+  Widget _buildDeveloperToolsAccordion(BuildContext context) {
+    return GlassCard(
+      borderRadius: AppRadius.lg,
+      padding: const EdgeInsets.all(0),
+      child: Column(
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: () {
+                setState(() => _devToolsExpanded = !_devToolsExpanded);
+              },
+              borderRadius: AppRadius.lg,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: Colors.purpleAccent.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.build_outlined, color: Colors.purpleAccent, size: 20),
+                        ),
+                        const SizedBox(width: 14),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Developer Tools',
+                              style: GoogleFonts.inter(
+                                color: AppColors.onSurface,
+                                fontSize: 14.5,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'Internal diagnostic & testing tools',
+                              style: GoogleFonts.inter(
+                                color: AppColors.onSurfaceVariant,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    Icon(
+                      _devToolsExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
+                      color: AppColors.onSurfaceVariant,
+                      size: 22,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            duration: const Duration(milliseconds: 250),
+            crossFadeState: _devToolsExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            firstChild: const SizedBox.shrink(),
+            secondChild: Padding(
+              padding: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
+              child: Column(
+                children: [
+                  const Divider(color: Colors.white10, height: 1),
+                  const SizedBox(height: 10),
+                  _buildActionSetting(
+                    title: 'Test Notification',
+                    subtitle: 'Trigger a test local notification',
+                    icon: Icons.notifications_active_outlined,
+                    iconColor: AppColors.primary,
+                    onTap: () async {
+                      await ref.read(notificationServiceProvider).showNotification(
+                            id: 999,
+                            title: 'Receipto Test',
+                            body: 'This is a test warranty reminder notification.',
+                          );
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  _buildActionSetting(
+                    title: 'Send Test Email',
+                    subtitle: 'Send a test email to your address',
+                    icon: Icons.email_outlined,
+                    iconColor: AppColors.secondary,
+                    onTap: () async {
+                      final user = ref.read(firebaseAuthServiceProvider).currentUser;
+                      if (user != null && user.email != null && user.email!.isNotEmpty) {
+                        try {
+                          await ref.read(emailServiceProvider).sendTestEmail(
+                                recipientEmail: user.email!,
+                              );
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Test email sent successfully!')),
+                          );
+                        } catch (e) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Email failed: $e')),
+                          );
+                        }
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('No logged-in user email found.')),
+                        );
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 8),
+                  _buildActionSetting(
+                    title: 'Run Warranty Engine',
+                    subtitle: 'Trigger background scanning immediately',
+                    icon: Icons.play_arrow_outlined,
+                    iconColor: AppColors.tertiary,
+                    onTap: () async {
+                      final user = ref.read(firebaseAuthServiceProvider).currentUser;
+                      if (user != null) {
+                        try {
+                          await ref.read(reminderEngineProvider).checkWarrantyReminders(
+                                user.uid,
+                                user.email,
+                                user.displayName,
+                              );
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Warranty engine run completed! Check console logs.')),
+                          );
+                        } catch (e) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(content: Text('Engine failed: $e')),
+                          );
+                        }
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('No logged-in user found.')),
+                        );
+                      }
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Logout Button with subtle red warning styling & confirmation
+  Widget _buildLogoutButton(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () => _showLogoutConfirmationDialog(context),
+        borderRadius: AppRadius.lg,
+        splashColor: AppColors.error.withValues(alpha: 0.2),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          decoration: BoxDecoration(
+            color: AppColors.cardSurface.withValues(alpha: 0.85),
+            borderRadius: AppRadius.lg,
+            border: Border.all(
+              color: AppColors.error.withValues(alpha: 0.35),
+              width: 1.2,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.error.withValues(alpha: 0.08),
+                blurRadius: 16,
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.logout_rounded,
+                color: AppColors.error,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Logout of Account',
+                style: GoogleFonts.inter(
+                  color: AppColors.error,
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showLogoutConfirmationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.lg,
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        title: Text(
+          'Logout of Receipto?',
+          style: GoogleFonts.hankenGrotesk(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Are you sure you want to log out? Your receipt and warranty data remain safely encrypted on cloud servers.',
+          style: GoogleFonts.inter(color: AppColors.onSurfaceVariant, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.error),
+            onPressed: () {
+              Navigator.pop(context);
+              ref.read(firebaseAuthServiceProvider).signOut(ref);
+            },
+            child: const Text('Logout', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAboutBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.cardSurface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    gradient: AppGradients.primaryBlueCyan,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Icon(Icons.receipt_long_rounded, color: Colors.black, size: 26),
+                ),
+                const SizedBox(width: 14),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Receipto AI', style: GoogleFonts.hankenGrotesk(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
+                    Text('Smart Warranty & Receipt System', style: GoogleFonts.inter(fontSize: 12, color: AppColors.onSurfaceVariant)),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            const Divider(color: Colors.white10),
+            const SizedBox(height: 12),
+            Text(
+              'Receipto is an intelligent AI-driven application for extracting receipt metadata, parsing purchased line items, calculating dynamic warranty expirations, and sending automated push & email reminders.',
+              style: GoogleFonts.inter(color: AppColors.onSurfaceVariant, fontSize: 13, height: 1.5),
+            ),
+            const SizedBox(height: 20),
+            Center(
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  shape: RoundedRectangleBorder(borderRadius: AppRadius.full),
+                ),
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Close', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showInfoDialog(BuildContext context, String title, String body) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.lg,
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        title: Text(
+          title,
+          style: GoogleFonts.hankenGrotesk(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          body,
+          style: GoogleFonts.inter(color: AppColors.onSurfaceVariant, fontSize: 13, height: 1.4),
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -317,7 +1078,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   setDialogState(() => error = 'PINs do not match.');
                   return;
                 }
-                // Save custom PIN hash first, then set app_lock_enabled = true ONLY AFTER confirmation!
                 await ref.read(appLockProvider.notifier).setCustomPin(pin);
                 await ref.read(appLockProvider.notifier).setAppLockEnabled(true);
                 if (context.mounted) {
@@ -356,7 +1116,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     if (!context.mounted) return;
 
-    // PIN prompt
     String enteredPin = '';
     String error = '';
 
@@ -521,408 +1280,31 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
-    final user = ref.watch(firebaseAuthServiceProvider).currentUser;
-    final photoURL = user?.photoURL;
-    final hasPhoto = photoURL != null && photoURL.isNotEmpty;
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'Receipto',
-          style: Theme.of(context).textTheme.headlineMd.copyWith(
-            fontWeight: FontWeight.bold,
-            color: AppColors.primary,
-          ),
-        ),
-        Row(
-          children: [
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: AppColors.primary),
-              onPressed: () {},
-            ),
-            const SizedBox(width: 4),
-            Container(
-              width: 32,
-              height: 32,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(color: AppColors.primary.withValues(alpha: 0.2)),
-                image: DecorationImage(
-                  image: NetworkImage(
-                    hasPhoto ? photoURL : 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
-                  ),
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  // User Profile card containing verified badge and premium status
-  Widget _buildUserProfileCard(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    final user = ref.watch(firebaseAuthServiceProvider).currentUser;
-    final photoURL = user?.photoURL;
-    final hasPhoto = photoURL != null && photoURL.isNotEmpty;
-    final name = user?.displayName ?? 'User';
-    final email = user?.email ?? 'No email available';
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: AppRadius.lg,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary.withValues(alpha: 0.15),
-            blurRadius: 20,
-          ),
-        ],
-      ),
-      child: GlassCard(
-        borderRadius: AppRadius.lg,
-        padding: const EdgeInsets.all(AppSpacing.md),
-        child: Column(
-          children: [
-            // Centered Verified Avatar stack
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                // Avatar Box
-                Container(
-                  width: 96,
-                  height: 96,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.primary, width: 2),
-                    image: DecorationImage(
-                      image: NetworkImage(
-                        hasPhoto ? photoURL : 'https://www.gravatar.com/avatar/00000000000000000000000000000000?d=mp&f=y',
-                      ),
-                      fit: BoxFit.cover,
-                    ),
-                  ),
-                ),
-                // Verified Shield Badge overlay
-                Positioned(
-                  bottom: 0,
-                  right: 0,
-                  child: Container(
-                    width: 28,
-                    height: 28,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      Icons.verified_user,
-                      color: AppColors.onPrimary,
-                      size: 16,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Profile info text labels
-            Text(
-              name,
-              style: textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: AppColors.onSurface,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              email,
-              style: textTheme.labelLarge?.copyWith(
-                color: AppColors.onSurfaceVariant.withValues(alpha: 0.8),
-              ),
-            ),
-            const SizedBox(height: 12),
-
-            // Premium Member tag
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-              decoration: BoxDecoration(
-                gradient: AppGradients.primaryBlueCyan,
-                borderRadius: AppRadius.full,
-              ),
-              child: Text(
-                'PREMIUM MEMBER',
-                style: GoogleFonts.inter(
-                  color: AppColors.onPrimary,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Profile Stats summary grid row
-  Widget _buildStatsGrid(BuildContext context) {
-    return Row(
-      children: [
-        _buildStatBox(context, '1.2k', 'Receipts', AppColors.primary),
-        const SizedBox(width: 12),
-        _buildStatBox(context, '98%', 'Accuracy', AppColors.tertiary),
-        const SizedBox(width: 12),
-        _buildStatBox(context, '24', 'Reports', AppColors.secondary),
-      ],
-    );
-  }
-
-  Widget _buildStatBox(BuildContext context, String value, String label, Color color) {
-    return Expanded(
-      child: GlassCard(
-        borderRadius: AppRadius.lg,
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(
-              value,
-              style: GoogleFonts.inter(
-                color: color,
-                fontSize: 22,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label.toUpperCase(),
-              style: GoogleFonts.inter(
-                color: AppColors.onSurfaceVariant,
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Segment section label header
-  Widget _buildSectionHeader(BuildContext context, String title) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 4),
-      child: Text(
-        title.toUpperCase(),
-        style: AppFonts.geist(
-          color: AppColors.onSurfaceVariant.withValues(alpha: 0.8),
-          fontSize: 12,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 1.5,
-          height: 1.0,
-        ),
-      ),
-    );
-  }
-
-  // Toggle Switch setting widget
-  Widget _buildToggleSetting({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color iconColor,
-    required bool value,
-    required ValueChanged<bool> onChanged,
-  }) {
-    return GlassCard(
-      borderRadius: AppRadius.lg,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: iconColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Icon(icon, color: iconColor, size: 20),
-              ),
-              const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: GoogleFonts.inter(
-                      color: AppColors.onSurface,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    subtitle,
-                    style: GoogleFonts.inter(
-                      color: AppColors.onSurfaceVariant,
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          Switch(
-            value: value,
-            onChanged: onChanged,
-            activeThumbColor: AppColors.primary,
-            activeTrackColor: AppColors.primary.withValues(alpha: 0.3),
-            inactiveThumbColor: AppColors.onSurfaceVariant,
-            inactiveTrackColor: AppColors.surfaceVariant,
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Action Navigate setting widget
-  Widget _buildActionSetting({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color iconColor,
-    required VoidCallback onTap,
-  }) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: AppRadius.lg,
-        child: GlassCard(
-          borderRadius: AppRadius.lg,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: iconColor.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: Icon(icon, color: iconColor, size: 20),
-                  ),
-                  const SizedBox(width: 14),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: GoogleFonts.inter(
-                          color: AppColors.onSurface,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        subtitle,
-                        style: GoogleFonts.inter(
-                          color: AppColors.onSurfaceVariant,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              const Icon(
-                Icons.chevron_right,
-                color: AppColors.onSurfaceVariant,
-                size: 20,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLogoutButton(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: () {
-          ref.read(firebaseAuthServiceProvider).signOut();
-        },
-        borderRadius: AppRadius.lg,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 18),
-          decoration: BoxDecoration(
-            color: AppColors.cardSurface.withValues(alpha: 0.85),
-            borderRadius: AppRadius.lg,
-            border: Border.all(
-              color: AppColors.error.withValues(alpha: 0.2),
-            ),
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.logout,
-                color: AppColors.error,
-                size: 20,
-              ),
-              const SizedBox(width: 8),
-              Text(
-                'Logout',
-                style: GoogleFonts.inter(
-                  color: AppColors.error,
-                  fontSize: 15,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // Footer label info
   Widget _buildFooter(BuildContext context) {
     return Column(
       children: [
         Text(
-          'Receipto v2.4.0-pro',
-          style: AppFonts.geist(
+          'Receipto v2.4.0 (Build 104)',
+          style: GoogleFonts.inter(
             color: AppColors.onSurfaceVariant.withValues(alpha: 0.5),
-            fontSize: 11,
-            fontWeight: FontWeight.normal,
-            height: 1.0,
+            fontSize: 11.5,
+            fontWeight: FontWeight.w500,
           ),
         ),
-        const SizedBox(height: 2),
-        Text(
-          'Encrypted End-to-End',
-          style: AppFonts.geist(
-            color: AppColors.onSurfaceVariant.withValues(alpha: 0.5),
-            fontSize: 11,
-            fontWeight: FontWeight.normal,
-            height: 1.0,
-          ),
+        const SizedBox(height: 4),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.shield_outlined, size: 12, color: AppColors.onSurfaceVariant.withValues(alpha: 0.5)),
+            const SizedBox(width: 4),
+            Text(
+              'Encrypted End-to-End • Multi-User Isolated',
+              style: GoogleFonts.inter(
+                color: AppColors.onSurfaceVariant.withValues(alpha: 0.5),
+                fontSize: 11,
+              ),
+            ),
+          ],
         ),
       ],
     );

@@ -6,8 +6,9 @@ import 'package:receipto/features/notifications/domain/models/notification_model
 
 final notificationNotifierProvider = StateNotifierProvider<NotificationNotifier, AsyncValue<List<NotificationModel>>>((ref) {
   final dbService = ref.watch(notificationDatabaseServiceProvider);
-  final authService = ref.watch(firebaseAuthServiceProvider);
-  return NotificationNotifier(dbService, authService);
+  final authUser = ref.watch(authStateChangesProvider).value;
+  final userId = authUser?.uid ?? ref.watch(firebaseAuthServiceProvider).currentUser?.uid;
+  return NotificationNotifier(dbService, userId ?? '');
 });
 
 final unreadNotificationsCountProvider = Provider<int>((ref) {
@@ -20,25 +21,23 @@ final unreadNotificationsCountProvider = Provider<int>((ref) {
 
 class NotificationNotifier extends StateNotifier<AsyncValue<List<NotificationModel>>> {
   final NotificationDatabaseService _dbService;
-  final FirebaseAuthService _authService;
+  final String _userId;
 
-  NotificationNotifier(this._dbService, this._authService) : super(const AsyncValue.loading()) {
+  NotificationNotifier(this._dbService, this._userId) : super(const AsyncValue.loading()) {
     loadNotifications();
   }
-
-  String get _userId => _authService.currentUser?.uid ?? '';
 
   /// Fetches user notification records.
   Future<void> loadNotifications() async {
     if (_userId.isEmpty) {
-      state = const AsyncValue.data([]);
+      if (mounted) state = const AsyncValue.data([]);
       return;
     }
     try {
       final notifications = await _dbService.fetchNotifications(_userId);
-      state = AsyncValue.data(notifications);
+      if (mounted) state = AsyncValue.data(notifications);
     } catch (e, stack) {
-      state = AsyncValue.error(e, stack);
+      if (mounted) state = AsyncValue.error(e, stack);
     }
   }
 
@@ -49,13 +48,16 @@ class NotificationNotifier extends StateNotifier<AsyncValue<List<NotificationMod
 
   /// Marks a specific notification log as read.
   Future<void> markRead(String id) async {
+    if (_userId.isEmpty) return;
     try {
-      await _dbService.markAsRead(id);
-      
+      await _dbService.markAsRead(id, userId: _userId);
+      if (!mounted) return;
       state.whenData((list) {
-        state = AsyncValue.data(
-          list.map((n) => n.id == id ? n.copyWith(isRead: true) : n).toList(),
-        );
+        if (mounted) {
+          state = AsyncValue.data(
+            list.map((n) => n.id == id ? n.copyWith(isRead: true) : n).toList(),
+          );
+        }
       });
     } catch (e) {
       if (kDebugMode) print('Error marking notification as read: $e');
@@ -69,12 +71,14 @@ class NotificationNotifier extends StateNotifier<AsyncValue<List<NotificationMod
       state.whenData((list) async {
         for (final n in list) {
           if (!n.isRead && n.id != null) {
-            await _dbService.markAsRead(n.id!);
+            await _dbService.markAsRead(n.id!, userId: _userId);
           }
         }
-        state = AsyncValue.data(
-          list.map((n) => n.copyWith(isRead: true)).toList(),
-        );
+        if (mounted) {
+          state = AsyncValue.data(
+            list.map((n) => n.copyWith(isRead: true)).toList(),
+          );
+        }
       });
     } catch (e) {
       if (kDebugMode) print('Error marking all notifications as read: $e');
@@ -83,13 +87,16 @@ class NotificationNotifier extends StateNotifier<AsyncValue<List<NotificationMod
 
   /// Deletes a specific notification log.
   Future<void> delete(String id) async {
+    if (_userId.isEmpty) return;
     try {
-      await _dbService.deleteNotification(id);
-      
+      await _dbService.deleteNotification(id, userId: _userId);
+      if (!mounted) return;
       state.whenData((list) {
-        state = AsyncValue.data(
-          list.where((n) => n.id != id).toList(),
-        );
+        if (mounted) {
+          state = AsyncValue.data(
+            list.where((n) => n.id != id).toList(),
+          );
+        }
       });
     } catch (e) {
       if (kDebugMode) print('Error deleting notification: $e');
@@ -101,7 +108,7 @@ class NotificationNotifier extends StateNotifier<AsyncValue<List<NotificationMod
     if (_userId.isEmpty) return;
     try {
       await _dbService.deleteAllNotifications(_userId);
-      state = const AsyncValue.data([]);
+      if (mounted) state = const AsyncValue.data([]);
     } catch (e) {
       if (kDebugMode) print('Error deleting all notifications: $e');
     }

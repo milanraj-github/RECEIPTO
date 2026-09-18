@@ -2,9 +2,19 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:receipto/core/services/receipt_database_service.dart';
+import 'package:receipto/features/warranty/presentation/providers/warranty_provider.dart';
+import 'package:receipto/features/notifications/presentation/providers/notification_provider.dart';
+import 'package:receipto/features/notifications/data/services/notification_scheduler.dart';
+import 'package:receipto/features/scan/presentation/providers/scan_provider.dart';
+import 'package:receipto/features/ai_assistant/data/services/ai_assistant_service.dart';
 
 final firebaseAuthServiceProvider = Provider<FirebaseAuthService>((ref) {
   return FirebaseAuthService();
+});
+
+final authStateChangesProvider = StreamProvider<User?>((ref) {
+  return FirebaseAuth.instance.authStateChanges();
 });
 
 class FirebaseAuthService {
@@ -75,13 +85,28 @@ class FirebaseAuthService {
     await _auth.sendPasswordResetEmail(email: email);
   }
 
-  // Sign out from both Firebase and Google accounts
-  Future<void> signOut() async {
+  // Sign out from both Firebase and Google accounts and invalidate user caches
+  Future<void> signOut([WidgetRef? ref]) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove('last_logged_in_email');
       await prefs.remove('last_logged_in_uid');
     } catch (_) {}
+    if (ref != null) {
+      try {
+        await ref.read(notificationSchedulerProvider).cancelAll();
+      } catch (_) {}
+      try {
+        ref.read(scanProvider.notifier).clearState();
+      } catch (_) {}
+      try {
+        ref.read(aiAssistantServiceProvider).clearCache();
+      } catch (_) {}
+      ref.invalidate(dbReceiptsListProvider);
+      ref.invalidate(recycleBinProvider);
+      ref.invalidate(dbWarrantiesProvider);
+      ref.invalidate(notificationNotifierProvider);
+    }
     await _googleSignIn.signOut();
     await _auth.signOut();
   }

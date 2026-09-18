@@ -186,7 +186,9 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
 
     // 3. Perform soft delete
     try {
-      await ref.read(scanRepositoryProvider).softDeleteReceipt(item.id);
+      final user = ref.read(firebaseAuthServiceProvider).currentUser;
+      final userId = user?.uid ?? '';
+      await ref.read(scanRepositoryProvider).softDeleteReceipt(item.id, userId: userId);
 
       // Invalidate the active receipts, recycle bin, warranties, and notification providers
       ref.invalidate(dbReceiptsListProvider);
@@ -403,47 +405,8 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Horizontal Category Filter Chips row
-                  SizedBox(
-                    height: 38,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: _categories.length,
-                      separatorBuilder: (context, index) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final cat = _categories[index];
-                        final isSelected = cat == _selectedCategory;
-                        return GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _selectedCategory = cat;
-                            });
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              gradient: isSelected ? AppGradients.primaryBlueCyan : null,
-                              color: isSelected ? null : AppColors.cardSurface.withValues(alpha: 0.85),
-                              borderRadius: AppRadius.full,
-                              border: isSelected
-                                  ? null
-                                  : Border.all(color: Colors.white.withValues(alpha: 0.1)),
-                            ),
-                            alignment: Alignment.center,
-                            child: Text(
-                              cat,
-                              style: AppFonts.geist(
-                                color: isSelected ? AppColors.onPrimary : AppColors.onSurface,
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                height: 1.0,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                  ),
+                  // Redesigned Category Filter Chips Row
+                  _buildCategoryFilterRow(context),
                   const SizedBox(height: 16),
                 ],
               ),
@@ -489,7 +452,273 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
       ),
     );
   }
+
+  Widget _buildCategoryFilterRow(BuildContext context) {
+    const defaultChips = ['All', 'Electronics', 'Groceries', 'Food'];
+
+    final isDefaultSelected = defaultChips.any(
+      (c) => c.toLowerCase() == _selectedCategory.toLowerCase() ||
+             (_selectedCategory.toLowerCase() == 'food & dining' && c.toLowerCase() == 'food') ||
+             (_selectedCategory.toLowerCase() == 'grocery' && c.toLowerCase() == 'groceries')
+    );
+
+    final List<String> visibleChips = [
+      'All',
+      'Electronics',
+      'Groceries',
+      'Food',
+      if (isDefaultSelected) '+ More ▼' else '$_selectedCategory ▼',
+    ];
+
+    return SizedBox(
+      height: 38,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: visibleChips.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 8),
+        itemBuilder: (context, index) {
+          final chipText = visibleChips[index];
+          final isMoreChip = chipText.contains('▼');
+          final isCustomSelected = !isDefaultSelected && index == 4;
+
+          final bool isSelected;
+          if (chipText == 'All') {
+            isSelected = _selectedCategory == 'All';
+          } else if (chipText == 'Food') {
+            isSelected = _selectedCategory.toLowerCase() == 'food' || _selectedCategory.toLowerCase() == 'food & dining';
+          } else if (chipText == 'Groceries') {
+            isSelected = _selectedCategory.toLowerCase() == 'groceries' || _selectedCategory.toLowerCase() == 'grocery';
+          } else if (isCustomSelected) {
+            isSelected = true;
+          } else {
+            isSelected = chipText.toLowerCase() == _selectedCategory.toLowerCase();
+          }
+
+          final displayLabel = chipText.replaceAll(' ▼', '');
+
+          return GestureDetector(
+            onTap: () {
+              if (isMoreChip) {
+                _showCategoriesBottomSheet(context);
+              } else {
+                setState(() {
+                  _selectedCategory = chipText;
+                });
+              }
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                gradient: isSelected ? AppGradients.primaryBlueCyan : null,
+                color: isSelected
+                    ? null
+                    : (isMoreChip
+                        ? AppColors.primary.withValues(alpha: 0.12)
+                        : AppColors.cardSurface.withValues(alpha: 0.85)),
+                borderRadius: AppRadius.full,
+                border: isSelected
+                    ? null
+                    : Border.all(
+                        color: isMoreChip
+                            ? AppColors.primary.withValues(alpha: 0.35)
+                            : Colors.white.withValues(alpha: 0.1),
+                      ),
+              ),
+              alignment: Alignment.center,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    displayLabel,
+                    style: AppFonts.geist(
+                      color: isSelected
+                          ? AppColors.onPrimary
+                          : (isMoreChip ? AppColors.primary : AppColors.onSurface),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      height: 1.0,
+                    ),
+                  ),
+                  if (isMoreChip) ...[
+                    const SizedBox(width: 4),
+                    Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: isSelected ? AppColors.onPrimary : AppColors.primary,
+                      size: 16,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  void _showCategoriesBottomSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.65),
+      builder: (sheetContext) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(sheetContext).size.height * 0.75,
+          ),
+          decoration: BoxDecoration(
+            color: AppColors.cardSurface,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(24),
+              topRight: Radius.circular(24),
+            ),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.12),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.5),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const SizedBox(height: 12),
+              // Drag Handle
+              Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.25),
+                  borderRadius: AppRadius.full,
+                ),
+              ),
+              const SizedBox(height: 16),
+              
+              // Bottom Sheet Title Header
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.15),
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(
+                            Icons.category_outlined,
+                            color: AppColors.primary,
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Categories',
+                          style: GoogleFonts.hankenGrotesk(
+                            color: Colors.white,
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.close_rounded, color: AppColors.onSurfaceVariant),
+                      onPressed: () => Navigator.of(sheetContext).pop(),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 8),
+              Divider(color: Colors.white.withValues(alpha: 0.08), height: 1),
+              
+              // Selectable Category List
+              Flexible(
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  shrinkWrap: true,
+                  itemCount: _categories.length,
+                  separatorBuilder: (context, index) => const SizedBox(height: 4),
+                  itemBuilder: (context, index) {
+                    final cat = _categories[index];
+                    final isSelected = cat.toLowerCase() == _selectedCategory.toLowerCase() ||
+                        (_selectedCategory == 'Food' && cat == 'Food & Dining') ||
+                        (_selectedCategory == 'Food & Dining' && cat == 'Food') ||
+                        (_selectedCategory == 'Groceries' && cat == 'Grocery') ||
+                        (_selectedCategory == 'Grocery' && cat == 'Groceries') ||
+                        (_selectedCategory == 'Healthcare' && cat == 'Medical') ||
+                        (_selectedCategory == 'Medical' && cat == 'Healthcare');
+
+                    return Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          setState(() {
+                            _selectedCategory = cat;
+                          });
+                          Navigator.of(sheetContext).pop();
+                        },
+                        borderRadius: AppRadius.md,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? AppColors.primary.withValues(alpha: 0.15)
+                                : Colors.transparent,
+                            borderRadius: AppRadius.md,
+                            border: isSelected
+                                ? Border.all(color: AppColors.primary.withValues(alpha: 0.4))
+                                : null,
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _getCategoryIcon(cat),
+                                color: isSelected ? AppColors.primary : AppColors.onSurfaceVariant,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 14),
+                              Expanded(
+                                child: Text(
+                                  cat,
+                                  style: GoogleFonts.inter(
+                                    color: isSelected ? Colors.white : AppColors.onSurface,
+                                    fontSize: 15,
+                                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                              if (isSelected)
+                                const Icon(
+                                  Icons.check_circle_rounded,
+                                  color: AppColors.primary,
+                                  size: 20,
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }
 
-// Data holder class
 

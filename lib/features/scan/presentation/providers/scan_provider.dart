@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:receipto/features/scan/data/repositories/scan_repository.dart';
 import 'package:receipto/features/scan/domain/models/receipt_model.dart';
 import 'package:receipto/core/services/receipt_database_service.dart';
@@ -27,6 +28,7 @@ class ScanState {
   
   // Supabase Database receipt ID
   final String? savedReceiptId;
+  final String? statusMessage;
 
   const ScanState({
     this.selectedImage,
@@ -42,6 +44,7 @@ class ScanState {
     this.uploadedUrl,
     this.extractedReceipt,
     this.savedReceiptId,
+    this.statusMessage,
   });
 
   ScanState copyWith({
@@ -58,6 +61,7 @@ class ScanState {
     String? uploadedUrl,
     ReceiptModel? extractedReceipt,
     String? savedReceiptId,
+    String? statusMessage,
     bool clearCapturedImage = false,
     bool clearAll = false,
   }) {
@@ -78,6 +82,7 @@ class ScanState {
       uploadedUrl: uploadedUrl ?? this.uploadedUrl,
       extractedReceipt: extractedReceipt ?? this.extractedReceipt,
       savedReceiptId: savedReceiptId ?? this.savedReceiptId,
+      statusMessage: statusMessage ?? this.statusMessage,
     );
   }
 }
@@ -88,28 +93,47 @@ class ScanNotifier extends StateNotifier<ScanState> {
 
   ScanNotifier(this._repository, this._ref) : super(const ScanState());
 
-  /// Set the captured image awaiting preview confirmation
+  /// Set the captured image awaiting preview confirmation, clearing previous scan metadata
   void setCapturedImage(File file) {
-    state = state.copyWith(
+    state = ScanState(
       capturedImage: file,
+      selectedImage: file,
+      selectedFilePath: file.path,
+      selectedFileName: file.path.split('/').last.split('\\').last,
       isAccepted: false,
       isProcessing: false,
+      isLoading: false,
       errorMessage: null,
+      statusMessage: null,
     );
   }
 
   /// Reset/delete the captured image awaiting preview
   void resetCapturedImage() {
+    state = const ScanState();
+  }
+
+  /// Manually update processing state and optional status message
+  void setProcessing(bool value, {String? statusMessage}) {
     state = state.copyWith(
-      clearCapturedImage: true,
-      isAccepted: false,
-      isProcessing: false,
-      errorMessage: null,
+      isLoading: value,
+      isProcessing: value,
+      statusMessage: statusMessage ?? (value ? 'Preparing Image...' : null),
     );
+  }
+
+  /// Dynamically update loading progress status message
+  void setStatusMessage(String message) {
+    state = state.copyWith(statusMessage: message);
   }
 
   /// Run the entire AI pipeline: upload image -> run Gemini vision -> save to Supabase database
   Future<bool> acceptAndProcessReceipt({required String userId}) async {
+    final activeUid = FirebaseAuth.instance.currentUser?.uid ?? userId;
+    if (activeUid.isEmpty || activeUid == 'guest') {
+      throw Exception('Authentication required: Cannot save receipt without active user login.');
+    }
+
     if (state.capturedImage == null) return false;
     
     state = state.copyWith(
@@ -117,16 +141,19 @@ class ScanNotifier extends StateNotifier<ScanState> {
       isProcessing: true,
       isAccepted: false,
       errorMessage: null,
+      statusMessage: 'Preparing Image...',
     );
 
     try {
       final File file = state.capturedImage!;
       final int size = await file.length();
       
+      state = state.copyWith(statusMessage: 'Extracting Receipt...');
+
       // Execute the centralized repository workflow:
       final Map<String, dynamic> result = await _repository.processAndSaveReceiptFlow(
         imageFile: file,
-        userId: userId,
+        userId: activeUid,
         fileSize: size,
       );
 
@@ -146,6 +173,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
         extractedReceipt: receipt,
         savedReceiptId: dbId,
         isAccepted: true,
+        statusMessage: 'Completed',
       );
 
       // Invalidate the lists provider to trigger dynamic refreshes across Dashboard, Receipts & Analytics
@@ -168,27 +196,38 @@ class ScanNotifier extends StateNotifier<ScanState> {
 
   /// Runs ONLY extraction and uploads the file to storage without saving it to database.
   Future<ReceiptModel?> extractReceiptOnly({required String userId}) async {
+    final activeUid = FirebaseAuth.instance.currentUser?.uid ?? userId;
     if (state.capturedImage == null) return null;
     
+    // Return cached extraction only if performed for current session
+    if (state.extractedReceipt != null && state.uploadedUrl != null) {
+      return state.extractedReceipt;
+    }
+
     state = state.copyWith(
       isLoading: true,
       isProcessing: true,
       isAccepted: false,
       errorMessage: null,
+      statusMessage: 'Extracting Receipt...',
     );
 
     try {
       final File file = state.capturedImage!;
       
-      final Map<String, dynamic> result = await _repository.extractReceiptAndUpload(
+      // Parallel execution of file processor and AI extraction upload
+      final fileResultFuture = _repository.processReceiptFile(file);
+      final extractFuture = _repository.extractReceiptAndUpload(
         imageFile: file,
-        userId: userId,
+        userId: activeUid,
       );
 
-      final ReceiptModel receipt = result['receipt'] as ReceiptModel;
-      final String publicUrl = result['imageUrl'] as String;
+      final results = await Future.wait([fileResultFuture, extractFuture]);
+      final fileResult = results[0];
+      final extractResult = results[1];
 
-      final fileResult = await _repository.processReceiptFile(file);
+      final ReceiptModel receipt = extractResult['receipt'] as ReceiptModel;
+      final String publicUrl = extractResult['imageUrl'] as String;
       
       state = state.copyWith(
         selectedImage: fileResult['file'] as File?,
@@ -199,6 +238,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
         uploadedUrl: publicUrl,
         extractedReceipt: receipt,
         isAccepted: false,
+        statusMessage: 'Analyzing Products...',
       );
 
       return receipt;
@@ -218,14 +258,25 @@ class ScanNotifier extends StateNotifier<ScanState> {
 
   /// Saves the already extracted receipt inside state to the database.
   Future<bool> saveExtracted({required String userId}) async {
+    final activeUid = FirebaseAuth.instance.currentUser?.uid ?? userId;
+    if (activeUid.isEmpty || activeUid == 'guest') {
+      throw Exception('Authentication required: Cannot save receipt without active user login.');
+    }
+
     final receipt = state.extractedReceipt;
     final publicUrl = state.uploadedUrl;
     if (receipt == null || publicUrl == null) return false;
+
+    // Performance Optimization: Prevent redundant database save if already saved
+    if (state.savedReceiptId != null) {
+      return true;
+    }
 
     state = state.copyWith(
       isLoading: true,
       isProcessing: true,
       errorMessage: null,
+      statusMessage: 'Saving Receipt...',
     );
 
     try {
@@ -236,7 +287,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
       final dbId = await _repository.saveExtractedReceiptFlow(
         receipt,
         publicUrl,
-        userId,
+        activeUid,
         originalFileName: state.selectedFileName,
         fileSize: size,
       );
@@ -246,9 +297,10 @@ class ScanNotifier extends StateNotifier<ScanState> {
         isAccepted: true,
         isProcessing: false,
         isLoading: false,
+        statusMessage: 'Completed',
       );
 
-      if (kDebugMode) print('Saving as new');
+      if (kDebugMode) print('Saved receipt $dbId for authenticated user $activeUid');
 
       // Invalidate providers to trigger dynamic refreshes across all screens
       _ref.invalidate(dbReceiptsListProvider);
@@ -281,6 +333,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
       if (kDebugMode) print('Replacing receipt');
       await _repository.deleteReceiptCascade(
         receiptId: oldReceiptId,
+        userId: userId,
         imageUrl: oldImageUrl,
       );
 

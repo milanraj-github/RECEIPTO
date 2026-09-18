@@ -54,6 +54,16 @@ class NotificationScheduler {
     }
   }
 
+  /// Cancels all pending local scheduled notifications.
+  Future<void> cancelAll() async {
+    try {
+      await _notificationsPlugin.cancelAll();
+      debugPrint('[NotificationScheduler] All local scheduled notifications cancelled.');
+    } catch (e) {
+      debugPrint('[NotificationScheduler] cancelAll failed: $e');
+    }
+  }
+
   int calculateNotificationId(String warrantyId, int daysBefore) {
     return ((warrantyId.hashCode * 31) + daysBefore) & 0x7FFFFFFF;
   }

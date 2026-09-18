@@ -30,7 +30,7 @@ class FakeFirebaseAuthService implements FirebaseAuthService {
   Future<void> sendPasswordResetEmail(String email) async {}
 
   @override
-  Future<void> signOut() async {}
+  Future<void> signOut([WidgetRef? ref]) async {}
 }
 
 void main() {

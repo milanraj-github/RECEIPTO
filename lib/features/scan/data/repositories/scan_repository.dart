@@ -16,6 +16,7 @@ import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 import 'package:receipto/core/utils/warranty_utils.dart';
 import 'package:receipto/features/notifications/data/services/notification_scheduler.dart';
 import 'package:receipto/core/services/ai_categorizer_service.dart';
+import 'package:receipto/features/warranty/presentation/widgets/manual_warranty_modal.dart';
 
 final scanRepositoryProvider = Provider<ScanRepository>((ref) {
   final imagePickerService = ref.watch(imagePickerServiceProvider);
@@ -316,24 +317,67 @@ class ScanRepository {
     return dbId;
   }
 
+  /// Saves manually specified warranties for eligible products.
+  Future<void> saveManualWarranties({
+    required String receiptId,
+    required String userId,
+    required String merchantName,
+    required String? invoiceNumber,
+    required String purchaseDate,
+    required String imageUrl,
+    required List<ManualWarrantySelection> selections,
+  }) async {
+    for (final selection in selections) {
+      if (!selection.isEnabled || selection.period <= 0) continue;
+
+      final status = WarrantyUtils.calculateStatus(selection.expiryDate);
+
+      final warranty = WarrantyModel(
+        userId: userId,
+        receiptId: receiptId,
+        productName: selection.item.name,
+        merchantName: merchantName,
+        invoiceNumber: invoiceNumber,
+        purchaseDate: purchaseDate,
+        warrantyPeriod: selection.period,
+        warrantyUnit: selection.unit,
+        expiryDate: selection.expiryDate,
+        imageUrl: imageUrl,
+        status: status,
+        brand: selection.item.brand,
+        model: selection.item.model,
+        serialNumber: selection.item.serialNumber,
+        isManual: true,
+      );
+
+      final warrantyId = await _warrantyDatabaseService.saveWarranty(warranty);
+      if (kDebugMode) print('=== Manual warranty inserted: $warrantyId for ${selection.item.name} ===');
+      await _notificationScheduler.rescheduleWarranty(warranty.copyWith(id: warrantyId));
+    }
+  }
+
   /// Deletes a receipt and all cascaded child relations (items, warranties, notifications, files).
   Future<void> deleteReceiptCascade({
     required String receiptId,
+    required String userId,
     required String? imageUrl,
   }) async {
     if (kDebugMode) print('Replacing receipt - Deleting old record: $receiptId');
     final client = Supabase.instance.client;
+    final intId = int.tryParse(receiptId) ?? receiptId;
+
+    // Verify receipt ownership
+    final check = await client.from('receipts').select('id').eq('id', intId).eq('user_id', userId).maybeSingle();
+    if (check == null) return;
 
     // 1. Delete storage file if URL exists
     if (imageUrl != null && imageUrl.isNotEmpty) {
       await _storageService.deleteReceiptFileByUrl(imageUrl);
     }
 
-    final intId = int.tryParse(receiptId) ?? receiptId;
-
     // 2. Delete warranties linked to this receipt
     try {
-      await client.from('warranties').delete().eq('receipt_id', intId);
+      await client.from('warranties').delete().eq('receipt_id', intId).eq('user_id', userId);
     } catch (e) {
       if (kDebugMode) print('Error deleting warranties linked to receipt: $e');
     }
@@ -347,7 +391,7 @@ class ScanRepository {
 
     // 5. Delete receipt record itself
     try {
-      await client.from('receipts').delete().eq('id', intId);
+      await client.from('receipts').delete().eq('id', intId).eq('user_id', userId);
     } catch (e) {
       if (kDebugMode) print('Error deleting receipt record: $e');
     }
@@ -420,15 +464,15 @@ class ScanRepository {
   }
 
   /// Soft deletes a receipt record by updating is_deleted to true and deleted_at to current timestamp.
-  Future<void> softDeleteReceipt(String receiptId) async {
+  Future<void> softDeleteReceipt(String receiptId, {required String userId}) async {
     debugPrint('Receipt deleted: $receiptId. Cancelling pending notifications...');
-    await _receiptDatabaseService.softDeleteReceipt(receiptId);
+    await _receiptDatabaseService.softDeleteReceipt(receiptId, userId: userId);
     
     // Fetch and cancel notifications for all warranties associated with this receipt
     try {
       final client = Supabase.instance.client;
       final intId = int.tryParse(receiptId) ?? receiptId;
-      final warrantiesData = await client.from('warranties').select('id').eq('receipt_id', intId);
+      final warrantiesData = await client.from('warranties').select('id').eq('receipt_id', intId).eq('user_id', userId);
       for (final w in warrantiesData) {
         final wId = w['id']?.toString();
         if (wId != null) {
@@ -441,15 +485,15 @@ class ScanRepository {
   }
 
   /// Restores a soft-deleted receipt record by setting is_deleted to false and deleted_at to null.
-  Future<void> restoreReceipt(String receiptId) async {
+  Future<void> restoreReceipt(String receiptId, {required String userId}) async {
     debugPrint('Receipt restored: $receiptId. Rescheduling notifications...');
-    await _receiptDatabaseService.restoreReceipt(receiptId);
+    await _receiptDatabaseService.restoreReceipt(receiptId, userId: userId);
     
     // Fetch and reschedule notifications for all warranties associated with this receipt
     try {
       final client = Supabase.instance.client;
       final intId = int.tryParse(receiptId) ?? receiptId;
-      final warrantiesData = await client.from('warranties').select().eq('receipt_id', intId);
+      final warrantiesData = await client.from('warranties').select().eq('receipt_id', intId).eq('user_id', userId);
       for (final w in warrantiesData) {
         final warranty = WarrantyModel.fromJson(w);
         await _notificationScheduler.rescheduleWarranty(warranty);
@@ -463,6 +507,7 @@ class ScanRepository {
   /// Performs transactional rollback in case database deletes fail.
   Future<void> permanentDeleteReceipt({
     required String receiptId,
+    required String userId,
     required String? imageUrl,
   }) async {
     final client = Supabase.instance.client;
@@ -474,9 +519,12 @@ class ScanRepository {
     List<dynamic> warrantiesData = [];
 
     try {
-      receiptData = await client.from('receipts').select().eq('id', intId).maybeSingle();
+      receiptData = await client.from('receipts').select().eq('id', intId).eq('user_id', userId).maybeSingle();
+      if (receiptData == null) {
+        throw Exception('Access denied: Receipt not found or does not belong to current user.');
+      }
       itemsData = await client.from('receipt_items').select().eq('receipt_id', intId);
-      warrantiesData = await client.from('warranties').select().eq('receipt_id', intId);
+      warrantiesData = await client.from('warranties').select().eq('receipt_id', intId).eq('user_id', userId);
     } catch (e, stackTrace) {
       print('=== Deletion Backup Fetch Failed ===');
       print('Receipt ID: $receiptId');
@@ -499,7 +547,7 @@ class ScanRepository {
       print('Deleting warranties...');
       if (warrantiesData.isNotEmpty) {
         try {
-          await client.from('warranties').delete().eq('receipt_id', intId);
+          await client.from('warranties').delete().eq('receipt_id', intId).eq('user_id', userId);
         } catch (e, stackTrace) {
           print('=== Deletion Failed at warranties ===');
           print('Receipt ID: $receiptId');
@@ -544,7 +592,7 @@ class ScanRepository {
       print('Deleting receipt...');
       if (receiptData != null) {
         try {
-          await client.from('receipts').delete().eq('id', intId);
+          await client.from('receipts').delete().eq('id', intId).eq('user_id', userId);
         } catch (e, stackTrace) {
           print('=== Deletion Failed at receipts ===');
           print('Receipt ID: $receiptId');

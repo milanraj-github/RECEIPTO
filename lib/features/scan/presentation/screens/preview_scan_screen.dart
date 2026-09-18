@@ -8,10 +8,18 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/core/widgets/glass_card.dart';
 import 'package:receipto/features/scan/presentation/providers/scan_provider.dart';
+import 'package:receipto/features/scan/data/repositories/scan_repository.dart';
 import 'package:receipto/features/scan/domain/models/receipt_model.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:receipto/core/services/firebase_auth_service.dart';
 import 'package:receipto/core/services/duplicate_receipt_service.dart';
+import 'package:receipto/core/services/receipt_validator_service.dart';
 import 'package:receipto/core/utils/currency_formatter.dart';
+import 'package:receipto/core/utils/warranty_eligibility_filter.dart';
+import 'package:receipto/features/warranty/presentation/widgets/manual_warranty_modal.dart';
+import 'package:receipto/core/services/receipt_database_service.dart';
+import 'package:receipto/features/warranty/presentation/providers/warranty_provider.dart';
+import 'package:receipto/features/notifications/presentation/providers/notification_provider.dart';
 
 class PreviewScanScreen extends ConsumerWidget {
   final File imageFile;
@@ -151,12 +159,44 @@ class PreviewScanScreen extends ConsumerWidget {
                                 textColor: Colors.black,
                                 disabled: scanState.isProcessing,
                                 onTap: () async {
-                                  final user = ref.read(firebaseAuthServiceProvider).currentUser;
-                                  final userId = user?.uid ?? 'guest';
+                                  final currentUser = ref.read(firebaseAuthServiceProvider).currentUser ?? FirebaseAuth.instance.currentUser;
+                                  if (currentUser == null || currentUser.uid.isEmpty) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text('Please log in to process receipts.'),
+                                          backgroundColor: Colors.redAccent,
+                                        ),
+                                      );
+                                    }
+                                    return;
+                                  }
+                                  final userId = currentUser.uid;
+
+                                  // Enable loading processing state while validating
+                                  ref.read(scanProvider.notifier).setProcessing(true, statusMessage: 'Preparing Image...');
+
+                                  try {
+                                    // 1. Receipt Validation Pre-Check BEFORE OCR
+                                    final valResult = await ref.read(receiptValidatorServiceProvider).validateImage(imageFile);
+
+                                    if (!valResult.isValid) {
+                                      ref.read(scanProvider.notifier).setProcessing(false);
+                                      if (context.mounted) {
+                                        _showInvalidReceiptDialog(context, ref);
+                                      }
+                                      return;
+                                    }
+                                  } catch (e) {
+                                    if (kDebugMode) {
+                                      print('[PreviewScanScreen] Validation notice: $e');
+                                    }
+                                  }
 
                                   Future<void> performExtraction() async {
                                     try {
-                                      // 1. Run extraction only
+                                      // 1. Run extraction only with status update
+                                      ref.read(scanProvider.notifier).setStatusMessage('Extracting Receipt...');
                                       final receipt = await ref.read(scanProvider.notifier).extractReceiptOnly(userId: userId);
                                       if (receipt == null) {
                                         if (context.mounted) {
@@ -172,9 +212,12 @@ class PreviewScanScreen extends ConsumerWidget {
 
                                       if (!context.mounted) return;
 
+                                      ref.read(scanProvider.notifier).setStatusMessage('Analyzing Products...');
                                       final originalFileName = imageFile.path.split('/').last.split('\\').last;
-                                      final fileSize = await imageFile.length();
+                                      final fileSizeFuture = imageFile.length();
                                       final rawText = ref.read(scanProvider).extractedContent;
+                                      
+                                      final fileSize = await fileSizeFuture;
                                       final dupResult = await ref.read(duplicateReceiptServiceProvider).checkDuplicate(
                                             receipt: receipt,
                                             userId: userId,
@@ -202,18 +245,121 @@ class PreviewScanScreen extends ConsumerWidget {
                                           userId,
                                         );
                                       } else {
-                                        // Save normally
-                                        final success = await ref.read(scanProvider.notifier).saveExtracted(userId: userId);
-                                        if (context.mounted && success) {
-                                          final dbId = ref.read(scanProvider).savedReceiptId;
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            const SnackBar(
-                                              content: Text('Receipt successfully processed and saved!'),
-                                              backgroundColor: AppColors.primary,
-                                            ),
+                                        // 3. Smart Warranty Detection Processing (Case 1, Case 2, Case 3)
+                                        ref.read(scanProvider.notifier).setStatusMessage('Detecting Warranty...');
+                                        final List<ReceiptItemModel> manualEligibleItems = [];
+                                        for (final item in receipt.items) {
+                                          final hasExplicitExpiry = item.warrantyExpiry != null && item.warrantyExpiry!.trim().isNotEmpty;
+                                          final hasWarrantyPeriod = item.warrantyPeriod != null && item.warrantyPeriod! > 0;
+                                          if (!hasExplicitExpiry && !hasWarrantyPeriod) {
+                                            if (WarrantyEligibilityFilter.isEligible(item.name, category: item.category ?? receipt.category)) {
+                                              manualEligibleItems.add(item);
+                                            }
+                                          }
+                                        }
+
+                                        Future<void> executeFinalSave(List<ManualWarrantySelection> manualSelections) async {
+                                          final activeUid = FirebaseAuth.instance.currentUser?.uid ?? userId;
+                                          ref.read(scanProvider.notifier).setProcessing(true, statusMessage: 'Saving Receipt...');
+
+                                          try {
+                                            // 1. Insert receipt metadata and items into database under live activeUid
+                                            final success = await ref.read(scanProvider.notifier).saveExtracted(userId: activeUid);
+                                            if (!success) {
+                                              ref.read(scanProvider.notifier).setProcessing(false);
+                                              if (context.mounted) {
+                                                ScaffoldMessenger.of(context).showSnackBar(
+                                                  const SnackBar(
+                                                    content: Text('Failed to save receipt. Please try again.'),
+                                                    backgroundColor: Colors.redAccent,
+                                                  ),
+                                                );
+                                              }
+                                              return;
+                                            }
+
+                                            final dbId = ref.read(scanProvider).savedReceiptId;
+                                            final publicUrl = ref.read(scanProvider).uploadedUrl ?? '';
+                                            final merchantName = receipt.merchantName ?? 'Unknown Merchant';
+                                            final purchaseDate = receipt.date ?? DateTime.now().toString().split(' ').first;
+
+                                            // 2. Persist manual warranties into warranties table under live activeUid
+                                            if (manualSelections.isNotEmpty && dbId != null) {
+                                              ref.read(scanProvider.notifier).setStatusMessage('Saving Warranties...');
+                                              await ref.read(scanRepositoryProvider).saveManualWarranties(
+                                                receiptId: dbId,
+                                                userId: activeUid,
+                                                merchantName: merchantName,
+                                                invoiceNumber: receipt.invoiceNumber,
+                                                purchaseDate: purchaseDate,
+                                                imageUrl: publicUrl,
+                                                selections: manualSelections,
+                                              );
+                                            }
+
+                                            // 3. Invalidate Riverpod providers to trigger dynamic refreshes across Dashboard, Warranty Tracker, Analytics & Details
+                                            ref.invalidate(dbReceiptsListProvider);
+                                            ref.invalidate(dbWarrantiesProvider);
+                                            ref.invalidate(notificationNotifierProvider);
+
+                                            ref.read(scanProvider.notifier).setProcessing(false);
+
+                                            if (!context.mounted) return;
+
+                                            // 4. Success SnackBar and clean navigation
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              const SnackBar(
+                                                content: Text('Receipt & Warranties saved successfully!'),
+                                                backgroundColor: AppColors.primary,
+                                                duration: Duration(seconds: 3),
+                                              ),
+                                            );
+
+                                            if (dbId != null && dbId.isNotEmpty) {
+                                              context.pushReplacement('/receipts/details/$dbId');
+                                            } else {
+                                              context.go('/receipts');
+                                            }
+                                          } catch (e) {
+                                            ref.read(scanProvider.notifier).setProcessing(false);
+                                            if (!context.mounted) return;
+                                            ScaffoldMessenger.of(context).showSnackBar(
+                                              SnackBar(
+                                                content: Text('Error saving receipt: ${e.toString().replaceAll('Exception: ', '')}'),
+                                                backgroundColor: Colors.redAccent,
+                                                duration: const Duration(seconds: 4),
+                                              ),
+                                            );
+                                          }
+                                        }
+
+                                        if (manualEligibleItems.isNotEmpty) {
+                                          ref.read(scanProvider.notifier).setProcessing(false);
+                                          // Case 3: Display Manual Warranty Screen ONCE for all eligible products
+                                          showModalBottomSheet(
+                                            context: context,
+                                            isScrollControlled: true,
+                                            backgroundColor: Colors.transparent,
+                                            barrierColor: Colors.black.withValues(alpha: 0.65),
+                                            builder: (sheetContext) {
+                                              return ManualWarrantyModal(
+                                                eligibleItems: manualEligibleItems,
+                                                purchaseDate: receipt.date ?? DateTime.now().toString().split(' ').first,
+                                                merchantName: receipt.merchantName ?? 'Unknown Merchant',
+                                                onSave: (selections) async {
+                                                  Navigator.of(sheetContext).pop();
+                                                  await executeFinalSave(selections);
+                                                },
+                                                onSkip: () async {
+                                                  Navigator.of(sheetContext).pop();
+                                                  await executeFinalSave([]);
+                                                },
+                                              );
+                                            },
                                           );
-                                          context.push('/receipts/details/$dbId');
-                                          Navigator.of(context).pop();
+                                        } else {
+                                          // Case 1 & Case 2: Save automatically with zero user prompts
+                                          await executeFinalSave([]);
                                         }
                                       }
                                     } catch (e) {
@@ -319,7 +465,7 @@ class PreviewScanScreen extends ConsumerWidget {
             ),
           ),
 
-          // 5. Processing / OCR Loading Overlay
+          // 5. Processing / OCR Loading Overlay with Dynamic Status
           if (scanState.isProcessing)
             Positioned.fill(
               child: Container(
@@ -337,7 +483,7 @@ class PreviewScanScreen extends ConsumerWidget {
                         ),
                         const SizedBox(height: 18),
                         Text(
-                          'Analyzing Receipt...',
+                          scanState.statusMessage ?? 'Analyzing Receipt...',
                           style: GoogleFonts.hankenGrotesk(
                             color: AppColors.onSurface,
                             fontSize: 16,
@@ -596,6 +742,71 @@ class PreviewScanScreen extends ConsumerWidget {
               ),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  void _showInvalidReceiptDialog(BuildContext context, WidgetRef ref) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: AppColors.cardSurface,
+          shape: RoundedRectangleBorder(
+            borderRadius: AppRadius.lg,
+            side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+          ),
+          title: Text(
+            'Invalid Receipt',
+            style: GoogleFonts.hankenGrotesk(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'The selected image is not recognized as a valid shopping receipt. Please upload a clear purchase receipt or invoice.',
+            style: GoogleFonts.inter(
+              color: AppColors.onSurfaceVariant,
+              fontSize: 14.5,
+              height: 1.4,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+                ref.read(scanProvider.notifier).resetCapturedImage();
+                Navigator.of(context).pop();
+              },
+              child: Text(
+                'Cancel',
+                style: GoogleFonts.inter(
+                  color: AppColors.onSurfaceVariant,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: AppRadius.sm,
+                ),
+              ),
+              onPressed: () {
+                Navigator.of(dialogContext).pop();
+              },
+              child: Text(
+                'Try Again',
+                style: GoogleFonts.inter(
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ],
         );
       },
     );

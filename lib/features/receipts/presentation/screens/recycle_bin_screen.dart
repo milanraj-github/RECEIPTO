@@ -56,7 +56,7 @@ class _RecycleBinScreenState extends ConsumerState<RecycleBinScreen> {
         for (final row in oldReceipts) {
           final idStr = row['id'].toString();
           final imageUrl = row['image_url'] as String?;
-          await repo.permanentDeleteReceipt(receiptId: idStr, imageUrl: imageUrl);
+          await repo.permanentDeleteReceipt(receiptId: idStr, userId: userId, imageUrl: imageUrl);
         }
         ref.invalidate(recycleBinProvider);
         ref.invalidate(dbReceiptsListProvider);
@@ -77,7 +77,9 @@ class _RecycleBinScreenState extends ConsumerState<RecycleBinScreen> {
     setState(() => _isOperationLoading = true);
     final receiptId = row['id'].toString();
     try {
-      await ref.read(scanRepositoryProvider).restoreReceipt(receiptId);
+      final user = ref.read(firebaseAuthServiceProvider).currentUser;
+      final userId = user?.uid ?? '';
+      await ref.read(scanRepositoryProvider).restoreReceipt(receiptId, userId: userId);
       ref.invalidate(recycleBinProvider);
       ref.invalidate(dbReceiptsListProvider);
       ref.invalidate(dbWarrantiesProvider);
@@ -95,7 +97,7 @@ class _RecycleBinScreenState extends ConsumerState<RecycleBinScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Restore failed: $e'),
+            content: Text('Failed to restore receipt: $e'),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -107,16 +109,12 @@ class _RecycleBinScreenState extends ConsumerState<RecycleBinScreen> {
     }
   }
 
-  /// Handles permanent deletion of a receipt
-  Future<void> _handleDeletePermanently(Map<String, dynamic> row) async {
-    final bool? confirm = await showDialog<bool>(
+  /// Handles permanent deletion of a single receipt
+  Future<void> _handleDelete(Map<String, dynamic> row) async {
+    final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.cardSurface,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.lg,
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-        ),
         title: Text(
           'Delete Permanently?',
           style: GoogleFonts.hankenGrotesk(
@@ -125,38 +123,21 @@ class _RecycleBinScreenState extends ConsumerState<RecycleBinScreen> {
           ),
         ),
         content: Text(
-          'This action cannot be undone.\nThe following will be removed permanently:\n• Receipt\n• Receipt Items\n• Warranty\n• Receipt Image\n• Reminder Schedules\n• Email Reminder Flags',
-          style: GoogleFonts.inter(
-            color: AppColors.onSurfaceVariant,
-            fontSize: 14,
-          ),
+          'This action cannot be undone. All receipt items and associated warranty data will be permanently removed.',
+          style: GoogleFonts.inter(color: AppColors.onSurfaceVariant),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.inter(
-                color: AppColors.onSurface,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: AppRadius.sm,
-              ),
             ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(
-              'Delete Forever',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Delete Permanently'),
           ),
         ],
       ),
@@ -168,8 +149,11 @@ class _RecycleBinScreenState extends ConsumerState<RecycleBinScreen> {
     final receiptId = row['id'].toString();
     final imageUrl = row['image_url'] as String?;
     try {
+      final user = ref.read(firebaseAuthServiceProvider).currentUser;
+      final userId = user?.uid ?? '';
       await ref.read(scanRepositoryProvider).permanentDeleteReceipt(
         receiptId: receiptId,
+        userId: userId,
         imageUrl: imageUrl,
       );
       ref.invalidate(recycleBinProvider);
@@ -189,7 +173,7 @@ class _RecycleBinScreenState extends ConsumerState<RecycleBinScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Delete failed: $e'),
+            content: Text('Failed to delete receipt: $e'),
             backgroundColor: Colors.redAccent,
           ),
         );
@@ -201,58 +185,37 @@ class _RecycleBinScreenState extends ConsumerState<RecycleBinScreen> {
     }
   }
 
-  /// Handles Empty Bin action
-  Future<void> _handleEmptyBin(List<Map<String, dynamic>> deletedReceipts) async {
+  /// Permanently deletes all items currently in the recycle bin
+  Future<void> _emptyBin(List<Map<String, dynamic>> deletedReceipts) async {
     if (deletedReceipts.isEmpty) return;
 
-    final bool? confirm = await showDialog<bool>(
+    final confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: AppColors.cardSurface,
-        shape: RoundedRectangleBorder(
-          borderRadius: AppRadius.lg,
-          side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-        ),
         title: Text(
-          'Empty Bin?',
+          'Empty Recycle Bin?',
           style: GoogleFonts.hankenGrotesk(
             color: Colors.white,
             fontWeight: FontWeight.bold,
           ),
         ),
         content: Text(
-          'Delete ALL permanently?\nThis action cannot be undone and will delete every receipt inside the recycle bin.',
-          style: GoogleFonts.inter(
-            color: AppColors.onSurfaceVariant,
-            fontSize: 14,
-          ),
+          'Are you sure you want to permanently delete all ${deletedReceipts.length} items in the Recycle Bin? This action cannot be undone.',
+          style: GoogleFonts.inter(color: AppColors.onSurfaceVariant),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
-              'Cancel',
-              style: GoogleFonts.inter(
-                color: AppColors.onSurface,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: AppRadius.sm,
-              ),
             ),
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text(
-              'Delete All',
-              style: GoogleFonts.inter(
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Empty Bin'),
           ),
         ],
       ),
@@ -262,11 +225,13 @@ class _RecycleBinScreenState extends ConsumerState<RecycleBinScreen> {
 
     setState(() => _isOperationLoading = true);
     try {
+      final user = ref.read(firebaseAuthServiceProvider).currentUser;
+      final userId = user?.uid ?? '';
       final repo = ref.read(scanRepositoryProvider);
       for (final row in deletedReceipts) {
         final idStr = row['id'].toString();
         final imageUrl = row['image_url'] as String?;
-        await repo.permanentDeleteReceipt(receiptId: idStr, imageUrl: imageUrl);
+        await repo.permanentDeleteReceipt(receiptId: idStr, userId: userId, imageUrl: imageUrl);
       }
       ref.invalidate(recycleBinProvider);
       ref.invalidate(dbReceiptsListProvider);
@@ -336,7 +301,7 @@ class _RecycleBinScreenState extends ConsumerState<RecycleBinScreen> {
                     fontSize: 13,
                   ),
                 ),
-                onPressed: () => _handleEmptyBin(deletedRows),
+                onPressed: () => _emptyBin(deletedRows),
               );
             },
             error: (_, __) => const SizedBox.shrink(),
@@ -550,7 +515,7 @@ class _RecycleBinScreenState extends ConsumerState<RecycleBinScreen> {
                                                 icon: const Icon(Icons.delete_forever_rounded, color: Colors.redAccent),
                                                 padding: EdgeInsets.zero,
                                                 constraints: const BoxConstraints(),
-                                                onPressed: () => _handleDeletePermanently(row),
+                                                onPressed: () => _handleDelete(row),
                                                 tooltip: 'Delete Forever',
                                               ),
                                             ],

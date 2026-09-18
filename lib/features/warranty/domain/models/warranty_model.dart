@@ -28,6 +28,7 @@ class WarrantyModel {
   final bool email1Sent;
   final bool emailTodaySent;
   final bool emailExpiredSent;
+  final bool isManual;
 
   WarrantyModel({
     this.id,
@@ -59,6 +60,7 @@ class WarrantyModel {
     this.email1Sent = false,
     this.emailTodaySent = false,
     this.emailExpiredSent = false,
+    this.isManual = false,
   });
 
   factory WarrantyModel.fromJson(Map<String, dynamic> json) {
@@ -92,6 +94,7 @@ class WarrantyModel {
       email1Sent: json['email_1_sent'] as bool? ?? false,
       emailTodaySent: json['email_today_sent'] as bool? ?? false,
       emailExpiredSent: json['email_expired_sent'] as bool? ?? false,
+      isManual: json['is_manual'] as bool? ?? (json['is_manual_entry'] as bool? ?? false),
     );
   }
 
@@ -112,6 +115,7 @@ class WarrantyModel {
       'brand': brand,
       'model': model,
       'serial_number': serialNumber,
+      'is_manual': isManual,
       'notification_30_sent': notification30Sent,
       'notification_15_sent': notification15Sent,
       'notification_7_sent': notification7Sent,
@@ -159,6 +163,7 @@ class WarrantyModel {
     bool? email1Sent,
     bool? emailTodaySent,
     bool? emailExpiredSent,
+    bool? isManual,
   }) {
     return WarrantyModel(
       id: id ?? this.id,
@@ -190,6 +195,7 @@ class WarrantyModel {
       email1Sent: email1Sent ?? this.email1Sent,
       emailTodaySent: emailTodaySent ?? this.emailTodaySent,
       emailExpiredSent: emailExpiredSent ?? this.emailExpiredSent,
+      isManual: isManual ?? this.isManual,
     );
   }
 }

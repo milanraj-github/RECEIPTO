@@ -16,6 +16,10 @@ import 'package:receipto/core/services/warranty_database_service.dart';
 import 'package:receipto/core/services/receipt_database_service.dart';
 import 'package:receipto/app/config/routes.dart';
 import 'package:receipto/features/notifications/data/services/notification_scheduler.dart';
+import 'package:receipto/features/notifications/presentation/providers/notification_provider.dart';
+import 'package:receipto/features/scan/presentation/providers/scan_provider.dart';
+import 'package:receipto/features/ai_assistant/data/services/ai_assistant_service.dart';
+import 'package:receipto/features/warranty/presentation/providers/warranty_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
@@ -57,6 +61,14 @@ Future<void> main() async {
 
   // Listen to Auth changes to run startup notification synchronization
   FirebaseAuth.instance.authStateChanges().listen((user) async {
+    // Invalidate all user-specific Riverpod providers and clear memory caches on auth state transition
+    container.read(scanProvider.notifier).clearState();
+    container.read(aiAssistantServiceProvider).clearCache();
+    container.invalidate(dbReceiptsListProvider);
+    container.invalidate(recycleBinProvider);
+    container.invalidate(dbWarrantiesProvider);
+    container.invalidate(notificationNotifierProvider);
+
     if (user != null) {
       try {
         final prefs = await SharedPreferences.getInstance();
@@ -71,13 +83,16 @@ Future<void> main() async {
 
       debugPrint('[Startup] User detected: ${user.uid}. Starting notification synchronization...');
       try {
+        final scheduler = container.read(notificationSchedulerProvider);
+        await scheduler.cancelAll(); // Clear any stale notifications from previous account
+
         final dbWarrs = await container.read(warrantyDatabaseServiceProvider).fetchAllWarranties(user.uid);
         final dbReceiptsService = container.read(receiptDatabaseServiceProvider);
         final activeReceipts = await dbReceiptsService.fetchAllReceipts(userId: user.uid);
         final activeReceiptIds = activeReceipts.map((r) => r['id'].toString()).toSet();
         final activeWarranties = dbWarrs.where((w) => activeReceiptIds.contains(w.receiptId)).toList();
 
-        await container.read(notificationSchedulerProvider).syncWarranties(activeWarranties);
+        await scheduler.syncWarranties(activeWarranties);
 
         // Show battery optimization prompt once after user is authenticated
         // Use a short delay so the UI is fully mounted before showing a dialog
@@ -88,6 +103,16 @@ Future<void> main() async {
         }
       } catch (e) {
         debugPrint('[Startup] Error during startup notification sync: $e');
+      }
+    } else {
+      // User signed out: Clear local preferences and cancel device notifications
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.remove('last_logged_in_email');
+        await prefs.remove('last_logged_in_uid');
+        await container.read(notificationSchedulerProvider).cancelAll();
+      } catch (e) {
+        debugPrint('[main.dart] Error clearing cache on signout: $e');
       }
     }
   });

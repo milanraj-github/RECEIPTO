@@ -429,7 +429,7 @@ class ReminderEngine {
         // Persist Notification flags immediately after push dispatches complete
         if (updatedWarrantiesNotif.isNotEmpty) {
           for (final updated in updatedWarrantiesNotif.values) {
-            await _dbService.updateWarranty(updated);
+            await _dbService.updateWarranty(updated, userId: updated.userId);
           }
           print("=== Notification Flags Updated for ${updatedWarrantiesNotif.length} warranties ===");
         }
@@ -504,7 +504,7 @@ class ReminderEngine {
           // Persist Email Flags ONLY upon successful SMTP dispatch! (Flag Safety Requirement)
           if (updatedWarrantiesEmail.isNotEmpty) {
             for (final updated in updatedWarrantiesEmail.values) {
-              await _dbService.updateWarranty(updated);
+              await _dbService.updateWarranty(updated, userId: updated.userId);
             }
             print("=== Email Flags Updated for ${updatedWarrantiesEmail.length} warranties ===");
             print("Flags Updated");

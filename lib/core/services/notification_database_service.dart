@@ -34,22 +34,24 @@ class NotificationDatabaseService {
         .toList();
   }
 
-  /// Marks a specific notification as read.
-  Future<void> markAsRead(String id) async {
+  /// Marks a specific notification as read for a specific user.
+  Future<void> markAsRead(String id, {required String userId}) async {
     final intId = int.tryParse(id);
     await _client
         .from('notifications')
         .update({'is_read': true})
-        .eq('id', intId ?? id);
+        .eq('id', intId ?? id)
+        .eq('user_id', userId);
   }
 
-  /// Deletes a specific notification.
-  Future<void> deleteNotification(String id) async {
+  /// Deletes a specific notification for a specific user.
+  Future<void> deleteNotification(String id, {required String userId}) async {
     final intId = int.tryParse(id);
     await _client
         .from('notifications')
         .delete()
-        .eq('id', intId ?? id);
+        .eq('id', intId ?? id)
+        .eq('user_id', userId);
   }
 
   /// Deletes all notifications for a specific user.

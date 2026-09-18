@@ -121,33 +121,56 @@ class ReceiptDatabaseService {
     }
   }
 
-  /// Fetches a receipt record and its items from Supabase by ID.
-  Future<Map<String, dynamic>> fetchReceipt(String receiptId) async {
+  /// Fetches a receipt record and its items from Supabase by ID for a specific user.
+  Future<Map<String, dynamic>> fetchReceipt(String receiptId, {required String userId}) async {
     try {
+      final intId = int.tryParse(receiptId) ?? receiptId;
+      
       final receiptData = await _supabase
           .from('receipts')
           .select()
-          .eq('id', int.parse(receiptId))
+          .eq('id', intId)
+          .eq('user_id', userId)
           .maybeSingle();
 
       if (receiptData == null) {
-        throw Exception('Receipt not found in database.');
+        // Diagnostic fallback to identify exact missing/mismatched record
+        final checkAny = await _supabase
+            .from('receipts')
+            .select()
+            .eq('id', intId)
+            .maybeSingle();
+
+        if (checkAny == null) {
+          throw Exception('Receipt record ID "$receiptId" does not exist in database.');
+        } else if (checkAny['user_id'] != userId && checkAny['user_id'] != 'guest') {
+          throw Exception('Access denied: Receipt owner (${checkAny['user_id']}) does not match current user ($userId).');
+        } else {
+          return await _fetchReceiptWithData(checkAny, intId);
+        }
       }
 
-      final itemsData = await _supabase
-          .from('receipt_items')
-          .select()
-          .eq('receipt_id', int.parse(receiptId));
-
-      final migratedReceipt = migrateReceiptDataIfNeeded(receiptData);
-
-      return {
-        'receipt': migratedReceipt,
-        'items': itemsData,
-      };
+      return await _fetchReceiptWithData(receiptData, intId);
     } catch (e) {
-      throw Exception('Supabase database fetch failed: $e');
+      if (kDebugMode) {
+        print('[FetchReceipt Error] Receipt ID: $receiptId | User UID: $userId | Exception: $e');
+      }
+      throw Exception('Database fetch failed: $e');
     }
+  }
+
+  Future<Map<String, dynamic>> _fetchReceiptWithData(Map<String, dynamic> receiptData, dynamic intId) async {
+    final itemsData = await _supabase
+        .from('receipt_items')
+        .select()
+        .eq('receipt_id', intId);
+
+    final migratedReceipt = migrateReceiptDataIfNeeded(receiptData);
+
+    return {
+      'receipt': migratedReceipt,
+      'items': itemsData,
+    };
   }
 
   /// Fetches all active receipts (where is_deleted is false or null) for a specific user.
@@ -197,7 +220,7 @@ class ReceiptDatabaseService {
   }
 
   /// Soft deletes a receipt record by updating is_deleted to true and deleted_at to current timestamp.
-  Future<void> softDeleteReceipt(String receiptId) async {
+  Future<void> softDeleteReceipt(String receiptId, {required String userId}) async {
     try {
       final intId = int.tryParse(receiptId) ?? receiptId;
       await _supabase
@@ -206,14 +229,15 @@ class ReceiptDatabaseService {
             'is_deleted': true,
             'deleted_at': DateTime.now().toIso8601String(),
           })
-          .eq('id', intId);
+          .eq('id', intId)
+          .eq('user_id', userId);
     } catch (e) {
       throw Exception('Failed to soft delete receipt: $e');
     }
   }
 
   /// Restores a soft-deleted receipt record by setting is_deleted to false and deleted_at to null.
-  Future<void> restoreReceipt(String receiptId) async {
+  Future<void> restoreReceipt(String receiptId, {required String userId}) async {
     try {
       final intId = int.tryParse(receiptId) ?? receiptId;
       await _supabase
@@ -222,7 +246,8 @@ class ReceiptDatabaseService {
             'is_deleted': false,
             'deleted_at': null,
           })
-          .eq('id', intId);
+          .eq('id', intId)
+          .eq('user_id', userId);
     } catch (e) {
       throw Exception('Failed to restore receipt: $e');
     }
@@ -329,15 +354,17 @@ class ReceiptDatabaseService {
 }
 
 final dbReceiptsListProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final authUser = ref.watch(authStateChangesProvider).value;
   final dbService = ref.watch(receiptDatabaseServiceProvider);
-  final authService = ref.watch(firebaseAuthServiceProvider);
-  final userId = authService.currentUser?.uid ?? 'guest';
-  return await dbService.fetchAllReceipts(userId: userId);
+  final user = authUser ?? ref.watch(firebaseAuthServiceProvider).currentUser;
+  if (user == null) return [];
+  return await dbService.fetchAllReceipts(userId: user.uid);
 });
 
 final recycleBinProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final authUser = ref.watch(authStateChangesProvider).value;
   final dbService = ref.watch(receiptDatabaseServiceProvider);
-  final authService = ref.watch(firebaseAuthServiceProvider);
-  final userId = authService.currentUser?.uid ?? 'guest';
-  return await dbService.fetchDeletedReceipts(userId: userId);
+  final user = authUser ?? ref.watch(firebaseAuthServiceProvider).currentUser;
+  if (user == null) return [];
+  return await dbService.fetchDeletedReceipts(userId: user.uid);
 });

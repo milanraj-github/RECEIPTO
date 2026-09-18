@@ -7,7 +7,8 @@ import 'package:receipto/core/utils/warranty_utils.dart';
 
 final dbWarrantiesProvider = FutureProvider<List<WarrantyModel>>((ref) async {
   final dbService = ref.watch(warrantyDatabaseServiceProvider);
-  final user = ref.watch(firebaseAuthServiceProvider).currentUser;
+  final authUser = ref.watch(authStateChangesProvider).value;
+  final user = authUser ?? ref.watch(firebaseAuthServiceProvider).currentUser;
   if (user == null) return [];
   
   final activeReceipts = await ref.watch(dbReceiptsListProvider.future);
@@ -32,8 +33,11 @@ final warrantiesByReceiptProvider = FutureProvider.family<List<WarrantyModel>, S
 
 final warrantyDetailProvider = FutureProvider.family<WarrantyModel?, String>((ref, warrantyId) async {
   final dbService = ref.watch(warrantyDatabaseServiceProvider);
-  final w = await dbService.fetchWarranty(warrantyId);
-  if (w == null) return null;
+  final user = ref.watch(firebaseAuthServiceProvider).currentUser;
+  if (user == null) return null;
+  
+  final w = await dbService.fetchWarranty(warrantyId, userId: user.uid);
+  if (w == null || w.userId != user.uid) return null;
   
   final status = WarrantyUtils.calculateStatus(w.expiryDate);
   return w.copyWith(status: status);

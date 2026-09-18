@@ -27,22 +27,28 @@ class AIAssistantService {
     return dotenv.env['GEMINI_API_KEY'] ?? '';
   }
 
+  /// Clears in-memory AI response cache.
+  void clearCache() {
+    _cache.clear();
+  }
+
   /// Entry point for handling user question, running intent detection,
   /// executing structured local query, and producing human friendly answers.
   Future<String> ask(String question) async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) {
+      return "You must be logged in to ask the AI Warranty Assistant.";
+    }
+    final userId = currentUser.uid;
     final cleanQuestion = question.trim().toLowerCase();
-    if (_cache.containsKey(cleanQuestion)) {
+    final cacheKey = '$userId|$cleanQuestion';
+
+    if (_cache.containsKey(cacheKey)) {
       if (kDebugMode) print('[AI Assistant] Cache Hit for: $question');
-      return _cache[cleanQuestion]!;
+      return _cache[cacheKey]!;
     }
 
     try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser == null) {
-        return "You must be logged in to ask the AI Warranty Assistant.";
-      }
-      final userId = currentUser.uid;
-
       // 1. Detect Intent
       final intentJson = await _detectIntent(question);
       if (kDebugMode) print('[AI Assistant] Detected Intent JSON: $intentJson');
@@ -58,9 +64,9 @@ class AIAssistantService {
       // 4. Generate Final Response
       final answer = await _generateAnswer(question, queryResult);
       
-      // Cache response
+      // Cache response with user-isolated key
       if (answer.isNotEmpty) {
-        _cache[cleanQuestion] = answer;
+        _cache[cacheKey] = answer;
       }
       
       return answer;

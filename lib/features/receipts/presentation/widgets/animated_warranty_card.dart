@@ -6,6 +6,11 @@ import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/core/utils/warranty_utils.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 import 'package:receipto/features/notifications/presentation/providers/notification_settings_provider.dart';
+import 'package:receipto/features/notifications/data/services/notification_scheduler.dart';
+import 'package:receipto/core/services/warranty_database_service.dart';
+import 'package:receipto/core/services/receipt_database_service.dart';
+import 'package:receipto/features/warranty/presentation/providers/warranty_provider.dart';
+import 'package:receipto/features/warranty/presentation/widgets/edit_single_warranty_modal.dart';
 
 class AnimatedWarrantyCard extends ConsumerStatefulWidget {
   final WarrantyModel warranty;
@@ -238,37 +243,61 @@ class _AnimatedWarrantyCardState extends ConsumerState<AnimatedWarrantyCard>
                       Divider(color: Colors.white.withValues(alpha: 0.05), height: 1),
                       const SizedBox(height: 8),
 
-                      // Bottom Right Action Link
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: InkWell(
-                          onTap: () {
-                            context.push('/receipts/warranty/${w.id}');
-                          },
-                          borderRadius: BorderRadius.circular(4),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'View Warranty Details',
-                                  style: GoogleFonts.inter(
-                                    color: AppColors.primary,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                const SizedBox(width: 4),
-                                const Icon(
-                                  Icons.arrow_forward_rounded,
-                                  size: 14,
+                      // Bottom Action Row
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          if (w.isManual)
+                            TextButton.icon(
+                              style: TextButton.styleFrom(
+                                foregroundColor: AppColors.primary,
+                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                minimumSize: Size.zero,
+                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              ),
+                              icon: const Icon(Icons.edit_outlined, size: 14, color: AppColors.primary),
+                              label: Text(
+                                'Edit Warranty',
+                                style: GoogleFonts.inter(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
                                   color: AppColors.primary,
                                 ),
-                              ],
+                              ),
+                              onPressed: () => _showEditWarrantyModal(context, ref, w),
+                            )
+                          else
+                            const SizedBox.shrink(),
+
+                          InkWell(
+                            onTap: () {
+                              context.push('/receipts/warranty/${w.id}');
+                            },
+                            borderRadius: BorderRadius.circular(4),
+                            child: Padding(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'View Details',
+                                    style: GoogleFonts.inter(
+                                      color: AppColors.primary,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.arrow_forward_rounded,
+                                    size: 14,
+                                    color: AppColors.primary,
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
+                        ],
                       ),
                     ],
                   ),
@@ -278,6 +307,69 @@ class _AnimatedWarrantyCardState extends ConsumerState<AnimatedWarrantyCard>
           ),
         ),
       ),
+    );
+  }
+
+  void _showEditWarrantyModal(BuildContext context, WidgetRef ref, WarrantyModel warranty) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      barrierColor: Colors.black.withValues(alpha: 0.65),
+      builder: (sheetContext) {
+        return EditSingleWarrantyModal(
+          warranty: warranty,
+          onSave: (isRemoved, newPeriod, newUnit, newExpiryDate) async {
+            Navigator.of(sheetContext).pop();
+
+            if (isRemoved) {
+              if (warranty.id != null) {
+                await ref.read(warrantyDatabaseServiceProvider).deleteWarranty(warranty.id!, userId: warranty.userId);
+                
+                // Invalidate all related providers to refresh Dashboard, Analytics, Receipts & Details
+                ref.invalidate(warrantiesByReceiptProvider(warranty.receiptId ?? ''));
+                ref.invalidate(dbWarrantiesProvider);
+                ref.invalidate(dbReceiptsListProvider);
+
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Manual warranty removed successfully.'),
+                      backgroundColor: Colors.orange,
+                    ),
+                  );
+                }
+              }
+            } else {
+              final newStatus = WarrantyUtils.calculateStatus(newExpiryDate);
+              final updatedWarranty = warranty.copyWith(
+                warrantyPeriod: newPeriod,
+                warrantyUnit: newUnit,
+                expiryDate: newExpiryDate,
+                status: newStatus,
+                isManual: true,
+              );
+
+              await ref.read(warrantyDatabaseServiceProvider).updateWarranty(updatedWarranty, userId: updatedWarranty.userId);
+              await ref.read(notificationSchedulerProvider).rescheduleWarranty(updatedWarranty);
+
+              // Invalidate all related providers to refresh Dashboard, Analytics, Receipts & Details
+              ref.invalidate(warrantiesByReceiptProvider(warranty.receiptId ?? ''));
+              ref.invalidate(dbWarrantiesProvider);
+              ref.invalidate(dbReceiptsListProvider);
+
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Warranty updated successfully!'),
+                    backgroundColor: AppColors.primary,
+                  ),
+                );
+              }
+            }
+          },
+        );
+      },
     );
   }
 
