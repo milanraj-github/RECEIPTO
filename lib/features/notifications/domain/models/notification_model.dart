@@ -41,8 +41,11 @@ class NotificationModel {
     return {
       if (id != null) 'id': int.tryParse(id!) ?? id,
       'user_id': userId,
+      if (warrantyId != null) 'warranty_id': warrantyId,
+      if (receiptId != null) 'receipt_id': receiptId,
       'title': title,
       'message': message,
+      'type': type,
       'is_read': isRead,
       'created_at': createdAt.toIso8601String(),
     };

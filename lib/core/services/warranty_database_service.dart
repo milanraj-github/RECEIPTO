@@ -1,15 +1,22 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
+import 'package:receipto/core/services/offline_cache_service.dart';
 
 final warrantyDatabaseServiceProvider = Provider<WarrantyDatabaseService>((ref) {
-  return WarrantyDatabaseService(Supabase.instance.client);
+  return WarrantyDatabaseService(Supabase.instance.client, OfflineCacheService());
 });
 
 class WarrantyDatabaseService {
   final SupabaseClient _supabase;
+  final OfflineCacheService? _cache;
+  OfflineCacheService get _offlineCacheService => _cache ?? OfflineCacheService.instance;
 
-  WarrantyDatabaseService(this._supabase);
+  WarrantyDatabaseService([
+    SupabaseClient? supabase,
+    OfflineCacheService? offlineCacheService,
+  ])  : _supabase = supabase ?? Supabase.instance.client,
+        _cache = offlineCacheService ?? OfflineCacheService.instance;
 
   /// Saves a warranty record in the "warranties" table. Returns generated ID.
   Future<String> saveWarranty(WarrantyModel warranty) async {
@@ -55,11 +62,15 @@ class WarrantyDatabaseService {
       if (response == null) return null;
       return WarrantyModel.fromJson(response);
     } catch (e) {
+      // Fallback: check if in user's cached warranties list
+      final cachedList = await _offlineCacheService.getCachedWarranties(userId);
+      final match = cachedList.where((w) => w.id == id).firstOrNull;
+      if (match != null) return match;
       throw Exception('Supabase fetchWarranty failed: $e');
     }
   }
 
-  /// Fetches all warranty records for a given user.
+  /// Fetches all warranty records for a given user, with offline cache support.
   Future<List<WarrantyModel>> fetchAllWarranties(String userId) async {
     try {
       final response = await _supabase
@@ -69,9 +80,13 @@ class WarrantyDatabaseService {
           .order('expiry_date', ascending: true);
 
       final List<dynamic> list = response as List<dynamic>? ?? [];
-      return list.map((item) => WarrantyModel.fromJson(item as Map<String, dynamic>)).toList();
+      final result = list.map((item) => WarrantyModel.fromJson(item as Map<String, dynamic>)).toList();
+      
+      // Update local cache
+      await _offlineCacheService.cacheWarranties(userId, result);
+      return result;
     } catch (e) {
-      throw Exception('Supabase fetchAllWarranties failed: $e');
+      return await _offlineCacheService.getCachedWarranties(userId);
     }
   }
 

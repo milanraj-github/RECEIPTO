@@ -18,6 +18,7 @@ import 'package:receipto/features/receipts/presentation/widgets/animated_warrant
 import 'package:receipto/features/receipts/presentation/widgets/document_viewer_dialog.dart';
 import 'package:receipto/features/receipts/presentation/widgets/pdf_viewer_dialog.dart';
 import 'package:receipto/features/receipts/presentation/widgets/share_options_bottom_sheet.dart';
+import 'package:receipto/core/services/receipt_export_service.dart';
 import 'package:receipto/features/scan/domain/models/receipt_model.dart';
 import 'package:receipto/features/scan/presentation/providers/scan_provider.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
@@ -381,7 +382,7 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
     );
   }
 
-  // Back Nav custom Header bar with active Share button
+  // Back Nav custom Header bar with active Share and Export buttons
   Widget _buildHeader(
     BuildContext context,
     ReceiptDetailViewModel? detail,
@@ -418,31 +419,117 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
             ),
           ),
           
-          // Share Action Button
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.surfaceVariant.withValues(alpha: 0.3),
-            ),
-            child: IconButton(
-              icon: const Icon(
-                Icons.share_rounded,
-                color: AppColors.onSurface,
-                size: 20,
-              ),
-              onPressed: detail == null
-                  ? null
-                  : () {
-                      ShareOptionsBottomSheet.show(
-                        context,
+          Row(
+            children: [
+              // Export Action Menu (PDF, CSV, JSON)
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.surfaceVariant.withValues(alpha: 0.3),
+                ),
+                child: PopupMenuButton<ExportFormat>(
+                  icon: const Icon(
+                    Icons.file_download_outlined,
+                    color: AppColors.onSurface,
+                    size: 20,
+                  ),
+                  tooltip: 'Export receipt',
+                  color: AppColors.cardSurface,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                  ),
+                  onSelected: (format) async {
+                    if (detail == null) return;
+                    try {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Exporting ${format.name.toUpperCase()}...'),
+                          backgroundColor: AppColors.primary,
+                          duration: const Duration(seconds: 1),
+                        ),
+                      );
+                      await ref.read(receiptExportServiceProvider).exportSingleReceipt(
                         detail: detail,
                         warranties: warranties,
-                        cachedPdfFile: _cachedPdfFile,
+                        format: format,
                       );
-                    },
-            ),
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Export failed: $e'),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: ExportFormat.pdf,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.picture_as_pdf_outlined, color: Colors.redAccent, size: 18),
+                          const SizedBox(width: 10),
+                          Text('Export PDF', style: GoogleFonts.inter(color: Colors.white, fontSize: 13.5)),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: ExportFormat.csv,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.table_chart_outlined, color: Colors.greenAccent, size: 18),
+                          const SizedBox(width: 10),
+                          Text('Export CSV', style: GoogleFonts.inter(color: Colors.white, fontSize: 13.5)),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: ExportFormat.json,
+                      child: Row(
+                        children: [
+                          const Icon(Icons.code_outlined, color: Colors.amberAccent, size: 18),
+                          const SizedBox(width: 10),
+                          Text('Export JSON', style: GoogleFonts.inter(color: Colors.white, fontSize: 13.5)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Share Action Button
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.surfaceVariant.withValues(alpha: 0.3),
+                ),
+                child: IconButton(
+                  icon: const Icon(
+                    Icons.share_rounded,
+                    color: AppColors.onSurface,
+                    size: 20,
+                  ),
+                  onPressed: detail == null
+                      ? null
+                      : () {
+                          ShareOptionsBottomSheet.show(
+                            context,
+                            detail: detail,
+                            warranties: warranties,
+                            cachedPdfFile: _cachedPdfFile,
+                          );
+                        },
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -506,8 +593,19 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
                         errorBuilder: (context, error, stackTrace) {
                           return Container(
                             color: AppColors.surfaceVariant,
-                            child: const Center(
-                              child: Icon(Icons.broken_image_outlined, color: AppColors.onSurfaceVariant, size: 36),
+                            padding: const EdgeInsets.all(16),
+                            child: Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.cloud_off_rounded, color: AppColors.onSurfaceVariant, size: 36),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    'Image unavailable offline',
+                                    style: GoogleFonts.inter(color: AppColors.onSurfaceVariant, fontSize: 12),
+                                  ),
+                                ],
+                              ),
                             ),
                           );
                         },

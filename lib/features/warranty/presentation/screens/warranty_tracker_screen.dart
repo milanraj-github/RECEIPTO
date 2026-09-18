@@ -11,6 +11,7 @@ import 'package:receipto/core/services/receipt_database_service.dart';
 import 'package:receipto/features/scan/domain/models/receipt_model.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 import 'package:receipto/features/warranty/presentation/providers/warranty_provider.dart';
+import 'package:receipto/features/warranty/presentation/widgets/warranty_calendar_view.dart';
 
 class WarrantyTrackerScreen extends ConsumerStatefulWidget {
   const WarrantyTrackerScreen({super.key});
@@ -24,6 +25,7 @@ class _WarrantyTrackerScreenState extends ConsumerState<WarrantyTrackerScreen> {
   String _searchQuery = '';
   String _selectedStatus = 'All';
   String _selectedCategory = 'All';
+  bool _isCalendarView = false;
 
   final List<String> _statusFilters = ['All', 'Active', 'Expiring Soon', 'Expired'];
   
@@ -154,6 +156,28 @@ class _WarrantyTrackerScreenState extends ConsumerState<WarrantyTrackerScreen> {
                               fontWeight: FontWeight.bold,
                             ),
                           ),
+                          const Spacer(),
+                          // List / Calendar View Toggle Button
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                _isCalendarView ? Icons.view_list_rounded : Icons.calendar_month_rounded,
+                                color: AppColors.secondary,
+                                size: 22,
+                              ),
+                              tooltip: _isCalendarView ? 'Switch to List View' : 'Switch to Warranty Calendar',
+                              onPressed: () {
+                                setState(() {
+                                  _isCalendarView = !_isCalendarView;
+                                });
+                              },
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -162,6 +186,12 @@ class _WarrantyTrackerScreenState extends ConsumerState<WarrantyTrackerScreen> {
                   // Warranties Content state loading
                   warrantiesAsync.when(
                     data: (warranties) {
+                      if (_isCalendarView) {
+                        return SliverToBoxAdapter(
+                          child: WarrantyCalendarView(warranties: warranties),
+                        );
+                      }
+
                       final receipts = receiptsAsync.value ?? [];
                       
                       // 1. Calculate protected total values

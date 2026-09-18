@@ -5,15 +5,22 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receipto/features/scan/domain/models/receipt_model.dart';
 import 'package:receipto/core/services/firebase_auth_service.dart';
+import 'package:receipto/core/services/offline_cache_service.dart';
 
 final receiptDatabaseServiceProvider = Provider<ReceiptDatabaseService>((ref) {
-  return ReceiptDatabaseService(Supabase.instance.client);
+  return ReceiptDatabaseService(Supabase.instance.client, OfflineCacheService());
 });
 
 class ReceiptDatabaseService {
   final SupabaseClient _supabase;
+  final OfflineCacheService? _cache;
+  OfflineCacheService get _offlineCacheService => _cache ?? OfflineCacheService.instance;
 
-  ReceiptDatabaseService(this._supabase);
+  ReceiptDatabaseService([
+    SupabaseClient? supabase,
+    OfflineCacheService? offlineCacheService,
+  ])  : _supabase = supabase ?? Supabase.instance.client,
+        _cache = offlineCacheService ?? OfflineCacheService.instance;
 
   /// Inserts a new receipt record into the "receipts" table and returns the generated database ID.
   /// Generates a SHA-256 fingerprint hash of merchant_name, invoice_number, purchase_date, grand_total
@@ -121,7 +128,7 @@ class ReceiptDatabaseService {
     }
   }
 
-  /// Fetches a receipt record and its items from Supabase by ID for a specific user.
+  /// Fetches a receipt record and its items from Supabase by ID for a specific user, with offline cache support.
   Future<Map<String, dynamic>> fetchReceipt(String receiptId, {required String userId}) async {
     try {
       final intId = int.tryParse(receiptId) ?? receiptId;
@@ -142,18 +149,29 @@ class ReceiptDatabaseService {
             .maybeSingle();
 
         if (checkAny == null) {
+          // Check local offline cache before throwing
+          final cached = await _offlineCacheService.getCachedReceiptDetails(userId, receiptId);
+          if (cached != null) return cached;
           throw Exception('Receipt record ID "$receiptId" does not exist in database.');
         } else if (checkAny['user_id'] != userId && checkAny['user_id'] != 'guest') {
           throw Exception('Access denied: Receipt owner (${checkAny['user_id']}) does not match current user ($userId).');
         } else {
-          return await _fetchReceiptWithData(checkAny, intId);
+          final result = await _fetchReceiptWithData(checkAny, intId);
+          await _offlineCacheService.cacheReceiptDetails(userId, receiptId, result);
+          return result;
         }
       }
 
-      return await _fetchReceiptWithData(receiptData, intId);
+      final result = await _fetchReceiptWithData(receiptData, intId);
+      await _offlineCacheService.cacheReceiptDetails(userId, receiptId, result);
+      return result;
     } catch (e) {
       if (kDebugMode) {
-        print('[FetchReceipt Error] Receipt ID: $receiptId | User UID: $userId | Exception: $e');
+        print('[FetchReceipt Error] Receipt ID: $receiptId | User UID: $userId | Exception: $e. Checking offline cache...');
+      }
+      final cached = await _offlineCacheService.getCachedReceiptDetails(userId, receiptId);
+      if (cached != null) {
+        return cached;
       }
       throw Exception('Database fetch failed: $e');
     }
@@ -173,7 +191,7 @@ class ReceiptDatabaseService {
     };
   }
 
-  /// Fetches all active receipts (where is_deleted is false or null) for a specific user.
+  /// Fetches all active receipts (where is_deleted is false or null) for a specific user, with offline cache support.
   Future<List<Map<String, dynamic>>> fetchAllReceipts({required String userId}) async {
     try {
       final response = await _supabase
@@ -184,9 +202,16 @@ class ReceiptDatabaseService {
           .order('date', ascending: false);
 
       final list = List<Map<String, dynamic>>.from(response);
-      return list.map((r) => migrateReceiptDataIfNeeded(r)).toList();
-    } catch (_) {
-      return [];
+      final migratedList = list.map((r) => migrateReceiptDataIfNeeded(r)).toList();
+      
+      // Update user-scoped local cache when online
+      await _offlineCacheService.cacheReceipts(userId, migratedList);
+      return migratedList;
+    } catch (e) {
+      if (kDebugMode) {
+        print('[FetchAllReceipts] Network/database exception ($e). Loading user-scoped offline cache...');
+      }
+      return await _offlineCacheService.getCachedReceipts(userId);
     }
   }
 

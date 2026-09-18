@@ -173,11 +173,9 @@ class PreviewScanScreen extends ConsumerWidget {
                                   }
                                   final userId = currentUser.uid;
 
-                                  // Enable loading processing state while validating
-                                  ref.read(scanProvider.notifier).setProcessing(true, statusMessage: 'Preparing Image...');
-
+                                  // 1. Receipt Validation Pre-Check BEFORE OCR
+                                  ref.read(scanProvider.notifier).setProcessing(true, statusMessage: 'Preparing image...');
                                   try {
-                                    // 1. Receipt Validation Pre-Check BEFORE OCR
                                     final valResult = await ref.read(receiptValidatorServiceProvider).validateImage(imageFile);
 
                                     if (!valResult.isValid) {
@@ -195,8 +193,8 @@ class PreviewScanScreen extends ConsumerWidget {
 
                                   Future<void> performExtraction() async {
                                     try {
-                                      // 1. Run extraction only with status update
-                                      ref.read(scanProvider.notifier).setStatusMessage('Extracting Receipt...');
+                                      // 3. Run AI extraction
+                                      ref.read(scanProvider.notifier).setStatusMessage('Extracting receipt...');
                                       final receipt = await ref.read(scanProvider.notifier).extractReceiptOnly(userId: userId);
                                       if (receipt == null) {
                                         if (context.mounted) {

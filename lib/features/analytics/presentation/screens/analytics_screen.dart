@@ -279,7 +279,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
         ),
         IconButton(
           icon: const Icon(Icons.notifications_outlined, color: AppColors.primary),
-          onPressed: () {},
+          onPressed: () => context.push('/notifications'),
         ),
       ],
     );
@@ -1124,15 +1124,19 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> {
         children: [
           Icon(icon, color: AppColors.primary, size: 20),
           const SizedBox(width: 12),
+          Text(
+            label,
+            style: GoogleFonts.inter(color: AppColors.onSurfaceVariant, fontSize: 13),
+          ),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
-              label,
-              style: GoogleFonts.inter(color: AppColors.onSurfaceVariant, fontSize: 13),
+              value,
+              textAlign: TextAlign.end,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
             ),
-          ),
-          Text(
-            value,
-            style: GoogleFonts.inter(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
           ),
         ],
       ),

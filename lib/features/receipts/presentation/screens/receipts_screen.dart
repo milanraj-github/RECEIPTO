@@ -315,7 +315,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                     children: [
                       IconButton(
                         icon: const Icon(Icons.notifications_outlined, color: AppColors.primary),
-                        onPressed: () {},
+                        onPressed: () => context.push('/notifications'),
                       ),
                       const SizedBox(width: 4),
                       GestureDetector(

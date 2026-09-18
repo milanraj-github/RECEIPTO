@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/core/services/pdf_invoice_service.dart';
+import 'package:receipto/core/services/receipt_export_service.dart';
 import 'package:receipto/core/utils/currency_formatter.dart';
 import 'package:receipto/core/widgets/glass_card.dart';
 import 'package:receipto/features/receipts/presentation/models/receipt_detail_view_model.dart';
@@ -234,6 +235,38 @@ class _ShareOptionsBottomSheetState extends State<ShareOptionsBottomSheet> {
                 title: 'Share PDF + Image',
                 subtitle: 'Share invoice PDF together with scan image',
                 onTap: _sharePdfAndImage,
+              ),
+              const SizedBox(height: 10),
+              _buildOptionTile(
+                icon: Icons.table_chart_rounded,
+                iconColor: Colors.greenAccent,
+                title: 'Export as CSV Spreadsheet',
+                subtitle: 'Tabular receipt and product data for Excel/Sheets',
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  final exportService = ReceiptExportService();
+                  await exportService.exportSingleReceipt(
+                    detail: widget.detail,
+                    warranties: widget.warranties,
+                    format: ExportFormat.csv,
+                  );
+                },
+              ),
+              const SizedBox(height: 10),
+              _buildOptionTile(
+                icon: Icons.code_rounded,
+                iconColor: Colors.amberAccent,
+                title: 'Export as JSON',
+                subtitle: 'Structured machine-readable receipt data',
+                onTap: () async {
+                  Navigator.of(context).pop();
+                  final exportService = ReceiptExportService();
+                  await exportService.exportSingleReceipt(
+                    detail: widget.detail,
+                    warranties: widget.warranties,
+                    format: ExportFormat.json,
+                  );
+                },
               ),
               const SizedBox(height: 10),
               _buildOptionTile(
