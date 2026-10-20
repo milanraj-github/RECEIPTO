@@ -207,10 +207,14 @@ class WarrantyUtils {
 
   /// Calculates remaining days between current date (today) and expiry date.
   static int calculateDaysRemaining(String expiryDateStr) {
-    if (expiryDateStr.toLowerCase().contains('unknown')) {
+    if (expiryDateStr.toLowerCase().contains('unknown') || expiryDateStr.trim().isEmpty) {
       return 9999; // Gracefully handle unknown expiry dates
     }
-    final expiry = _parseDate(expiryDateStr);
+    final normalized = parseAndNormalizeDate(expiryDateStr);
+    if (normalized == null) {
+      return 9999;
+    }
+    final expiry = _parseDate(normalized);
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final expiryClean = DateTime(expiry.year, expiry.month, expiry.day);
@@ -219,14 +223,16 @@ class WarrantyUtils {
 
   /// Resolves the warranty status based on expiryDate.
   static String calculateStatus(String expiryDateStr) {
-    if (expiryDateStr.toLowerCase().contains('unknown')) {
+    if (expiryDateStr.toLowerCase().contains('unknown') ||
+        expiryDateStr.trim().isEmpty ||
+        parseAndNormalizeDate(expiryDateStr) == null) {
       return 'ACTIVE';
     }
     final days = calculateDaysRemaining(expiryDateStr);
     if (days < 0) {
       return 'EXPIRED';
     } else if (days <= 30) {
-      return 'EXPIRING_SOON';
+      return 'EXPIRING SOON';
     } else {
       return 'ACTIVE';
     }

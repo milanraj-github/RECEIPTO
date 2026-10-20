@@ -49,34 +49,31 @@ class EmailService {
   Future<SmtpServer> _getSmtpServer() async {
     final prefs = await SharedPreferences.getInstance();
     
-    final String host = dotenv.env['SMTP_HOST'] ?? prefs.getString('env_SMTP_HOST') ?? '';
-    final String portStr = dotenv.env['SMTP_PORT'] ?? prefs.getString('env_SMTP_PORT') ?? '';
-    final String username = dotenv.env['SMTP_USERNAME'] ?? prefs.getString('env_SMTP_USERNAME') ?? '';
-    final String password = dotenv.env['SMTP_PASSWORD'] ?? prefs.getString('env_SMTP_PASSWORD') ?? '';
-    final String sender = dotenv.env['SMTP_SENDER'] ?? prefs.getString('env_SMTP_SENDER') ?? '';
+    final String host = dotenv.env['SMTP_HOST'] ?? prefs.getString('env_SMTP_HOST') ?? 'smtp-relay.brevo.com';
+    final String portStr = dotenv.env['SMTP_PORT'] ?? prefs.getString('env_SMTP_PORT') ?? '587';
+    final String username = dotenv.env['SMTP_USERNAME'] ?? prefs.getString('env_SMTP_USERNAME') ?? 'b2786c001@smtp-brevo.com';
+    final String password = dotenv.env['SMTP_PASSWORD'] ?? prefs.getString('env_SMTP_PASSWORD') ?? 'xsmtpsib-6bd2aa412b0e2539075028fa719ed8d47586bb0a898b5f4d814ddcb7c39def54-uf5X2irs5yjLkMMZ';
+    final String sender = dotenv.env['SMTP_SENDER'] ?? prefs.getString('env_SMTP_SENDER') ?? 'receiptotechexplorers@gmail.com';
 
-    // Validate that all required environment variables exist
-    final List<String> missing = [];
-    if (host.isEmpty) missing.add('SMTP_HOST');
-    if (portStr.isEmpty) missing.add('SMTP_PORT');
-    if (username.isEmpty) missing.add('SMTP_USERNAME');
-    if (password.isEmpty) missing.add('SMTP_PASSWORD');
-    if (sender.isEmpty) missing.add('SMTP_SENDER');
-
-    if (missing.isNotEmpty) {
-      final errorMsg = 'SMTP Configuration Error: Missing required environment variables: ${missing.join(', ')}';
+    // Validate that all required environment variables exist or have fallbacks
+    if (username.isEmpty || password.isEmpty) {
+      final errorMsg = 'SMTP Configuration Error: Missing username or password.';
       debugPrint('[EmailService] $errorMsg');
       throw Exception(errorMsg);
     }
 
     final int port = int.tryParse(portStr) ?? 587;
 
+    if (host.contains('gmail.com')) {
+      return gmail(username, password);
+    }
+
     return SmtpServer(
       host,
       port: port,
       username: username,
       password: password,
-      ssl: false,
+      ssl: port == 465,
       ignoreBadCertificate: false,
     );
   }
@@ -223,8 +220,8 @@ class EmailService {
   }) async {
     final prefs = await SharedPreferences.getInstance();
     
-    final host = dotenv.env['SMTP_HOST'] ?? prefs.getString('env_SMTP_HOST') ?? 'smtp.gmail.com';
-    final senderEmail = dotenv.env['SMTP_SENDER'] ?? prefs.getString('env_SMTP_SENDER') ?? '';
+    final host = dotenv.env['SMTP_HOST'] ?? prefs.getString('env_SMTP_HOST') ?? 'smtp-relay.brevo.com';
+    final senderEmail = dotenv.env['SMTP_SENDER'] ?? prefs.getString('env_SMTP_SENDER') ?? 'receiptotechexplorers@gmail.com';
     final subject = 'Warranty Reminder - $productName';
 
     _printEmailFlowDebug(
@@ -253,6 +250,15 @@ class EmailService {
         daysRemaining: daysRemaining,
         invoiceNumber: invoiceNumber,
       );
+      final emailText = EmailTemplates.getWarrantyReminderText(
+        userName: userName,
+        productName: productName,
+        merchantName: merchantName,
+        purchaseDate: purchaseDate,
+        expiryDate: expiryDate,
+        daysRemaining: daysRemaining,
+        invoiceNumber: invoiceNumber,
+      );
 
       if (senderEmail.isEmpty) {
         throw Exception('SMTP_SENDER is missing');
@@ -262,7 +268,9 @@ class EmailService {
         ..from = Address(senderEmail, 'Receipto')
         ..recipients.add(recipientEmail.trim())
         ..subject = subject
-        ..html = emailHtml;
+        ..text = emailText
+        ..html = emailHtml
+        ..headers['Reply-To'] = senderEmail;
 
       int retries = 3;
       bool sentSuccessfully = false;
@@ -382,8 +390,8 @@ class EmailService {
   }) async {
     final prefs = await SharedPreferences.getInstance();
     
-    final host = dotenv.env['SMTP_HOST'] ?? prefs.getString('env_SMTP_HOST') ?? 'smtp.gmail.com';
-    final senderEmail = dotenv.env['SMTP_SENDER'] ?? prefs.getString('env_SMTP_SENDER') ?? '';
+    final host = dotenv.env['SMTP_HOST'] ?? prefs.getString('env_SMTP_HOST') ?? 'smtp-relay.brevo.com';
+    final senderEmail = dotenv.env['SMTP_SENDER'] ?? prefs.getString('env_SMTP_SENDER') ?? 'receiptotechexplorers@gmail.com';
     final subject = 'Receipto SMTP Connection Test';
 
     _printEmailFlowDebug(
@@ -398,6 +406,7 @@ class EmailService {
 
     try {
       final emailHtml = EmailTemplates.getTestEmailHtml();
+      final emailText = EmailTemplates.getTestEmailText();
 
       if (senderEmail.isEmpty) {
         throw Exception('SMTP_SENDER is missing');
@@ -407,7 +416,9 @@ class EmailService {
         ..from = Address(senderEmail, 'Receipto')
         ..recipients.add(recipientEmail.trim())
         ..subject = subject
-        ..html = emailHtml;
+        ..text = emailText
+        ..html = emailHtml
+        ..headers['Reply-To'] = senderEmail;
 
       print("Recipient Verified");
       print("Connecting to Gmail SMTP...");
@@ -492,7 +503,7 @@ class EmailService {
     final prefs = await SharedPreferences.getInstance();
     
     final host = dotenv.env['SMTP_HOST'] ?? prefs.getString('env_SMTP_HOST') ?? 'smtp.gmail.com';
-    final senderEmail = dotenv.env['SMTP_SENDER'] ?? prefs.getString('env_SMTP_SENDER') ?? '';
+    final senderEmail = dotenv.env['SMTP_SENDER'] ?? prefs.getString('env_SMTP_SENDER') ?? 'receiptotechexplorers@gmail.com';
     final count = products.length;
     final subject = count == 1
         ? 'Warranty Reminder - ${products.first['name']}'
@@ -519,6 +530,10 @@ class EmailService {
         userName: userName,
         products: products,
       );
+      final emailText = EmailTemplates.getGroupedWarrantyReminderText(
+        userName: userName,
+        products: products,
+      );
 
       if (senderEmail.isEmpty) {
         throw Exception('SMTP_SENDER is missing');
@@ -528,7 +543,11 @@ class EmailService {
         ..from = Address(senderEmail, 'Receipto')
         ..recipients.add(recipientEmail.trim())
         ..subject = subject
-        ..html = emailHtml;
+        ..text = emailText
+        ..html = emailHtml
+        ..headers['Auto-Submitted'] = 'auto-generated'
+        ..headers['X-Auto-Response-Suppress'] = 'All'
+        ..headers['X-Mailer'] = 'Receipto App';
 
       int retries = 3;
       bool sentSuccessfully = false;

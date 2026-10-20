@@ -171,14 +171,14 @@ class ReminderEngine {
       final activeReceiptIds = (activeResponse as List).map((r) => r['id'].toString()).toSet();
 
       final allWarranties = await _dbService.fetchAllWarranties(userId);
-      final warranties = allWarranties.where((w) => activeReceiptIds.contains(w.receiptId)).toList();
+      final warranties = allWarranties.where((w) => w.receiptId == null || w.receiptId!.isEmpty || activeReceiptIds.contains(w.receiptId)).toList();
 
-      print("Fetched ${warranties.length} warranties");
+      print("Fetched ${warranties.length} active warranties for reminders");
 
       final userName = displayName ?? 'User';
 
       final isNotificationsEnabled = prefs.getBool('warranty_notif_enabled') ?? true;
-      final isEmailEnabled = prefs.getBool('warranty_notif_email_enabled') ?? false;
+      final isEmailEnabled = prefs.getBool('warranty_notif_email_enabled') ?? true;
 
       final remind30 = prefs.getBool('warranty_notif_30_days') ?? true;
       final remind15 = prefs.getBool('warranty_notif_15_days') ?? true;
@@ -380,8 +380,13 @@ class ReminderEngine {
         print(recipientEmail);
         print("Should Send");
         print(shouldSend);
-        print("Reason");
-        print(shouldSend ? (emailDue ? emailReason : notifReason) : "No trigger conditions met");
+        if (shouldSend) {
+          print("Reason");
+          print(emailDue ? emailReason : notifReason);
+        } else {
+          // Print actual individual reasons so we know exactly why each is skipped
+          print("Skipped — Notif: $notifReason | Email: $emailReason");
+        }
 
         if (isExpired && w.notificationExpiredSent && w.emailExpiredSent) {
           continue;
@@ -569,6 +574,10 @@ class ReminderEngine {
       'isGrouped': false,
     });
 
+    // Cancel any pre-scheduled zonedSchedule alarm with this exact ID first.
+    // This prevents the scheduled alarm from firing a duplicate later.
+    // Cancelling before show: clears the future alarm, then we re-post the notification.
+    await _notificationService.cancelNotification(id);
     await _notificationService.showNotification(
       id: id,
       title: subjectText,
@@ -624,6 +633,8 @@ class ReminderEngine {
       'daysBefore': stage,
     });
 
+    // Cancel any pre-scheduled grouped zonedSchedule alarm with this exact ID first.
+    await _notificationService.cancelNotification(id);
     await _notificationService.showNotification(
       id: id,
       title: title,

@@ -1,4 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Internet permission for API and SMTP email connections -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- Camera and media permissions -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />

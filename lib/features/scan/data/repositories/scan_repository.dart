@@ -2,6 +2,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image/image.dart' as img;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
@@ -18,6 +19,9 @@ import 'package:receipto/features/notifications/data/services/notification_sched
 import 'package:receipto/core/services/ai_categorizer_service.dart';
 import 'package:receipto/features/warranty/presentation/widgets/manual_warranty_modal.dart';
 
+import 'package:receipto/core/services/reminder_engine.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 final scanRepositoryProvider = Provider<ScanRepository>((ref) {
   final imagePickerService = ref.watch(imagePickerServiceProvider);
   final fileProcessorService = ref.watch(fileProcessorServiceProvider);
@@ -27,6 +31,7 @@ final scanRepositoryProvider = Provider<ScanRepository>((ref) {
   final warrantyDatabaseService = ref.watch(warrantyDatabaseServiceProvider);
   final notificationScheduler = ref.watch(notificationSchedulerProvider);
   final aiCategorizerService = ref.watch(aiCategorizerServiceProvider);
+  final reminderEngine = ref.watch(reminderEngineProvider);
   return ScanRepository(
     imagePickerService,
     fileProcessorService,
@@ -36,6 +41,7 @@ final scanRepositoryProvider = Provider<ScanRepository>((ref) {
     warrantyDatabaseService,
     notificationScheduler,
     aiCategorizerService,
+    reminderEngine,
   );
 });
 
@@ -48,6 +54,7 @@ class ScanRepository {
   final WarrantyDatabaseService _warrantyDatabaseService;
   final NotificationScheduler _notificationScheduler;
   final AICategorizerService _aiCategorizerService;
+  final ReminderEngine _reminderEngine;
 
   ScanRepository(
     this._imagePickerService,
@@ -58,6 +65,7 @@ class ScanRepository {
     this._warrantyDatabaseService,
     this._notificationScheduler,
     this._aiCategorizerService,
+    this._reminderEngine,
   );
 
   /// Capture image using camera, perform permissions checks, compression, and return the compressed File.
@@ -155,24 +163,19 @@ class ScanRepository {
     ReceiptModel receipt;
 
     if (['jpg', 'jpeg', 'png', 'webp', 'heic'].contains(extension)) {
-      // 1. Read bytes directly from local file
-      final bytes = await imageFile.readAsBytes();
-      final mimeType = extension == 'png'
-          ? 'image/png'
-          : extension == 'webp'
-              ? 'image/webp'
-              : 'image/jpeg';
-
-      // 2. Parallel execution: Storage Upload + Gemini AI Vision
+      // 1. Storage Upload in parallel with fast image optimization & Gemini AI Vision
       final uploadFuture = _storageService.uploadReceiptFile(
         file: imageFile,
         userId: userId,
       );
 
-      final analyzeFuture = _geminiService.analyzeReceiptBytes(
-        imageBytes: bytes,
-        mimeType: mimeType,
-      );
+      final analyzeFuture = () async {
+        final optimizedBytes = await _prepareOptimizedImageBytes(imageFile);
+        return await _geminiService.analyzeReceiptBytes(
+          imageBytes: optimizedBytes,
+          mimeType: 'image/jpeg',
+        );
+      }();
 
       final results = await Future.wait([uploadFuture, analyzeFuture]);
       publicUrl = results[0] as String;
@@ -237,8 +240,11 @@ class ScanRepository {
       throw Exception('Gemini extraction failed: Total amount must be greater than zero.');
     }
 
+    // Standardize and intelligently categorize the receipt and its individual items
+    final categorizedReceipt = await _aiCategorizerService.categorize(receipt);
+
     return {
-      'receipt': receipt,
+      'receipt': categorizedReceipt,
       'imageUrl': publicUrl,
     };
   }
@@ -251,9 +257,14 @@ class ScanRepository {
     String? originalFileName,
     int? fileSize,
   }) async {
+    // 0. Ensure receipt category is normalized and valid
+    final finalReceipt = (receipt.category == null || receipt.category!.trim().isEmpty || receipt.category == 'Others')
+        ? await _aiCategorizerService.categorize(receipt)
+        : receipt.copyWith(category: _aiCategorizerService.resolveSupportedCategory(receipt.category));
+
     // 1. Save receipt meta to receipts table
     final String dbId = await _receiptDatabaseService.saveReceipt(
-      receipt,
+      finalReceipt,
       userId: userId,
       imageUrl: publicUrl,
       originalFileName: originalFileName,
@@ -261,7 +272,7 @@ class ScanRepository {
     );
 
     // 2. Save individual items
-    await _receiptDatabaseService.saveReceiptItems(dbId, receipt.items);
+    await _receiptDatabaseService.saveReceiptItems(dbId, finalReceipt.items);
 
     // 3. Automatic Warranty processing
     for (final item in receipt.items) {
@@ -281,8 +292,17 @@ class ScanRepository {
 
         if (hasExplicitExpiry) {
           // Priority 1: Explicit printed expiry
-          expiryDate = item.warrantyExpiry!;
-          reason = 'Printed expiry date detected. Using printed expiry. Ignoring calculated warranty.';
+          final normalizedExplicit = WarrantyUtils.parseAndNormalizeDate(item.warrantyExpiry);
+          if (normalizedExplicit != null) {
+            expiryDate = normalizedExplicit;
+            reason = 'Printed expiry date detected ($normalizedExplicit). Using printed expiry.';
+          } else if (hasWarrantyPeriod) {
+            expiryDate = WarrantyUtils.calculateExpiryDate(purchaseDate, warrantyPeriod, warrantyUnit);
+            reason = 'Printed expiry was not a standard date. Calculated from warranty period: $warrantyPeriod $warrantyUnit.';
+          } else {
+            expiryDate = 'Warranty Unknown';
+            reason = 'Printed expiry was not a standard date and no duration was detected. Storing Warranty Unknown.';
+          }
         } else if (hasWarrantyPeriod) {
           // Priority 2: Calculate from duration
           expiryDate = WarrantyUtils.calculateExpiryDate(purchaseDate, warrantyPeriod, warrantyUnit);
@@ -333,15 +353,30 @@ class ScanRepository {
           print('Expiry: $expiryDate, Status: $status');
         }
 
-        final warrantyId = await _warrantyDatabaseService.saveWarranty(warranty);
+        try {
+          final warrantyId = await _warrantyDatabaseService.saveWarranty(warranty);
 
-        if (kDebugMode) print('=== Warranty inserted: $warrantyId ===');
-        
-        // Automatically schedule notifications for the newly created warranty
-        debugPrint('Scheduling warranty notifications for product: $productName');
-        await _notificationScheduler.rescheduleWarranty(warranty.copyWith(id: warrantyId));
+          if (kDebugMode) print('=== Warranty inserted: $warrantyId ===');
+          
+          // Automatically schedule notifications for the newly created warranty
+          debugPrint('Scheduling warranty notifications for product: $productName');
+          try {
+            await _notificationScheduler.rescheduleWarranty(warranty.copyWith(id: warrantyId));
+          } catch (ne) {
+            debugPrint('[ScanRepository] Non-fatal notification error: $ne');
+          }
+        } catch (we) {
+          debugPrint('[ScanRepository] Non-fatal warranty saving error for $productName: $we');
+        }
       }
     }
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await _reminderEngine.checkWarrantyReminders(user.uid, user.email, user.displayName);
+      }
+    } catch (_) {}
 
     return dbId;
   }
@@ -383,6 +418,13 @@ class ScanRepository {
       if (kDebugMode) print('=== Manual warranty inserted: $warrantyId for ${selection.item.name} ===');
       await _notificationScheduler.rescheduleWarranty(warranty.copyWith(id: warrantyId));
     }
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await _reminderEngine.checkWarrantyReminders(user.uid, user.email, user.displayName);
+      }
+    } catch (_) {}
   }
 
   /// Deletes a receipt and all cascaded child relations (items, warranties, notifications, files).
@@ -490,6 +532,23 @@ class ScanRepository {
       merchantPhone: merchantPhone,
       items: items,
     );
+  }
+
+  /// Optimizes image bytes for ultra-fast upload & AI processing without UI thread blocking.
+  Future<Uint8List> _prepareOptimizedImageBytes(File file) async {
+    try {
+      final rawBytes = await file.readAsBytes();
+      // If smaller than 400KB, it's already fast and compact
+      if (rawBytes.lengthInBytes <= 400 * 1024) {
+        return rawBytes;
+      }
+      // Offload downscaling and compression to background isolate via compute
+      final optimized = await compute(_downscaleImageBytes, rawBytes);
+      return optimized ?? rawBytes;
+    } catch (e) {
+      debugPrint('[ScanRepository] Image optimization fallback: $e');
+      return await file.readAsBytes();
+    }
   }
 
   /// Soft deletes a receipt record by updating is_deleted to true and deleted_at to current timestamp.
@@ -619,25 +678,21 @@ class ScanRepository {
 
       // 5. Delete receipt row
       print('Deleting receipt...');
-      if (receiptData != null) {
-        try {
-          await client.from('receipts').delete().eq('id', intId).eq('user_id', userId);
-        } catch (e, stackTrace) {
-          print('=== Deletion Failed at receipts ===');
-          print('Receipt ID: $receiptId');
-          print('Table: receipts');
-          print('Exception: $e');
-          print('StackTrace: $stackTrace');
-          throw Exception('Table: receipts. Error: $e');
-        }
+      try {
+        await client.from('receipts').delete().eq('id', intId).eq('user_id', userId);
+      } catch (e, stackTrace) {
+        print('=== Deletion Failed at receipts ===');
+        print('Receipt ID: $receiptId');
+        print('Table: receipts');
+        print('Exception: $e');
+        print('StackTrace: $stackTrace');
+        throw Exception('Table: receipts. Error: $e');
       }
     } catch (e) {
       if (kDebugMode) print('Deletion failed, attempting rollback: $e');
       // Rollback: Re-insert in reverse order
       try {
-        if (receiptData != null) {
-          await client.from('receipts').insert(receiptData);
-        }
+        await client.from('receipts').insert(receiptData);
         if (itemsData.isNotEmpty) {
           await client.from('receipt_items').insert(itemsData);
         }
@@ -660,5 +715,29 @@ class ScanRepository {
         }
       }
     } catch (_) {}
+  }
+}
+
+/// Standalone top-level isolate worker function for fast image downscaling.
+Uint8List? _downscaleImageBytes(Uint8List rawBytes) {
+  try {
+    final image = img.decodeImage(rawBytes);
+    if (image == null) return null;
+
+    img.Image processed = image;
+    // Downscale if dimension exceeds 1400px (ideal balance of OCR clarity and minimal payload size)
+    const maxDim = 1400;
+    if (image.width > maxDim || image.height > maxDim) {
+      if (image.width >= image.height) {
+        processed = img.copyResize(image, width: maxDim);
+      } else {
+        processed = img.copyResize(image, height: maxDim);
+      }
+    }
+
+    // JPEG encode with 80% quality compression (typically 150KB - 250KB)
+    return Uint8List.fromList(img.encodeJpg(processed, quality: 80));
+  } catch (_) {
+    return null;
   }
 }

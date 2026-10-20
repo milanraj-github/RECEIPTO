@@ -40,41 +40,167 @@ class _WarrantyTrackerScreenState extends ConsumerState<WarrantyTrackerScreen> {
 
   IconData _getProductIcon(String productName) {
     final lower = productName.toLowerCase();
-    if (lower.contains('laptop') || lower.contains('macbook') || lower.contains('computer') || lower.contains('notebook')) {
+    if (lower.contains('laptop') || lower.contains('macbook') || lower.contains('computer') || lower.contains('notebook') || lower.contains('desktop') || lower.contains('pc ') || lower.contains('thinkpad')) {
       return Icons.laptop_chromebook;
     }
-    if (lower.contains('phone') || lower.contains('mobile') || lower.contains('iphone') || lower.contains('pixel') || lower.contains('android')) {
+    if (lower.contains('phone') || lower.contains('mobile') || lower.contains('iphone') || lower.contains('pixel') || lower.contains('android') || lower.contains('galaxy') || lower.contains('oneplus') || lower.contains('redmi') || lower.contains('tablet') || lower.contains('ipad')) {
       return Icons.phone_android;
     }
-    if (lower.contains('tv') || lower.contains('television') || lower.contains('monitor') || lower.contains('screen')) {
-      return Icons.tv;
-    }
-    if (lower.contains('kettle') || lower.contains('fridge') || lower.contains('oven') || lower.contains('stove') || lower.contains('kitchen') || lower.contains('cooker')) {
-      return Icons.kitchen;
-    }
-    if (lower.contains('watch') || lower.contains('fitbit') || lower.contains('wearable')) {
+    if (lower.contains('watch') || lower.contains('smartwatch') || lower.contains('band') || lower.contains('fitbit') || lower.contains('wearable')) {
       return Icons.watch;
     }
-    if (lower.contains('headphone') || lower.contains('earbud') || lower.contains('speaker') || lower.contains('audio')) {
+    if (lower.contains('tv') || lower.contains('television') || lower.contains('monitor') || lower.contains('screen') || lower.contains('display')) {
+      return Icons.tv;
+    }
+    if (lower.contains('headphone') || lower.contains('earbud') || lower.contains('airdopes') || lower.contains('airpod') || lower.contains('earphone') || lower.contains('tws') || lower.contains('speaker') || lower.contains('soundbar') || lower.contains('audio') || lower.contains('rockerz') || lower.contains('buds')) {
       return Icons.headphones;
+    }
+    if (lower.contains('fridge') || lower.contains('refrigerator') || lower.contains('washing machine') || lower.contains('dryer') || lower.contains('oven') || lower.contains('microwave') || lower.contains('stove') || lower.contains('kitchen') || lower.contains('cooker') || lower.contains('ac') || lower.contains('air conditioner') || lower.contains('geyser') || lower.contains('heater') || lower.contains('purifier') || lower.contains('mixer') || lower.contains('grinder') || lower.contains('iron') || lower.contains('vacuum')) {
+      return Icons.kitchen;
+    }
+    if (lower.contains('powerbank') || lower.contains('power bank') || lower.contains('charger') || lower.contains('cable') || lower.contains('adapter') || lower.contains('usb') || lower.contains('type-c')) {
+      return Icons.battery_charging_full;
+    }
+    if (lower.contains('camera') || lower.contains('dslr') || lower.contains('webcam') || lower.contains('lens')) {
+      return Icons.camera_alt;
+    }
+    if (lower.contains('keyboard') || lower.contains('mouse') || lower.contains('printer') || lower.contains('scanner') || lower.contains('ssd') || lower.contains('hard disk') || lower.contains('hdd')) {
+      return Icons.memory;
     }
     return Icons.verified_user_outlined;
   }
 
   String _guessCategory(String productName) {
     final lower = productName.toLowerCase();
-    if (lower.contains('laptop') || lower.contains('macbook') || lower.contains('computer') || lower.contains('notebook')) {
+
+    // 1. Laptop & Computers
+    if (lower.contains('laptop') ||
+        lower.contains('macbook') ||
+        lower.contains('computer') ||
+        lower.contains('notebook') ||
+        lower.contains('desktop') ||
+        lower.contains('thinkpad') ||
+        lower.contains('pc ') ||
+        lower.contains('keyboard') ||
+        lower.contains('mouse') ||
+        lower.contains('printer') ||
+        lower.contains('scanner') ||
+        lower.contains('ssd') ||
+        lower.contains('hard disk') ||
+        lower.contains('hdd') ||
+        lower.contains('ram ') ||
+        lower.contains('processor') ||
+        lower.contains('motherboard') ||
+        lower.contains('graphics card') ||
+        lower.contains('gpu') ||
+        lower.contains('cpu')) {
       return 'Laptop';
     }
-    if (lower.contains('phone') || lower.contains('mobile') || lower.contains('iphone') || lower.contains('pixel') || lower.contains('android') || lower.contains('ipad') || lower.contains('tablet')) {
+
+    // 2. Mobile & Mobile Accessories
+    if (lower.contains('phone') ||
+        lower.contains('mobile') ||
+        lower.contains('iphone') ||
+        lower.contains('pixel') ||
+        lower.contains('android') ||
+        lower.contains('ipad') ||
+        lower.contains('tablet') ||
+        lower.contains('galaxy') ||
+        lower.contains('oneplus') ||
+        lower.contains('redmi') ||
+        lower.contains('xiaomi') ||
+        lower.contains('realme') ||
+        lower.contains('oppo') ||
+        lower.contains('vivo') ||
+        lower.contains('smartwatch') ||
+        lower.contains('watch') ||
+        lower.contains('band') ||
+        lower.contains('powerbank') ||
+        lower.contains('power bank') ||
+        lower.contains('charger') ||
+        lower.contains('adapter') ||
+        lower.contains('cable') ||
+        lower.contains('type-c') ||
+        lower.contains('lightning') ||
+        lower.contains('back cover') ||
+        lower.contains('case')) {
       return 'Mobile';
     }
-    if (lower.contains('tv') || lower.contains('television') || lower.contains('monitor') || lower.contains('screen') || lower.contains('headphone') || lower.contains('earbud') || lower.contains('speaker') || lower.contains('audio') || lower.contains('camera')) {
-      return 'Electronics';
-    }
-    if (lower.contains('kettle') || lower.contains('fridge') || lower.contains('oven') || lower.contains('stove') || lower.contains('kitchen') || lower.contains('cooker') || lower.contains('machine') || lower.contains('vacuum')) {
+
+    // 3. Appliances & Home Equipment
+    if (lower.contains('kettle') ||
+        lower.contains('fridge') ||
+        lower.contains('refrigerator') ||
+        lower.contains('oven') ||
+        lower.contains('microwave') ||
+        lower.contains('otg') ||
+        lower.contains('stove') ||
+        lower.contains('cooktop') ||
+        lower.contains('induction') ||
+        lower.contains('kitchen') ||
+        lower.contains('cooker') ||
+        lower.contains('washing machine') ||
+        lower.contains('dryer') ||
+        lower.contains('washer') ||
+        lower.contains('vacuum') ||
+        lower.contains('air conditioner') ||
+        lower.contains('ac ') ||
+        lower.contains('split ac') ||
+        lower.contains('inverter') ||
+        lower.contains('geyser') ||
+        lower.contains('water heater') ||
+        lower.contains('purifier') ||
+        lower.contains('ro ') ||
+        lower.contains('water purifier') ||
+        lower.contains('chimney') ||
+        lower.contains('mixer') ||
+        lower.contains('grinder') ||
+        lower.contains('blender') ||
+        lower.contains('air fryer') ||
+        lower.contains('toaster') ||
+        lower.contains('iron') ||
+        lower.contains('cooler') ||
+        lower.contains('fan') ||
+        lower.contains('stabilizer')) {
       return 'Appliances';
     }
+
+    // 4. Electronics, Audio & Gadgets
+    if (lower.contains('tv') ||
+        lower.contains('television') ||
+        lower.contains('monitor') ||
+        lower.contains('screen') ||
+        lower.contains('headphone') ||
+        lower.contains('earbud') ||
+        lower.contains('earphone') ||
+        lower.contains('airdopes') ||
+        lower.contains('airpod') ||
+        lower.contains('tws') ||
+        lower.contains('rockerz') ||
+        lower.contains('buds') ||
+        lower.contains('speaker') ||
+        lower.contains('soundbar') ||
+        lower.contains('audio') ||
+        lower.contains('amplifier') ||
+        lower.contains('camera') ||
+        lower.contains('dslr') ||
+        lower.contains('lens') ||
+        lower.contains('gopro') ||
+        lower.contains('webcam') ||
+        lower.contains('playstation') ||
+        lower.contains('ps5') ||
+        lower.contains('ps4') ||
+        lower.contains('xbox') ||
+        lower.contains('nintendo') ||
+        lower.contains('console') ||
+        lower.contains('controller') ||
+        lower.contains('drone') ||
+        lower.contains('projector') ||
+        lower.contains('trimmer') ||
+        lower.contains('shaver')) {
+      return 'Electronics';
+    }
+
     return 'Other';
   }
 
@@ -209,17 +335,20 @@ class _WarrantyTrackerScreenState extends ConsumerState<WarrantyTrackerScreen> {
                         }
                       }
 
-                      final totalActive = warranties.where((w) => w.status == 'ACTIVE').length;
-                      final totalExpiring = warranties.where((w) => w.status == 'EXPIRING SOON').length;
-                      final totalExpired = warranties.where((w) => w.status == 'EXPIRED').length;
+                      final totalActive = warranties.where((w) => w.isActive).length;
+                      final totalExpiring = warranties.where((w) => w.isExpiringSoon).length;
+                      final totalExpired = warranties.where((w) => w.isExpired).length;
 
                       // 2. Filter list
                       var filteredList = warranties.where((item) {
                         final cat = _guessCategory(item.productName);
                         final matchesCategory = _selectedCategory == 'All' || cat == _selectedCategory;
                         
-                        final matchesStatus = _selectedStatus == 'All' || 
-                            item.status.toLowerCase() == _selectedStatus.toLowerCase();
+                        final matchesStatus = _selectedStatus == 'All' ||
+                            (_selectedStatus == 'Active' && item.isActive) ||
+                            (_selectedStatus == 'Expiring Soon' && item.isExpiringSoon) ||
+                            (_selectedStatus == 'Expired' && item.isExpired) ||
+                            item.status.toLowerCase().replaceAll('_', ' ') == _selectedStatus.toLowerCase();
 
                         final query = _searchQuery.toLowerCase().trim();
                         final matchesSearch = query.isEmpty ||

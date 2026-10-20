@@ -87,6 +87,7 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
         warrantyAvailable: item.warrantyAvailable,
         warrantyPeriod: item.warrantyPeriod,
         warrantyUnit: item.warrantyUnit,
+        warrantyExpiry: item.warrantyExpiry,
       )).toList(),
     );
   }
@@ -306,7 +307,7 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
                         const SizedBox(height: 20),
 
                         // Line items purchase summary
-                        _buildPurchasedItemsList(context, detail),
+                        _buildPurchasedItemsList(context, detail, warrantiesList),
                         const SizedBox(height: 32),
 
                         // Premium PDF Export Button
@@ -811,9 +812,9 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
               
               final isMulti = warranties.length > 1;
               final w = warranties.first;
-              final statusColor = w.status == 'ACTIVE' 
+              final statusColor = w.isActive 
                   ? Colors.greenAccent 
-                  : (w.status == 'EXPIRING SOON' ? Colors.orangeAccent : Colors.redAccent);
+                  : (w.isExpiringSoon ? Colors.orangeAccent : Colors.redAccent);
 
               return Container(
                 margin: const EdgeInsets.only(left: 12),
@@ -936,7 +937,11 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
     );
   }
 
-  Widget _buildPurchasedItemsList(BuildContext context, ReceiptDetailViewModel detail) {
+  Widget _buildPurchasedItemsList(
+    BuildContext context,
+    ReceiptDetailViewModel detail, [
+    List<WarrantyModel> warranties = const [],
+  ]) {
     return GlassCard(
       borderRadius: AppRadius.lg,
       padding: const EdgeInsets.all(AppSpacing.md),
@@ -973,6 +978,20 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
               separatorBuilder: (context, index) => const SizedBox(height: 12),
               itemBuilder: (context, index) {
                 final prod = detail.items[index];
+
+                // Match with warranties table if item doesn't have local expiry
+                final matchedWarranty = warranties.cast<WarrantyModel?>().firstWhere(
+                  (w) => w != null && (w.productName.trim().toLowerCase() == prod.name.trim().toLowerCase() ||
+                         prod.name.trim().toLowerCase().contains(w.productName.trim().toLowerCase()) ||
+                         w.productName.trim().toLowerCase().contains(prod.name.trim().toLowerCase())),
+                  orElse: () => null,
+                );
+
+                final String? expiryDate = prod.warrantyExpiry ?? (matchedWarranty?.expiryDate != 'Warranty Unknown' ? matchedWarranty?.expiryDate : null);
+                final bool hasWarranty = (prod.warrantyPeriod != null && prod.warrantyPeriod! > 0) || (matchedWarranty != null && matchedWarranty.warrantyPeriod > 0);
+                final int warrantyPeriod = prod.warrantyPeriod ?? matchedWarranty?.warrantyPeriod ?? 0;
+                final String warrantyUnit = prod.warrantyUnit ?? matchedWarranty?.warrantyUnit ?? 'months';
+
                 return Row(
                   children: [
                     Expanded(
@@ -995,14 +1014,31 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
                               fontSize: 12,
                             ),
                           ),
-                          if (prod.warrantyAvailable == true) ...[
+                          if (expiryDate != null && expiryDate.trim().isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.event_available_rounded, color: Colors.amberAccent, size: 13),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Expiry: $expiryDate',
+                                  style: GoogleFonts.inter(
+                                    color: Colors.amberAccent,
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                          if (hasWarranty) ...[
                             const SizedBox(height: 4),
                             Row(
                               children: [
                                 const Icon(Icons.shield_outlined, color: Colors.greenAccent, size: 12),
                                 const SizedBox(width: 4),
                                 Text(
-                                  'Active Warranty: ${prod.warrantyPeriod} ${prod.warrantyUnit}',
+                                  'Active Warranty: $warrantyPeriod $warrantyUnit',
                                   style: GoogleFonts.inter(
                                     color: Colors.greenAccent,
                                     fontSize: 11,

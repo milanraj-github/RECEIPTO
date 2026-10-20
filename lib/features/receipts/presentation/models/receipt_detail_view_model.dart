@@ -42,6 +42,7 @@ class ProductItemViewModel {
   final bool? warrantyAvailable;
   final int? warrantyPeriod;
   final String? warrantyUnit;
+  final String? warrantyExpiry;
 
   ProductItemViewModel({
     required this.name,
@@ -51,5 +52,6 @@ class ProductItemViewModel {
     this.warrantyAvailable,
     this.warrantyPeriod,
     this.warrantyUnit,
+    this.warrantyExpiry,
   });
 }

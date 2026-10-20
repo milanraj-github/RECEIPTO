@@ -31,10 +31,10 @@ class WarrantyEligibilityFilter {
   // Keywords that strongly indicate a warranty-eligible product
   static const List<String> _eligibleKeywords = [
     'laptop', 'desktop', 'computer', 'monitor', 'screen', 'tv', 'television',
-    'mobile', 'phone', 'smartphone', 'tablet', 'ipad', 'watch', 'smartwatch',
-    'headphone', 'headset', 'earbud', 'earphone', 'airpod', 'speaker', 'soundbar',
+    'mobile', 'phone', 'smartphone', 'tablet', 'ipad', 'watch', 'smartwatch', 'smart watch',
+    'headphone', 'headset', 'earbud', 'earphone', 'airpod', 'airdopes', 'tws', 'rockerz', 'buds', 'speaker', 'soundbar',
     'keyboard', 'mouse', 'printer', 'scanner', 'camera', 'webcam', 'router',
-    'modem', 'powerbank', 'power bank', 'charger', 'adapter', 'harddisk', 'hard disk',
+    'modem', 'powerbank', 'power bank', 'charger', 'adapter', 'cable', 'harddisk', 'hard disk',
     'hdd', 'ssd', 'pendrive', 'flash drive', 'memory card', 'graphics card', 'gpu',
     'motherboard', 'cpu', 'processor', 'ram', 'psu', 'cabinet', 'gaming', 'console',
     'playstation', 'xbox', 'nintendo', 'joystick', 'controller',

@@ -24,10 +24,11 @@ class ValidationResult {
 
 class ReceiptValidatorService {
   late final String _apiKey;
-  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent';
 
   ReceiptValidatorService() {
-    _apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
+    final raw = dotenv.env['GEMINI_API_KEYS'] ?? dotenv.env['GEMINI_API_KEY'] ?? '';
+    _apiKey = raw.split(',').firstWhere((k) => k.trim().isNotEmpty, orElse: () => '').trim();
   }
 
   /// Analyzes an image file to validate whether it is a genuine purchase receipt before OCR extraction.

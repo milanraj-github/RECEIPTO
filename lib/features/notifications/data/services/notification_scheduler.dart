@@ -122,6 +122,19 @@ class NotificationScheduler {
             final isEnabled = settings.reminderTypes[days] ?? true;
             if (!isEnabled) continue;
 
+            // ── Skip if this tier was already sent (flag = true in DB) ──
+            // Prevents zonedSchedule from firing a duplicate after WorkManager
+            // already delivered the notification + email for this tier.
+            final alreadySent = (days == 30 && w.notification30Sent) ||
+                (days == 15 && w.notification15Sent) ||
+                (days == 7 && w.notification7Sent) ||
+                (days == 1 && w.notification1Sent) ||
+                (days == 0 && w.notificationTodaySent);
+            if (alreadySent) {
+              debugPrint('[Sync] Skipping zonedSchedule — ${w.productName} ($days-day already sent)');
+              continue;
+            }
+
             final reminderDate = expiryScheduledDate.subtract(Duration(days: days));
             if (reminderDate.isAfter(now)) {
               final key = reminderDate.millisecondsSinceEpoch;
@@ -322,7 +335,10 @@ class NotificationScheduler {
       final dbWarrs = await _warrantyDb.fetchAllWarranties(user.uid);
       final activeReceipts = await _receiptDb.fetchAllReceipts(userId: user.uid);
       final activeReceiptIds = activeReceipts.map((r) => r['id'].toString()).toSet();
-      final activeWarranties = dbWarrs.where((w) => activeReceiptIds.contains(w.receiptId)).toList();
+      // Include both receipt-linked warranties AND standalone/manual warranties
+      final activeWarranties = dbWarrs
+          .where((w) => w.receiptId == null || w.receiptId!.isEmpty || activeReceiptIds.contains(w.receiptId))
+          .toList();
 
       await syncWarranties(activeWarranties);
     } catch (e) {

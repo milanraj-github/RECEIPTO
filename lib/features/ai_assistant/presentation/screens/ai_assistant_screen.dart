@@ -1,12 +1,20 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/core/widgets/glass_card.dart';
 import 'package:receipto/core/widgets/nebula_background.dart';
 import 'package:receipto/features/ai_assistant/domain/models/chat_message_model.dart';
+import 'package:receipto/features/ai_assistant/domain/models/ai_structured_response.dart';
 import 'package:receipto/features/ai_assistant/data/services/ai_assistant_service.dart';
+import 'package:receipto/features/ai_assistant/presentation/widgets/ai_product_card.dart';
+import 'package:receipto/features/ai_assistant/presentation/widgets/ai_receipt_card.dart';
+import 'package:receipto/features/ai_assistant/presentation/widgets/ai_warranty_card.dart';
+import 'package:receipto/features/ai_assistant/presentation/widgets/ai_summary_card.dart';
+import 'package:receipto/features/ai_assistant/presentation/widgets/ai_category_breakdown_card.dart';
+import 'package:receipto/features/ai_assistant/presentation/widgets/ai_follow_up_chips.dart';
 
 class AIAssistantScreen extends ConsumerStatefulWidget {
   const AIAssistantScreen({super.key});
@@ -22,21 +30,31 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> with Tick
   bool _isLoading = false;
 
   final List<String> _suggestions = [
-    'Is my laptop under warranty?',
-    'Show products expiring this month.',
-    'How much did I spend this year?',
-    'Which receipt is the largest?',
+    'Show products above ₹2,000',
+    'Which is my most expensive product?',
+    'Show products under warranty',
+    'Show receipts from this month',
+    'Show category breakdown',
+    'Show repeat purchases',
   ];
 
   @override
   void initState() {
     super.initState();
-    // Add default greeting
+    // Default greeting with product awareness intro
     _messages.add(
       ChatMessage(
-        text: "Hello! I am your Receipto AI Assistant. Ask me anything about your receipts, warranties, purchases, categories, or overall expenses!",
+        text: "Hello! I am your **Receipto AI Agent**.\n\nI can analyze your **individual products**, line items, complete receipts, warranties, spending categories, and purchase history.\n\nTry asking:\n* *\"Show products above ₹2,000\"*\n* *\"What is my most expensive product?\"*\n* *\"Find electronics products under warranty\"*",
         isUser: false,
         timestamp: DateTime.now(),
+        structuredResponse: const AIStructuredResponse(
+          text: "",
+          suggestedFollowUps: [
+            'Show products above ₹2,000',
+            'Which is my most expensive product?',
+            'Show products under warranty',
+          ],
+        ),
       ),
     );
   }
@@ -72,17 +90,31 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> with Tick
 
     try {
       final service = ref.read(aiAssistantServiceProvider);
-      final response = await service.ask(text);
+      final response = await service.askStructured(text);
 
       setState(() {
-        _messages.add(ChatMessage(text: response, isUser: false, timestamp: DateTime.now()));
+        _messages.add(ChatMessage(
+          text: response.text,
+          isUser: false,
+          timestamp: DateTime.now(),
+          structuredResponse: response,
+        ));
         _isLoading = false;
       });
+
+      // Handle direct navigation action if user explicitly requested opening a receipt
+      if (response.action != null &&
+          response.action!.actionType == 'openReceipt' &&
+          response.action!.targetReceiptId != null &&
+          mounted) {
+        final targetId = response.action!.targetReceiptId!;
+        context.push('/receipts/details/$targetId');
+      }
     } catch (e) {
       setState(() {
         _messages.add(
           ChatMessage(
-            text: "Sorry, I encountered an issue processing your request. Please try again.",
+            text: "Sorry, I encountered an issue retrieving your records. Please try again.",
             isUser: false,
             timestamp: DateTime.now(),
           ),
@@ -106,25 +138,61 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> with Tick
           icon: const Icon(Icons.arrow_back_ios_new, color: AppColors.onSurface, size: 20),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: Text(
-          'AI Warranty Assistant',
-          style: GoogleFonts.hankenGrotesk(
-            color: AppColors.onSurface,
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Receipto AI Agent',
+              style: GoogleFonts.hankenGrotesk(
+                color: AppColors.onSurface,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Row(
+              children: [
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFF66F2C1),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  'Product & Receipt Intelligence',
+                  style: GoogleFonts.hankenGrotesk(
+                    color: AppColors.onSurfaceVariant,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
         actions: [
           IconButton(
+            tooltip: 'Clear Conversation',
             icon: const Icon(Icons.refresh, color: AppColors.onSurface),
             onPressed: () {
+              ref.read(aiAssistantServiceProvider).resetContext();
               setState(() {
                 _messages.clear();
                 _messages.add(
                   ChatMessage(
-                    text: "Chat history cleared. How can I help you today?",
+                    text: "Conversation context cleared. How can I help you today?",
                     isUser: false,
                     timestamp: DateTime.now(),
+                    structuredResponse: const AIStructuredResponse(
+                      text: "",
+                      suggestedFollowUps: [
+                        'Show products above ₹2,000',
+                        'Which is my most expensive product?',
+                        'Show products under warranty',
+                      ],
+                    ),
                   ),
                 );
               });
@@ -134,18 +202,18 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> with Tick
       ),
       body: Stack(
         children: [
-          // Premium Nebula Background
+          // Nebula Background
           const Positioned.fill(
             child: AnimatedNebulaBackground(opacity: 0.8),
           ),
-          
+
           SafeArea(
             child: Column(
               children: [
                 Expanded(
                   child: ListView.builder(
                     controller: _scrollController,
-                    padding: const EdgeInsets.all(AppSpacing.md),
+                    padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md, vertical: 8.0),
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
                       final msg = _messages[index];
@@ -156,7 +224,7 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> with Tick
 
                 if (_isLoading) _buildTypingIndicator(),
 
-                // Suggested chips if list is short or just welcome message
+                // Suggestions if conversation is short
                 if (_messages.length <= 2 && !_isLoading) _buildSuggestions(),
 
                 _buildInputBar(textTheme),
@@ -170,6 +238,8 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> with Tick
 
   Widget _buildChatBubble(ChatMessage msg, TextTheme textTheme) {
     final isUser = msg.isUser;
+    final structured = msg.structuredResponse;
+
     return Align(
       alignment: isUser ? Alignment.centerRight : Alignment.centerLeft,
       child: Padding(
@@ -187,24 +257,104 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> with Tick
               const SizedBox(width: 8),
             ],
             Flexible(
-              child: GlassCard(
-                borderRadius: BorderRadius.only(
-                  topLeft: const Radius.circular(16),
-                  topRight: const Radius.circular(16),
-                  bottomLeft: Radius.circular(isUser ? 16 : 4),
-                  bottomRight: Radius.circular(isUser ? 4 : 16),
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                backgroundColor: isUser 
-                    ? AppColors.primary.withValues(alpha: 0.15) 
-                    : AppColors.cardSurface.withValues(alpha: 0.4),
-                child: MarkdownText(
-                  text: msg.text,
-                  style: textTheme.bodyMedium?.copyWith(
-                    color: AppColors.onSurface,
-                    height: 1.4,
-                  ),
-                ),
+              child: Column(
+                crossAxisAlignment: isUser ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+                children: [
+                  // Text bubble
+                  if (msg.text.trim().isNotEmpty)
+                    GlassCard(
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(16),
+                        topRight: const Radius.circular(16),
+                        bottomLeft: Radius.circular(isUser ? 16 : 4),
+                        bottomRight: Radius.circular(isUser ? 4 : 16),
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                      backgroundColor: isUser
+                          ? AppColors.primary.withValues(alpha: 0.15)
+                          : AppColors.cardSurface.withValues(alpha: 0.5),
+                      child: MarkdownText(
+                        text: msg.text,
+                        style: textTheme.bodyMedium?.copyWith(
+                          color: AppColors.onSurface,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+
+                  // Structured UI Cards (Interactive results)
+                  if (!isUser && structured != null) ...[
+                    // 1. Product Cards
+                    if (structured.hasProducts) ...[
+                      const SizedBox(height: 6),
+                      ...structured.products.map((p) => AIProductCard(product: p)),
+                    ],
+
+                    // 2. Receipt Cards
+                    if (structured.hasReceipts) ...[
+                      const SizedBox(height: 6),
+                      ...structured.receipts.map((r) => AIReceiptCard(receipt: r)),
+                    ],
+
+                    // 3. Warranty Cards
+                    if (structured.hasWarranties) ...[
+                      const SizedBox(height: 6),
+                      ...structured.warranties.map((w) => AIWarrantyCard(warranty: w)),
+                    ],
+
+                    // 4. Financial Summary Card
+                    if (structured.hasSummary) ...[
+                      const SizedBox(height: 6),
+                      AISummaryCard(summary: structured.summary!),
+                    ],
+
+                    // 5. Category Breakdown Card
+                    if (structured.hasCategories) ...[
+                      const SizedBox(height: 6),
+                      AICategoryBreakdownCard(categories: structured.categories),
+                    ],
+
+                    // 6. Action button if opened
+                    if (structured.action != null && structured.action!.targetReceiptId != null) ...[
+                      const SizedBox(height: 6),
+                      InkWell(
+                        onTap: () => context.push('/receipts/details/${structured.action!.targetReceiptId}'),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF66F2C1).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(color: const Color(0xFF66F2C1).withValues(alpha: 0.4)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.receipt_long_rounded, size: 16, color: Color(0xFF66F2C1)),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Tap to open Receipt #${structured.action!.targetReceiptId}',
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF66F2C1),
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              const Icon(Icons.arrow_forward_ios_rounded, size: 12, color: Color(0xFF66F2C1)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+
+                    // 7. Suggested Follow-up chips
+                    if (structured.suggestedFollowUps.isNotEmpty)
+                      AIFollowUpChips(
+                        suggestions: structured.suggestedFollowUps,
+                        onSelected: _sendMessage,
+                      ),
+                  ],
+                ],
               ),
             ),
             if (isUser) ...[
@@ -281,7 +431,7 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> with Tick
                 controller: _textController,
                 style: (textTheme.bodyMedium ?? const TextStyle()).copyWith(color: AppColors.onSurface),
                 decoration: const InputDecoration(
-                  hintText: 'Type your message...',
+                  hintText: 'Ask about products, receipts, prices...',
                   hintStyle: TextStyle(color: AppColors.onSurfaceVariant),
                   border: InputBorder.none,
                 ),
@@ -409,7 +559,7 @@ class MarkdownText extends StatelessWidget {
       } else {
         spans.add(
           Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            padding: const EdgeInsets.symmetric(vertical: 2.0),
             child: RichText(
               text: _parseBoldText(line, style),
             ),
@@ -434,7 +584,7 @@ class MarkdownText extends StatelessWidget {
         TextSpan(
           text: part,
           style: isBold
-              ? (baseStyle ?? const TextStyle()).copyWith(fontWeight: FontWeight.bold, color: AppColors.primary)
+              ? (baseStyle ?? const TextStyle()).copyWith(fontWeight: FontWeight.bold, color: const Color(0xFF66F2C1))
               : baseStyle,
         ),
       );

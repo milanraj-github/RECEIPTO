@@ -1,3 +1,5 @@
+import 'package:receipto/core/utils/warranty_utils.dart';
+
 class WarrantyModel {
   final String? id;
   final String userId;
@@ -106,10 +108,10 @@ class WarrantyModel {
       'product_name': productName,
       'merchant_name': merchantName,
       'invoice_number': invoiceNumber,
-      'purchase_date': purchaseDate,
+      'purchase_date': WarrantyUtils.parseAndNormalizeDate(purchaseDate) ?? purchaseDate,
       'warranty_period': warrantyPeriod,
       'warranty_unit': warrantyUnit,
-      'expiry_date': expiryDate,
+      'expiry_date': WarrantyUtils.parseAndNormalizeDate(expiryDate),
       'image_url': imageUrl,
       'status': status,
       'brand': brand,
@@ -198,4 +200,20 @@ class WarrantyModel {
       isManual: isManual ?? this.isManual,
     );
   }
+
+  bool get isExpiringSoon {
+    final s = status.toUpperCase().replaceAll('_', ' ').trim();
+    if (s == 'EXPIRING SOON') return true;
+    final days = WarrantyUtils.calculateDaysRemaining(expiryDate);
+    return days >= 0 && days <= 30 && !expiryDate.toLowerCase().contains('unknown');
+  }
+
+  bool get isExpired {
+    final s = status.toUpperCase().replaceAll('_', ' ').trim();
+    if (s == 'EXPIRED') return true;
+    final days = WarrantyUtils.calculateDaysRemaining(expiryDate);
+    return days < 0 && !expiryDate.toLowerCase().contains('unknown');
+  }
+
+  bool get isActive => !isExpired && !isExpiringSoon;
 }

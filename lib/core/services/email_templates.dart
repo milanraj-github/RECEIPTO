@@ -493,4 +493,91 @@ class EmailTemplates {
 </html>
 ''';
   }
+
+  /// Generates a clean plain-text version of the single warranty reminder email.
+  static String getWarrantyReminderText({
+    required String userName,
+    required String productName,
+    required String merchantName,
+    required String purchaseDate,
+    required String expiryDate,
+    required String daysRemaining,
+    required String invoiceNumber,
+  }) {
+    final invoiceStr = invoiceNumber.isNotEmpty ? invoiceNumber : 'N/A';
+    return '''
+Hello $userName,
+
+This is a reminder regarding your warranty for $productName from $merchantName.
+
+WARRANTY DETAILS:
+- Product: $productName
+- Merchant: $merchantName
+- Purchase Date: $purchaseDate
+- Expiry Date: $expiryDate
+- Days Remaining: $daysRemaining
+- Invoice/Receipt Number: $invoiceStr
+
+Please keep your original receipt and documents safe for any warranty claims.
+
+Best regards,
+Receipto Team
+https://receipto.app
+
+This is an automated system notification. Please do not reply directly to this email.
+''';
+  }
+
+  /// Generates a clean plain-text version of the grouped warranty reminder email.
+  static String getGroupedWarrantyReminderText({
+    required String userName,
+    required List<Map<String, String>> products,
+  }) {
+    final buffer = StringBuffer();
+    buffer.writeln('Hello $userName,');
+    buffer.writeln();
+    buffer.writeln('Here is a summary of your upcoming warranty expiration alerts:');
+    buffer.writeln();
+
+    for (int i = 0; i < products.length; i++) {
+      final p = products[i];
+      final name = p['name'] ?? 'Product';
+      final merchant = p['merchant'] ?? 'Merchant';
+      final purchase = p['purchaseDate'] ?? 'N/A';
+      final expiry = p['expiryDate'] ?? 'N/A';
+      final days = p['daysRemaining'] ?? '0';
+      final invoice = (p['invoiceNumber'] != null && p['invoiceNumber']!.isNotEmpty) ? p['invoiceNumber']! : 'N/A';
+
+      buffer.writeln('${i + 1}. $name ($merchant)');
+      buffer.writeln('   - Expiry Date: $expiry ($days days remaining)');
+      buffer.writeln('   - Purchase Date: $purchase');
+      buffer.writeln('   - Invoice: $invoice');
+      buffer.writeln();
+    }
+
+    buffer.writeln('Please keep your original receipts safe for any service or warranty claims.');
+    buffer.writeln();
+    buffer.writeln('Best regards,');
+    buffer.writeln('Receipto Team');
+    buffer.writeln('https://receipto.app');
+    buffer.writeln();
+    buffer.writeln('This is an automated system notification. Please do not reply directly to this email.');
+
+    return buffer.toString();
+  }
+
+  /// Generates a clean plain-text version of the test email.
+  static String getTestEmailText() {
+    return '''
+Receipto - SMTP Connection Test
+
+Your Receipto email notification system is configured correctly and working.
+
+If you received this message, warranty reminder emails will be delivered to this address.
+
+Best regards,
+Receipto Team
+https://receipto.app
+''';
+  }
 }

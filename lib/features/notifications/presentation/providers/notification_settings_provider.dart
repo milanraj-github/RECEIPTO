@@ -1,4 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:receipto/core/services/background_service.dart';
+import 'package:receipto/core/services/reminder_engine.dart';
 import 'package:receipto/features/notifications/data/services/notification_settings_service.dart';
 import 'package:receipto/features/notifications/data/services/notification_scheduler.dart';
 import 'package:receipto/features/notifications/domain/models/notification_settings_state.dart';
@@ -18,7 +22,7 @@ class NotificationSettingsNotifier extends StateNotifier<NotificationSettingsSta
           notificationsEnabled: true,
           reminderHour: 9,
           reminderMinute: 0,
-          emailNotificationsEnabled: false,
+          emailNotificationsEnabled: true,
           reminderTypes: {30: true, 15: true, 7: true, 1: true, 0: true},
         )) {
     _loadSettings();
@@ -84,8 +88,39 @@ class NotificationSettingsNotifier extends StateNotifier<NotificationSettingsSta
     try {
       final warranties = await _ref.read(dbWarrantiesProvider.future);
       await _ref.read(notificationSchedulerProvider).syncWarranties(warranties);
+
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        await _ref.read(reminderEngineProvider).checkWarrantyReminders(
+              user.uid,
+              user.email,
+              user.displayName,
+            );
+      }
+
+      // Re-register periodic safety-net task
+      await BackgroundService.registerPeriodicTask();
+
+      // ── Schedule exact one-time alarm at the user-configured reminder time ──
+      // This is the primary delivery mechanism for notification + email.
+      final now = DateTime.now();
+      final h = state.reminderHour;
+      final m = state.reminderMinute;
+      var target = DateTime(now.year, now.month, now.day, h, m);
+      // If the time has already passed today, schedule for tomorrow
+      if (!target.isAfter(now)) {
+        target = target.add(const Duration(days: 1));
+      }
+      final delay = target.difference(now);
+
+      debugPrint('[Reminder] Current time: $now');
+      debugPrint('[Reminder] Configured time: ${h.toString().padLeft(2, "0")}:${m.toString().padLeft(2, "0")}');
+      debugPrint('[Reminder] Target time: $target');
+      debugPrint('[Reminder] Scheduling exact alarm in: $delay');
+
+      await BackgroundService.registerOneTimeTask(delay);
     } catch (e) {
-      // Handle error gracefully
+      debugPrint('[Reminder] _rescheduleAll error: $e');
     }
   }
 }

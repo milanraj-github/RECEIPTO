@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
-import 'dart:io';
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -13,12 +12,24 @@ final geminiServiceProvider = Provider<GeminiService>((ref) {
 });
 
 class GeminiService {
-  late final String _apiKey;
-  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+  late final List<String> _apiKeys;
+  int _currentKeyIndex = 0;
+  final http.Client _client = http.Client();
+
+  // Fast, low-latency models with auto-failover
+  static const List<String> _models = [
+    'gemini-3.5-flash-lite', // Primary: ultra-fast (~1.5s), active quota
+    'gemini-3.5-flash',      // Secondary fallback
+    'gemini-2.5-flash',      // Tertiary fallback
+  ];
 
   static const String _prompt = '''
 You are an expert AI receipt scanner.
-Analyze the provided receipt image/content and extract the receipt details.
+Analyze the provided receipt image/content and extract all details in structured JSON.
+
+VALIDITY RULES:
+- Set "is_valid_receipt": true if the image is an authentic shopping receipt, store invoice, retail bill, restaurant check, or valid purchase record.
+- Set "is_valid_receipt": false if the image is NOT a receipt (e.g., photo of a person/selfie, face, pet, animal, food dish without bill, nature/landscape, screenshot of a chat/social media, blank or completely unreadable image). If false, describe the reason in "invalid_reason".
 
 CRITICAL RULES FOR CURRENCY RESOLUTION:
 - Assume all receipts are Indian by default unless another country's address, currency symbol, or tax format clearly proves otherwise.
@@ -27,22 +38,33 @@ CRITICAL RULES FOR CURRENCY RESOLUTION:
 - Return INR ("₹") for all Indian merchants.
 - Only return "\$", "€", "£", etc. when the receipt explicitly belongs to another country (e.g., US, Europe, UK).
 
-CRITICAL RULES FOR WARRANTY & RETURN EXTRACTION:
-- Distinguish Return/Replacement Windows (e.g., 7 days return, 10 days replacement) from Warranty Periods. Do not confuse them.
-- Never hardcode or assume warranty durations based on merchant names (e.g., do NOT assume Croma, Amazon, Reliance, or Flipkart always implies a 12-month warranty).
-- Receipts can contain multiple products. Extract warranty, brand, return details, category, and serial numbers independently for every product. Do NOT copy one product's warranty terms to other items.
-- Extracted dates (purchase date and expiry dates) must be normalized to standard ISO format (YYYY-MM-DD). Support formats like "19-Jul-2026", "19 July 2026", "19/07/2026", "19 Jul 26", "July 19 2026", etc.
+CRITICAL RULES FOR EXPIRY DATE & WARRANTY EXTRACTION:
+- Extract ANY printed expiry, expiration, best before, use by, valid till, or warranty date for each line item!
+- For grocery, dairy, food, beverages, medicines, cosmetics, and packaged items: receipts frequently print "Expiry : DD-MM-YYYY", "Exp:", "Use By:", or "Best Before:" (e.g., "Expiry : 21-10-2026 (TOMORROW)").
+- YOU MUST extract this printed date as the item's expiration date into "warranty_expiry" (normalized to standard ISO YYYY-MM-DD). If an expiry date is printed, set "warranty_available": true!
+- Example: "Amul Fresh Milk (500 ml) Expiry : 21-10-2026 (TOMORROW)" -> name: "Amul Fresh Milk (500 ml)", warranty_expiry: "2026-10-21", warranty_available: true.
+- Do NOT ignore food/dairy/medicine expiration dates! Treat all product expiry, validity, and warranty end dates as "warranty_expiry".
+- Distinguish Return/Replacement Windows (e.g., 7 days return, 10 days replacement) from Warranty/Expiry Periods. Do not confuse them.
+- Never hardcode or assume warranty durations based on merchant names.
+- Receipts can contain multiple products. Extract warranty/expiry, brand, return details, category, and serial numbers independently for every product. Do NOT copy one product's warranty/expiry terms to other items.
+- Extracted dates (purchase date and expiry dates) must be normalized to standard ISO format (YYYY-MM-DD).
 
-WARRANTY RESOLUTION PRIORITIES:
-- PRIORITY 1: If the receipt explicitly contains a printed expiry/validity date (using labels like: Warranty Expiry, Warranty End, Warranty Valid Till, Warranty Ends, Return / Warranty Expiry Date, Return Expiry, Replacement Until, Return Valid Until, Warranty Until, Valid Until, Expires On, Expiry Date, Expiration Date, End Date), use THAT exact date in "warranty_expiry". Do not calculate, estimate, or infer another date.
-- PRIORITY 2: Only if no expiry date is printed anywhere on the receipt, search for warranty duration keywords (e.g. 12 Months, 24 Months, 6 Months, 2 Years, 1 Year, etc.). Populate "warranty_period" (e.g., 12) and "warranty_unit" (e.g., "months").
-- PRIORITY 3: If neither an explicit printed expiry date nor a warranty period exists on the receipt for an item, set "warranty_available" to false, and set "warranty_period", "warranty_unit", "warranty_expiry", and "return_window" to null. Never assume 12 months, and never invent values.
+WARRANTY & EXPIRY RESOLUTION PRIORITIES:
+- PRIORITY 1: If the receipt explicitly contains a printed expiry/validity date, use THAT exact date in "warranty_expiry" and set "warranty_available": true.
+- PRIORITY 2: Only if no expiry date is printed, search for warranty duration keywords (e.g. 12 Months, 24 Months, 2 Years). Populate "warranty_period" (e.g., 12), "warranty_unit" (e.g., "months"), and set "warranty_available": true.
+- PRIORITY 3: If neither exists, set "warranty_available": false, and set "warranty_period", "warranty_unit", "warranty_expiry", and "return_window" to null.
+
+CRITICAL RULES FOR CATEGORIZATION:
+- You MUST categorize both the overall receipt ("category") and every individual line item ("category") using EXACTLY one of these supported categories:
+  ["Electronics", "Groceries", "Food & Dining", "Fuel", "Shopping", "Fashion", "Furniture", "Home Appliances", "Healthcare", "Beauty & Personal Care", "Travel", "Entertainment", "Education", "Utilities", "Office Supplies", "Sports", "Automotive", "Accessories", "Books", "Mobile & Gadgets", "Computers", "Subscription", "Others"]
 
 CONFIDENCE SCORE RULES:
-For key fields ("date", "merchant_name", "payment_method", "invoice_number", and inside each item: "name", "warranty_period", "warranty_expiry"), you must output an AI extraction confidence score between 0.0 and 1.0 (float) based on OCR legibility and textual certainty.
+For key fields ("date", "merchant_name", "payment_method", "invoice_number", and inside each item: "name", "warranty_period", "warranty_expiry"), output an extraction confidence score between 0.0 and 1.0.
 
-You must return ONLY a single, valid JSON object matching this structure:
+Return ONLY a single, valid JSON object matching this structure:
 {
+  "is_valid_receipt": boolean,
+  "invalid_reason": String or null,
   "merchant_name": String or null,
   "invoice_number": String or null,
   "date": String (YYYY-MM-DD format) or null,
@@ -89,10 +111,29 @@ You must return ONLY a single, valid JSON object matching this structure:
 ''';
 
   GeminiService() {
-    _apiKey = dotenv.env['GEMINI_API_KEY'] ?? '';
-    if (_apiKey.isEmpty) {
-      throw Exception('Missing GEMINI_API_KEY in environment variables (.env file).');
+    final rawKeys = dotenv.env['GEMINI_API_KEYS'] ?? dotenv.env['GEMINI_API_KEY'] ?? '';
+    _apiKeys = rawKeys
+        .split(',')
+        .map((k) => k.trim())
+        .where((k) => k.isNotEmpty)
+        .toList();
+
+    if (_apiKeys.isEmpty) {
+      throw Exception('Missing GEMINI_API_KEYS / GEMINI_API_KEY in environment variables (.env file).');
     }
+  }
+
+  /// Returns API keys ordered by round-robin starting position for fair distribution.
+  List<String> _getRotatedKeys() {
+    if (_apiKeys.isEmpty) return [];
+    final startIndex = _currentKeyIndex % _apiKeys.length;
+    _currentKeyIndex = (_currentKeyIndex + 1) % _apiKeys.length;
+
+    final List<String> rotated = [];
+    for (int i = 0; i < _apiKeys.length; i++) {
+      rotated.add(_apiKeys[(startIndex + i) % _apiKeys.length]);
+    }
+    return rotated;
   }
 
   /// Sends raw in-memory image bytes directly to Gemini Vision API (fastest, zero download latency).
@@ -100,22 +141,8 @@ You must return ONLY a single, valid JSON object matching this structure:
     required Uint8List imageBytes,
     String mimeType = 'image/jpeg',
   }) async {
-    return _analyzeReceiptBytesWithRetry(
-      imageBytes: imageBytes,
-      mimeType: mimeType,
-      retryCount: 1,
-    );
-  }
-
-  Future<ReceiptModel> _analyzeReceiptBytesWithRetry({
-    required Uint8List imageBytes,
-    required String mimeType,
-    required int retryCount,
-  }) async {
-    try {
-      final String base64Image = base64.encode(imageBytes);
-
-      final Map<String, dynamic> requestPayload = {
+    return _analyzeWithModelFailover(
+      buildRequestPayload: (base64Image) => {
         "contents": [
           {
             "parts": [
@@ -135,185 +162,157 @@ You must return ONLY a single, valid JSON object matching this structure:
           "temperature": 0.1,
           "responseMimeType": "application/json"
         }
-      };
-
-      final String requestBody = jsonEncode(requestPayload);
-
-      final http.Response response = await http.post(
-        Uri.parse('$_baseUrl?key=$_apiKey'),
-        headers: {'Content-Type': 'application/json'},
-        body: requestBody,
-      );
-
-      if (response.statusCode != 200) {
-        final geminiExc = GeminiExceptionHandler.handleResponse(response);
-        final bool isRetriable = [429, 500, 503].contains(response.statusCode);
-        if (isRetriable && retryCount > 0) {
-          final waitSec = geminiExc.retryAfterSeconds ?? 4;
-          await Future.delayed(Duration(seconds: waitSec));
-          return _analyzeReceiptBytesWithRetry(
-            imageBytes: imageBytes,
-            mimeType: mimeType,
-            retryCount: retryCount - 1,
-          );
-        }
-        throw geminiExc;
-      }
-
-      final Map<String, dynamic> jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
-      final candidates = jsonResponse['candidates'] as List<dynamic>?;
-      if (candidates == null || candidates.isEmpty) {
-        throw GeminiException("Unexpected error occurred.");
-      }
-      final candidate = candidates.first as Map<String, dynamic>;
-      final contentMap = candidate['content'] as Map<String, dynamic>?;
-      if (contentMap == null) {
-        throw GeminiException("Unexpected error occurred.");
-      }
-      final parts = contentMap['parts'] as List<dynamic>?;
-      if (parts == null || parts.isEmpty) {
-        throw GeminiException("Unexpected error occurred.");
-      }
-      final part = parts.first as Map<String, dynamic>;
-      final rawText = part['text'] as String?;
-
-      if (rawText == null || rawText.trim().isEmpty) {
-        throw GeminiException("Unexpected error occurred.");
-      }
-
-      final cleanedJson = _cleanJsonResponse(rawText);
-      final Map<String, dynamic> jsonMap = jsonDecode(cleanedJson) as Map<String, dynamic>;
-      return ReceiptModel.fromJson(jsonMap);
-    } catch (e) {
-      final mappedExc = GeminiExceptionHandler.handleException(e);
-      final bool isNetworkErr = e is SocketException || e is TimeoutException;
-      if (isNetworkErr && retryCount > 0) {
-        await Future.delayed(const Duration(seconds: 4));
-        return _analyzeReceiptBytesWithRetry(
-          imageBytes: imageBytes,
-          mimeType: mimeType,
-          retryCount: retryCount - 1,
-        );
-      }
-      throw mappedExc;
-    }
+      },
+      imageBytes: imageBytes,
+    );
   }
 
-  /// Sends the receipt image URL to Gemini Vision REST API for scanning and data extraction (fallback).
+  Future<ReceiptModel> _analyzeWithModelFailover({
+    required Map<String, dynamic> Function(String base64Image) buildRequestPayload,
+    required Uint8List imageBytes,
+  }) async {
+    final String base64Image = base64.encode(imageBytes);
+    final payload = buildRequestPayload(base64Image);
+    final String requestBody = jsonEncode(payload);
+
+    Exception? lastException;
+    final keys = _getRotatedKeys();
+
+    // Multi-key failover + multi-model failover
+    for (final model in _models) {
+      for (final apiKey in keys) {
+        try {
+          final url = 'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+          final response = await _client.post(
+            Uri.parse(url),
+            headers: {'Content-Type': 'application/json'},
+            body: requestBody,
+          ).timeout(const Duration(seconds: 18));
+
+          if (response.statusCode == 200) {
+            final Map<String, dynamic> jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
+            final candidates = jsonResponse['candidates'] as List<dynamic>?;
+            if (candidates != null && candidates.isNotEmpty) {
+              final candidate = candidates.first as Map<String, dynamic>;
+              final contentMap = candidate['content'] as Map<String, dynamic>?;
+              final parts = contentMap?['parts'] as List<dynamic>?;
+              if (parts != null && parts.isNotEmpty) {
+                final part = parts.first as Map<String, dynamic>;
+                final rawText = part['text'] as String?;
+                if (rawText != null && rawText.trim().isNotEmpty) {
+                  final cleanedJson = _cleanJsonResponse(rawText);
+                  final Map<String, dynamic> jsonMap = jsonDecode(cleanedJson) as Map<String, dynamic>;
+                  return ReceiptModel.fromJson(jsonMap);
+                }
+              }
+            }
+          } else if (response.statusCode == 429) {
+            if (kDebugMode) {
+              print('[GeminiService] Key ${apiKey.substring(0, 12)}... quota exhausted on $model. Switching to next API key immediately...');
+            }
+            lastException = GeminiExceptionHandler.handleResponse(response);
+            continue; // Switch to the next key in the pool!
+          } else if (response.statusCode == 404 || response.statusCode == 503) {
+            if (kDebugMode) {
+              print('[GeminiService] Model $model status ${response.statusCode}, switching model...');
+            }
+            lastException = GeminiExceptionHandler.handleResponse(response);
+            break; // Switch to next model
+          } else {
+            throw GeminiExceptionHandler.handleResponse(response);
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            print('[GeminiService] Model $model with key ${apiKey.substring(0, 12)}... error: $e');
+          }
+          lastException = e is Exception ? e : Exception(e.toString());
+          continue;
+        }
+      }
+    }
+
+    throw lastException ?? Exception('All Gemini vision models and API keys failed to process receipt.');
+  }
+
+  /// Sends the receipt image URL to Gemini Vision REST API for scanning (fallback).
   Future<ReceiptModel> analyzeReceipt({
     required String imageUrl,
   }) async {
-    return _analyzeReceiptWithRetry(imageUrl: imageUrl, retryCount: 1);
-  }
-
-  Future<ReceiptModel> _analyzeReceiptWithRetry({
-    required String imageUrl,
-    required int retryCount,
-  }) async {
-    try {
-      final http.Response downloadRes = await http.get(Uri.parse(imageUrl));
-      if (downloadRes.statusCode != 200) {
-        throw GeminiException(
-          'Failed to download image from storage bucket.',
-          statusCode: downloadRes.statusCode,
-        );
-      }
-      final bytes = downloadRes.bodyBytes;
-      return await analyzeReceiptBytes(
-        imageBytes: bytes,
-        mimeType: 'image/jpeg',
+    final http.Response downloadRes = await _client.get(Uri.parse(imageUrl));
+    if (downloadRes.statusCode != 200) {
+      throw GeminiException(
+        'Failed to download image from storage bucket.',
+        statusCode: downloadRes.statusCode,
       );
-    } catch (e) {
-      final mappedExc = GeminiExceptionHandler.handleException(e);
-      final bool isNetworkErr = e is SocketException || e is TimeoutException;
-      if (isNetworkErr && retryCount > 0) {
-        await Future.delayed(const Duration(seconds: 4));
-        return _analyzeReceiptWithRetry(imageUrl: imageUrl, retryCount: retryCount - 1);
-      }
-      throw mappedExc;
     }
+    return analyzeReceiptBytes(
+      imageBytes: downloadRes.bodyBytes,
+      mimeType: 'image/jpeg',
+    );
   }
 
   /// Sends the receipt plain text contents to Gemini REST API for scanning and data extraction.
   Future<ReceiptModel> analyzeReceiptText({
     required String text,
   }) async {
-    return _analyzeReceiptTextWithRetry(text: text, retryCount: 1);
-  }
+    final Map<String, dynamic> requestPayload = {
+      "contents": [
+        {
+          "parts": [
+            {
+              "text": '$_prompt\n\nRECEIPT TEXT:\n$text'
+            }
+          ]
+        }
+      ],
+      "generationConfig": {
+        "temperature": 0.1,
+        "responseMimeType": "application/json"
+      }
+    };
 
-  Future<ReceiptModel> _analyzeReceiptTextWithRetry({
-    required String text,
-    required int retryCount,
-  }) async {
-    try {
-      final Map<String, dynamic> requestPayload = {
-        "contents": [
-          {
-            "parts": [
-              {
-                "text": '$_prompt\n\nRECEIPT TEXT:\n$text'
+    final String requestBody = jsonEncode(requestPayload);
+    final keys = _getRotatedKeys();
+
+    for (final model in _models) {
+      for (final apiKey in keys) {
+        try {
+          final url = 'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
+          final response = await _client.post(
+            Uri.parse(url),
+            headers: {'Content-Type': 'application/json'},
+            body: requestBody,
+          ).timeout(const Duration(seconds: 15));
+
+          if (response.statusCode == 200) {
+            final Map<String, dynamic> jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
+            final candidates = jsonResponse['candidates'] as List<dynamic>?;
+            if (candidates != null && candidates.isNotEmpty) {
+              final candidate = candidates.first as Map<String, dynamic>;
+              final contentMap = candidate['content'] as Map<String, dynamic>?;
+              final parts = contentMap?['parts'] as List<dynamic>?;
+              if (parts != null && parts.isNotEmpty) {
+                final part = parts.first as Map<String, dynamic>;
+                final rawText = part['text'] as String?;
+                if (rawText != null && rawText.trim().isNotEmpty) {
+                  final cleanedJson = _cleanJsonResponse(rawText);
+                  final Map<String, dynamic> jsonMap = jsonDecode(cleanedJson) as Map<String, dynamic>;
+                  return ReceiptModel.fromJson(jsonMap);
+                }
               }
-            ]
+            }
+          } else if (response.statusCode == 429) {
+            continue; // Switch to next key
+          } else if (response.statusCode == 404 || response.statusCode == 503) {
+            break; // Switch to next model
           }
-        ],
-        "generationConfig": {
-          "temperature": 0.1,
-          "responseMimeType": "application/json"
+        } catch (_) {
+          continue;
         }
-      };
-
-      final String requestBody = jsonEncode(requestPayload);
-
-      final http.Response response = await http.post(
-        Uri.parse('$_baseUrl?key=$_apiKey'),
-        headers: {'Content-Type': 'application/json'},
-        body: requestBody,
-      );
-
-      if (response.statusCode != 200) {
-        final geminiExc = GeminiExceptionHandler.handleResponse(response);
-        final bool isRetriable = [429, 500, 503].contains(response.statusCode);
-        if (isRetriable && retryCount > 0) {
-          final waitSec = geminiExc.retryAfterSeconds ?? 4;
-          await Future.delayed(Duration(seconds: waitSec));
-          return _analyzeReceiptTextWithRetry(text: text, retryCount: retryCount - 1);
-        }
-        throw geminiExc;
       }
-
-      final Map<String, dynamic> jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
-      final candidates = jsonResponse['candidates'] as List<dynamic>?;
-      if (candidates == null || candidates.isEmpty) {
-        throw GeminiException("Unexpected error occurred.");
-      }
-      final candidate = candidates.first as Map<String, dynamic>;
-      final contentMap = candidate['content'] as Map<String, dynamic>?;
-      if (contentMap == null) {
-        throw GeminiException("Unexpected error occurred.");
-      }
-      final parts = contentMap['parts'] as List<dynamic>?;
-      if (parts == null || parts.isEmpty) {
-        throw GeminiException("Unexpected error occurred.");
-      }
-      final part = parts.first as Map<String, dynamic>;
-      final rawText = part['text'] as String?;
-
-      if (rawText == null || rawText.trim().isEmpty) {
-        throw GeminiException("Unexpected error occurred.");
-      }
-
-      final cleanedJson = _cleanJsonResponse(rawText);
-      final Map<String, dynamic> jsonMap = jsonDecode(cleanedJson) as Map<String, dynamic>;
-      return ReceiptModel.fromJson(jsonMap);
-    } catch (e) {
-      final mappedExc = GeminiExceptionHandler.handleException(e);
-      final bool isNetworkErr = e is SocketException || e is TimeoutException;
-      if (isNetworkErr && retryCount > 0) {
-        await Future.delayed(const Duration(seconds: 4));
-        return _analyzeReceiptTextWithRetry(text: text, retryCount: retryCount - 1);
-      }
-      throw mappedExc;
     }
+
+    throw Exception('Gemini text extraction failed across all models.');
   }
 
   String _cleanJsonResponse(String response) {

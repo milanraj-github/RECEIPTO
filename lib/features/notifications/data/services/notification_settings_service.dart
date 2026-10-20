@@ -57,7 +57,7 @@ class NotificationSettingsService {
       notificationsEnabled: prefs.getBool(_keyNotificationsEnabled) ?? true,
       reminderHour: prefs.getInt(_keyReminderHour) ?? 9,
       reminderMinute: prefs.getInt(_keyReminderMinute) ?? 0,
-      emailNotificationsEnabled: prefs.getBool(_keyEmailNotificationsEnabled) ?? false,
+      emailNotificationsEnabled: prefs.getBool(_keyEmailNotificationsEnabled) ?? true,
       reminderTypes: {
         30: prefs.getBool(_key30Days) ?? true,
         15: prefs.getBool(_key15Days) ?? true,

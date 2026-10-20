@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receipto/features/scan/domain/models/receipt_model.dart';
 import 'package:receipto/core/services/firebase_auth_service.dart';
 import 'package:receipto/core/services/offline_cache_service.dart';
+import 'package:receipto/core/utils/warranty_utils.dart';
 
 final receiptDatabaseServiceProvider = Provider<ReceiptDatabaseService>((ref) {
   return ReceiptDatabaseService(Supabase.instance.client, OfflineCacheService());
@@ -47,16 +48,31 @@ class ReceiptDatabaseService {
       final hashBytes = utf8.encode(hashInput);
       final String hash = sha256.convert(hashBytes).toString();
 
+      // Safe normalization for confidence_score:
+      // In PostgreSQL, confidence_score may be defined as NUMERIC(3, 2), requiring absolute value < 10.0 (e.g. 0.90)
+      double? safeConfidenceScore = receipt.confidenceScore;
+      if (safeConfidenceScore != null) {
+        if (safeConfidenceScore > 1.0) {
+          safeConfidenceScore = safeConfidenceScore / 100.0;
+        }
+        if (safeConfidenceScore > 1.0) {
+          safeConfidenceScore = 1.0;
+        } else if (safeConfidenceScore < 0.0) {
+          safeConfidenceScore = 0.0;
+        }
+        safeConfidenceScore = double.parse(safeConfidenceScore.toStringAsFixed(2));
+      }
+
       final Map<String, dynamic> insertData = {
         'user_id': userId,
         'merchant_name': receipt.merchantName,
-        'date': receipt.date,
+        'date': WarrantyUtils.parseAndNormalizeDate(receipt.date) ?? receipt.date,
         'time': receipt.time,
         'receipt_number': receipt.invoiceNumber,
         'invoice_number': receipt.invoiceNumber,
         'receipt_hash': hash,
         'file_size': fileSize,
-        'confidence_score': receipt.confidenceScore,
+        'confidence_score': safeConfidenceScore,
         'gst_number': receipt.gstNumber,
         'payment_method': receipt.paymentMethod,
         'currency': receipt.currency ?? '₹',
@@ -80,16 +96,31 @@ class ReceiptDatabaseService {
         print(insertData);
       }
 
-      final response = await _supabase
-          .from('receipts')
-          .insert(insertData)
-          .select('id')
-          .single();
+      try {
+        final response = await _supabase
+            .from('receipts')
+            .insert(insertData)
+            .select('id')
+            .single();
 
-      final String receiptId = response['id'].toString();
-      if (kDebugMode) print('=== Receipt ID: $receiptId ===');
+        final String receiptId = response['id'].toString();
+        if (kDebugMode) print('=== Receipt ID: $receiptId ===');
 
-      return receiptId;
+        return receiptId;
+      } on PostgrestException catch (pe) {
+        // Fallback: If numeric overflow occurs on confidence_score or similar constraint
+        if (pe.code == '22003' && insertData.containsKey('confidence_score')) {
+          if (kDebugMode) print('[saveReceipt] Postgrest 22003 numeric overflow. Retrying without confidence_score...');
+          insertData.remove('confidence_score');
+          final retryResponse = await _supabase
+              .from('receipts')
+              .insert(insertData)
+              .select('id')
+              .single();
+          return retryResponse['id'].toString();
+        }
+        rethrow;
+      }
     } catch (e) {
       throw Exception('Supabase receipts insert failed: $e');
     }
@@ -196,7 +227,7 @@ class ReceiptDatabaseService {
     try {
       final response = await _supabase
           .from('receipts')
-          .select()
+          .select('*, receipt_items(*)')
           .eq('user_id', userId)
           .or('is_deleted.is.null,is_deleted.eq.false')
           .order('date', ascending: false);

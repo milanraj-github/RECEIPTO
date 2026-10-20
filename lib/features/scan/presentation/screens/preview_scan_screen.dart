@@ -13,7 +13,6 @@ import 'package:receipto/features/scan/domain/models/receipt_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:receipto/core/services/firebase_auth_service.dart';
 import 'package:receipto/core/services/duplicate_receipt_service.dart';
-import 'package:receipto/core/services/receipt_validator_service.dart';
 import 'package:receipto/core/utils/currency_formatter.dart';
 import 'package:receipto/core/utils/warranty_eligibility_filter.dart';
 import 'package:receipto/features/warranty/presentation/widgets/manual_warranty_modal.dart';
@@ -173,28 +172,10 @@ class PreviewScanScreen extends ConsumerWidget {
                                   }
                                   final userId = currentUser.uid;
 
-                                  // 1. Receipt Validation Pre-Check BEFORE OCR
-                                  ref.read(scanProvider.notifier).setProcessing(true, statusMessage: 'Preparing image...');
-                                  try {
-                                    final valResult = await ref.read(receiptValidatorServiceProvider).validateImage(imageFile);
-
-                                    if (!valResult.isValid) {
-                                      ref.read(scanProvider.notifier).setProcessing(false);
-                                      if (context.mounted) {
-                                        _showInvalidReceiptDialog(context, ref);
-                                      }
-                                      return;
-                                    }
-                                  } catch (e) {
-                                    if (kDebugMode) {
-                                      print('[PreviewScanScreen] Validation notice: $e');
-                                    }
-                                  }
-
                                   Future<void> performExtraction() async {
                                     try {
-                                      // 3. Run AI extraction
-                                      ref.read(scanProvider.notifier).setStatusMessage('Extracting receipt...');
+                                      // 1. Direct fast AI extraction (includes receipt validation in a single roundtrip)
+                                      ref.read(scanProvider.notifier).setProcessing(true, statusMessage: 'Extracting receipt with AI...');
                                       final receipt = await ref.read(scanProvider.notifier).extractReceiptOnly(userId: userId);
                                       if (receipt == null) {
                                         if (context.mounted) {
@@ -204,6 +185,15 @@ class PreviewScanScreen extends ConsumerWidget {
                                               backgroundColor: Colors.redAccent,
                                             ),
                                           );
+                                        }
+                                        return;
+                                      }
+
+                                      // Validate receipt content from the unified extraction response
+                                      if (!receipt.isValidReceipt) {
+                                        ref.read(scanProvider.notifier).setProcessing(false);
+                                        if (context.mounted) {
+                                          _showInvalidReceiptDialog(context, ref, reason: receipt.invalidReason);
                                         }
                                         return;
                                       }
@@ -267,8 +257,10 @@ class PreviewScanScreen extends ConsumerWidget {
                                               ref.read(scanProvider.notifier).setProcessing(false);
                                               if (context.mounted) {
                                                 ScaffoldMessenger.of(context).showSnackBar(
-                                                  const SnackBar(
-                                                    content: Text('Failed to save receipt. Please try again.'),
+                                                  SnackBar(
+                                                    content: Text(ref.read(scanProvider).errorMessage?.isNotEmpty == true
+                                                        ? ref.read(scanProvider).errorMessage!
+                                                        : 'Failed to save receipt. Please try again.'),
                                                     backgroundColor: Colors.redAccent,
                                                   ),
                                                 );
@@ -745,7 +737,7 @@ class PreviewScanScreen extends ConsumerWidget {
     );
   }
 
-  void _showInvalidReceiptDialog(BuildContext context, WidgetRef ref) {
+  void _showInvalidReceiptDialog(BuildContext context, WidgetRef ref, {String? reason}) {
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -764,7 +756,9 @@ class PreviewScanScreen extends ConsumerWidget {
             ),
           ),
           content: Text(
-            'The selected image is not recognized as a valid shopping receipt. Please upload a clear purchase receipt or invoice.',
+            reason?.isNotEmpty == true
+                ? reason!
+                : 'The selected image is not recognized as a valid shopping receipt. Please upload a clear purchase receipt or invoice.',
             style: GoogleFonts.inter(
               color: AppColors.onSurfaceVariant,
               fontSize: 14.5,

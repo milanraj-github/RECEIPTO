@@ -13,6 +13,7 @@ import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 import 'package:receipto/core/utils/warranty_utils.dart';
 import 'package:receipto/features/scan/data/repositories/scan_repository.dart';
 import 'package:receipto/features/notifications/presentation/providers/notification_provider.dart';
+import 'package:receipto/core/services/ai_categorizer_service.dart';
 
 class ReceiptsScreen extends ConsumerStatefulWidget {
   const ReceiptsScreen({super.key});
@@ -228,6 +229,8 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
 
     final List<WarrantyModel> warranties = warrantiesAsync.value ?? [];
 
+    final aiCat = ref.read(aiCategorizerServiceProvider);
+
     final List<ReceiptInventoryItem> allItems = receiptsAsync.value?.map((row) {
       final double amt = ReceiptModel.parseDouble(row['grand_total']) ?? ReceiptModel.parseDouble(row['total']) ?? 0.0;
       final String category = row['category'] as String? ?? 'Other';
@@ -243,18 +246,40 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
           warrantyLabel = '${receiptWarranties.length} Products Protected';
         } else {
           final w = receiptWarranties.first;
-          if (w.status == 'EXPIRED') {
+          if (w.isExpired) {
             warrantyLabel = 'Warranty expired';
-          } else {
+          } else if (w.isExpiringSoon) {
             final days = WarrantyUtils.calculateDaysRemaining(w.expiryDate);
-            if (w.status == 'EXPIRING SOON' || w.status == 'EXPIRING_SOON') {
-              warrantyLabel = 'Warranty expires in $days days';
-            } else {
-              warrantyLabel = '1 Product Protected';
-            }
+            warrantyLabel = 'Warranty expires in $days days';
+          } else {
+            warrantyLabel = '1 Product Protected';
           }
         }
       }
+
+      // Map line items from 'receipt_items'
+      final rawItems = row['receipt_items'] as List<dynamic>? ?? [];
+      final List<ReceiptInventorySubItem> subItems = rawItems.map((itemMap) {
+        final Map<String, dynamic> item = Map<String, dynamic>.from(itemMap as Map);
+        final String name = (item['name'] as String? ?? 'Item').trim();
+        final double price = ReceiptModel.parseDouble(item['total_price']) ??
+            ReceiptModel.parseDouble(item['price']) ??
+            0.0;
+        final int quantity = (item['quantity'] as num?)?.toInt() ?? 1;
+
+        String cat = (item['category'] as String?)?.trim() ?? '';
+        if (cat.isEmpty) {
+          cat = aiCat.inferItemCategory(name, receiptCategory: category);
+        }
+        final resolvedCat = aiCat.resolveSupportedCategory(cat);
+
+        return ReceiptInventorySubItem(
+          name: name,
+          price: price,
+          quantity: quantity,
+          category: resolvedCat,
+        );
+      }).toList();
 
       return ReceiptInventoryItem(
         id: idStr,
@@ -268,15 +293,27 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
         hasWarranty: hasWarranty,
         warrantyStatus: warrantyStatus,
         warrantyLabel: warrantyLabel,
+        items: subItems,
       );
     }).toList() ?? [];
 
     final filteredItems = allItems.where((item) {
-      final matchesCategory = _selectedCategory == 'All' || 
-          item.category.toLowerCase() == _selectedCategory.toLowerCase() ||
-          (_selectedCategory.toLowerCase() == 'groceries' && item.category.toLowerCase() == 'grocery') ||
-          (_selectedCategory.toLowerCase() == 'food & dining' && item.category.toLowerCase() == 'food') ||
-          (_selectedCategory.toLowerCase() == 'healthcare' && item.category.toLowerCase() == 'medical');
+      final normalizedSelectedCat = aiCat.resolveSupportedCategory(_selectedCategory);
+
+      bool matchesCategory;
+      if (_selectedCategory == 'All') {
+        matchesCategory = true;
+      } else if (item.isMixedCategory) {
+        // Mixed-category receipt: appears in every category section represented by at least one of its item categories
+        matchesCategory = item.items.any((subItem) {
+          return ReceiptInventoryItem.isCategoryMatch(subItem.category, _selectedCategory);
+        });
+      } else {
+        // Normal single-category receipt: preserve existing filtering exactly
+        final normalizedItemCat = aiCat.resolveSupportedCategory(item.category);
+        matchesCategory = item.category.toLowerCase() == _selectedCategory.toLowerCase() ||
+            normalizedItemCat.toLowerCase() == normalizedSelectedCat.toLowerCase();
+      }
       
       final receiptWarranties = warranties.where((w) => w.receiptId == item.id).toList();
       final matchesWarrantyProduct = receiptWarranties.any((w) =>
@@ -284,9 +321,14 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
           (w.brand != null && w.brand!.toLowerCase().contains(_searchQuery.toLowerCase())) ||
           (w.model != null && w.model!.toLowerCase().contains(_searchQuery.toLowerCase())));
 
-      final matchesSearch = item.merchant.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+      final matchesItemName = item.items.any((subItem) =>
+          subItem.name.toLowerCase().contains(_searchQuery.toLowerCase()));
+
+      final matchesSearch = _searchQuery.isEmpty ||
+          item.merchant.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           item.category.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          matchesWarrantyProduct;
+          matchesWarrantyProduct ||
+          matchesItemName;
 
       return matchesCategory && matchesSearch;
     }).toList();
@@ -438,6 +480,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                         return ReceiptCardItem(
                           key: key,
                           item: item,
+                          selectedCategory: _selectedCategory,
                           onTap: () {
                             // GoRouter detail push passing ID
                             context.push('/receipts/details/${item.id}');

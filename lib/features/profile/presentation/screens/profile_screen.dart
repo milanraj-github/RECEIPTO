@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -168,7 +169,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                 subtitle: 'AI-driven receipt & smart warranty system',
                 icon: Icons.info_outline_rounded,
                 iconColor: AppColors.primary,
-                onTap: () => _showAboutBottomSheet(context),
+                onTap: () => _showAboutDialog(context),
               ),
               const SizedBox(height: 10),
               _buildActionSetting(
@@ -205,10 +206,10 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               const SizedBox(height: 10),
               _buildActionSetting(
                 title: 'Contact Support',
-                subtitle: 'Get assistance from our engineering team',
+                subtitle: 'receiptotechexplorers@gmail.com',
                 icon: Icons.support_agent_rounded,
                 iconColor: AppColors.secondary,
-                onTap: () => _showInfoDialog(context, 'Contact Support', 'Need help? Reach out to our technical support team at support@receipto.app.'),
+                onTap: () => _showContactSupportDialog(context),
               ),
               const SizedBox(height: 28),
 
@@ -463,7 +464,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       data: (list) {
         int count = 0;
         for (final r in list) {
-          final items = r['items'];
+          final items = r['receipt_items'] ?? r['items'];
           if (items is List) {
             count += items.length;
           }
@@ -920,62 +921,71 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     );
   }
 
-  void _showAboutBottomSheet(BuildContext context) {
-    showModalBottomSheet(
+  void _showAboutDialog(BuildContext context) {
+    showDialog(
       context: context,
-      backgroundColor: AppColors.cardSurface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.lg,
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        title: Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    gradient: AppGradients.primaryBlueCyan,
-                    borderRadius: BorderRadius.circular(12),
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                gradient: AppGradients.primaryBlueCyan,
+                borderRadius: BorderRadius.circular(10),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(Icons.receipt_long_rounded, color: Colors.black, size: 22),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Receipto AI',
+                    style: GoogleFonts.hankenGrotesk(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
                   ),
-                  alignment: Alignment.center,
-                  child: const Icon(Icons.receipt_long_rounded, color: Colors.black, size: 26),
-                ),
-                const SizedBox(width: 14),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Receipto AI', style: GoogleFonts.hankenGrotesk(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white)),
-                    Text('Smart Warranty & Receipt System', style: GoogleFonts.inter(fontSize: 12, color: AppColors.onSurfaceVariant)),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            const Divider(color: Colors.white10),
-            const SizedBox(height: 12),
-            Text(
-              'Receipto is an intelligent AI-driven application for extracting receipt metadata, parsing purchased line items, calculating dynamic warranty expirations, and sending automated push & email reminders.',
-              style: GoogleFonts.inter(color: AppColors.onSurfaceVariant, fontSize: 13, height: 1.5),
-            ),
-            const SizedBox(height: 20),
-            Center(
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
-                  shape: RoundedRectangleBorder(borderRadius: AppRadius.full),
-                ),
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Close', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+                  Text(
+                    'Smart Warranty & Receipt System',
+                    style: GoogleFonts.inter(
+                      fontSize: 11,
+                      color: AppColors.onSurfaceVariant,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
         ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Divider(color: Colors.white10),
+            const SizedBox(height: 8),
+            Text(
+              'Receipto is an intelligent AI-driven application for extracting receipt metadata, parsing purchased line items, calculating dynamic warranty expirations, and sending automated push & email reminders.',
+              style: GoogleFonts.inter(color: AppColors.onSurfaceVariant, fontSize: 13, height: 1.5),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }
@@ -998,6 +1008,87 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           style: GoogleFonts.inter(color: AppColors.onSurfaceVariant, fontSize: 13, height: 1.4),
         ),
         actions: [
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+            onPressed: () => Navigator.pop(context),
+            child: const Text('OK', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showContactSupportDialog(BuildContext context) {
+    const supportEmail = 'receiptotechexplorers@gmail.com';
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.lg,
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        title: Row(
+          children: [
+            const Icon(Icons.support_agent_rounded, color: AppColors.secondary),
+            const SizedBox(width: 10),
+            Text(
+              'Contact Support',
+              style: GoogleFonts.hankenGrotesk(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Need help or have questions? Reach out to our technical support team:',
+              style: GoogleFonts.inter(color: AppColors.onSurfaceVariant, fontSize: 13, height: 1.4),
+            ),
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.05),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: AppColors.secondary.withValues(alpha: 0.3)),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.email_outlined, color: AppColors.secondary, size: 18),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: SelectableText(
+                      supportEmail,
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          OutlinedButton.icon(
+            style: OutlinedButton.styleFrom(
+              foregroundColor: AppColors.secondary,
+              side: const BorderSide(color: AppColors.secondary),
+            ),
+            icon: const Icon(Icons.copy_rounded, size: 16),
+            label: const Text('Copy Email'),
+            onPressed: () {
+              Clipboard.setData(const ClipboardData(text: supportEmail));
+              Navigator.pop(context);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Support email copied to clipboard!')),
+              );
+            },
+          ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
             onPressed: () => Navigator.pop(context),

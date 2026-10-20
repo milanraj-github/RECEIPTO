@@ -21,6 +21,8 @@ class ReceiptModel {
   final int? fileSize;
   final double? confidenceScore;
   final String? rawText;
+  final bool isValidReceipt;
+  final String? invalidReason;
 
   ReceiptModel({
     this.merchantName,
@@ -42,6 +44,8 @@ class ReceiptModel {
     this.fileSize,
     this.confidenceScore,
     this.rawText,
+    this.isValidReceipt = true,
+    this.invalidReason,
   });
 
   factory ReceiptModel.fromJson(Map<String, dynamic> json) {
@@ -114,6 +118,8 @@ class ReceiptModel {
       fileSize: parseInt(json['file_size']),
       confidenceScore: parseDouble(json['confidence_score']),
       rawText: json['raw_text'] as String?,
+      isValidReceipt: json['is_valid_receipt'] is bool ? json['is_valid_receipt'] as bool : true,
+      invalidReason: json['invalid_reason'] as String?,
     );
   }
 
@@ -181,6 +187,8 @@ class ReceiptModel {
     int? fileSize,
     double? confidenceScore,
     String? rawText,
+    bool? isValidReceipt,
+    String? invalidReason,
   }) {
     return ReceiptModel(
       merchantName: merchantName ?? this.merchantName,
@@ -202,6 +210,8 @@ class ReceiptModel {
       fileSize: fileSize ?? this.fileSize,
       confidenceScore: confidenceScore ?? this.confidenceScore,
       rawText: rawText ?? this.rawText,
+      isValidReceipt: isValidReceipt ?? this.isValidReceipt,
+      invalidReason: invalidReason ?? this.invalidReason,
     );
   }
 }
@@ -279,6 +289,38 @@ class ReceiptItemModel {
       category: json['category'] as String?,
       warrantyExpiry: normalizedExpiry ?? parsedExpiry,
       returnWindow: parseInt(json['return_window']),
+    );
+  }
+
+  ReceiptItemModel copyWith({
+    String? name,
+    int? quantity,
+    double? unitPrice,
+    double? totalPrice,
+    String? brand,
+    String? model,
+    String? serialNumber,
+    bool? warrantyAvailable,
+    int? warrantyPeriod,
+    String? warrantyUnit,
+    String? category,
+    String? warrantyExpiry,
+    int? returnWindow,
+  }) {
+    return ReceiptItemModel(
+      name: name ?? this.name,
+      quantity: quantity ?? this.quantity,
+      unitPrice: unitPrice ?? this.unitPrice,
+      totalPrice: totalPrice ?? this.totalPrice,
+      brand: brand ?? this.brand,
+      model: model ?? this.model,
+      serialNumber: serialNumber ?? this.serialNumber,
+      warrantyAvailable: warrantyAvailable ?? this.warrantyAvailable,
+      warrantyPeriod: warrantyPeriod ?? this.warrantyPeriod,
+      warrantyUnit: warrantyUnit ?? this.warrantyUnit,
+      category: category ?? this.category,
+      warrantyExpiry: warrantyExpiry ?? this.warrantyExpiry,
+      returnWindow: returnWindow ?? this.returnWindow,
     );
   }
 

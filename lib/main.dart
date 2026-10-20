@@ -11,6 +11,7 @@ import 'package:receipto/firebase_options.dart';
 import 'package:receipto/core/services/notification_service.dart';
 import 'package:receipto/core/services/background_service.dart';
 import 'package:receipto/core/services/email_service.dart';
+import 'package:receipto/core/services/reminder_engine.dart';
 import 'package:receipto/core/services/battery_optimization_service.dart';
 import 'package:receipto/core/services/warranty_database_service.dart';
 import 'package:receipto/core/services/receipt_database_service.dart';
@@ -56,7 +57,17 @@ Future<void> main() async {
 
   // Initialize Workmanager
   Workmanager().initialize(callbackDispatcher);
-  BackgroundService.registerPeriodicTask();
+  // Cache Supabase env vars to SharedPreferences for background isolate
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final supabaseUrl = dotenv.env['SUPABASE_URL'];
+    final supabaseKey = dotenv.env['SUPABASE_ANON_KEY'];
+    if (supabaseUrl != null) await prefs.setString('env_SUPABASE_URL', supabaseUrl);
+    if (supabaseKey != null) await prefs.setString('env_SUPABASE_ANON_KEY', supabaseKey);
+  } catch (e) {
+    debugPrint('[main] Error caching Supabase env vars: $e');
+  }
+  await BackgroundService.registerPeriodicTask();
   debugPrint('[main] WorkManager initialized.');
 
   // Listen to Auth changes to run startup notification synchronization
@@ -90,9 +101,34 @@ Future<void> main() async {
         final dbReceiptsService = container.read(receiptDatabaseServiceProvider);
         final activeReceipts = await dbReceiptsService.fetchAllReceipts(userId: user.uid);
         final activeReceiptIds = activeReceipts.map((r) => r['id'].toString()).toSet();
-        final activeWarranties = dbWarrs.where((w) => activeReceiptIds.contains(w.receiptId)).toList();
+        final activeWarranties = dbWarrs.where((w) => w.receiptId == null || w.receiptId!.isEmpty || activeReceiptIds.contains(w.receiptId)).toList();
 
         await scheduler.syncWarranties(activeWarranties);
+
+        // Also evaluate and dispatch any currently due notifications/emails immediately
+        final reminderEngine = container.read(reminderEngineProvider);
+        await reminderEngine.checkWarrantyReminders(user.uid, user.email, user.displayName);
+
+        // ── Schedule exact one-time alarm for configured reminder time ──
+        // This is the primary mechanism: fires at the user-set time even when app is closed.
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          final reminderHour = prefs.getInt('warranty_notif_hour') ?? 9;
+          final reminderMinute = prefs.getInt('warranty_notif_minute') ?? 0;
+          final now = DateTime.now();
+          var target = DateTime(now.year, now.month, now.day, reminderHour, reminderMinute);
+          if (!target.isAfter(now)) {
+            target = target.add(const Duration(days: 1));
+          }
+          final delay = target.difference(now);
+          debugPrint('[Reminder] Login — Current time: $now');
+          debugPrint('[Reminder] Login — Configured reminder time: ${reminderHour.toString().padLeft(2, "0")}:${reminderMinute.toString().padLeft(2, "0")}');
+          debugPrint('[Reminder] Login — Target time: $target');
+          debugPrint('[Reminder] Login — Scheduling exact alarm in: $delay');
+          await BackgroundService.registerOneTimeTask(delay);
+        } catch (e) {
+          debugPrint('[Startup] Error scheduling one-time alarm: $e');
+        }
 
         // Show battery optimization prompt once after user is authenticated
         // Use a short delay so the UI is fully mounted before showing a dialog
@@ -105,12 +141,14 @@ Future<void> main() async {
         debugPrint('[Startup] Error during startup notification sync: $e');
       }
     } else {
-      // User signed out: Clear local preferences and cancel device notifications
+      // User signed out: Clear local preferences, cancel device notifications,
+      // and cancel the one-time alarm so it does NOT fire for the next user.
       try {
         final prefs = await SharedPreferences.getInstance();
         await prefs.remove('last_logged_in_email');
         await prefs.remove('last_logged_in_uid');
         await container.read(notificationSchedulerProvider).cancelAll();
+        await BackgroundService.cancelOneTimeTask(); // ← cancel exact alarm on logout
       } catch (e) {
         debugPrint('[main.dart] Error clearing cache on signout: $e');
       }

@@ -265,7 +265,12 @@ class ScanNotifier extends StateNotifier<ScanState> {
 
     final receipt = state.extractedReceipt;
     final publicUrl = state.uploadedUrl;
-    if (receipt == null || publicUrl == null) return false;
+    if (receipt == null || publicUrl == null) {
+      state = state.copyWith(
+        errorMessage: 'Receipt data or uploaded image URL is missing. Please try scanning again.',
+      );
+      return false;
+    }
 
     // Performance Optimization: Prevent redundant database save if already saved
     if (state.savedReceiptId != null) {
@@ -308,10 +313,12 @@ class ScanNotifier extends StateNotifier<ScanState> {
       _ref.invalidate(notificationNotifierProvider);
       return true;
     } catch (e) {
+      final err = e.toString().replaceAll('Exception: ', '').replaceAll('HttpException: ', '');
+      if (kDebugMode) print('[saveExtracted Error] $err');
       state = state.copyWith(
         isLoading: false,
         isProcessing: false,
-        errorMessage: e.toString().replaceAll('Exception: ', '').replaceAll('HttpException: ', ''),
+        errorMessage: err,
       );
       return false;
     }

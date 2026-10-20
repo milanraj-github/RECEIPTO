@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 import 'package:receipto/core/services/offline_cache_service.dart';
+import 'package:receipto/core/utils/warranty_utils.dart';
 
 final warrantyDatabaseServiceProvider = Provider<WarrantyDatabaseService>((ref) {
   return WarrantyDatabaseService(Supabase.instance.client, OfflineCacheService());
@@ -23,6 +24,14 @@ class WarrantyDatabaseService {
     try {
       final payload = warranty.toJson();
       payload.remove('id');
+
+      // Sanitize date fields to prevent PostgreSQL syntax errors (code 22007)
+      if (payload['expiry_date'] != null) {
+        payload['expiry_date'] = WarrantyUtils.parseAndNormalizeDate(payload['expiry_date'].toString());
+      }
+      if (payload['purchase_date'] != null) {
+        payload['purchase_date'] = WarrantyUtils.parseAndNormalizeDate(payload['purchase_date'].toString()) ?? payload['purchase_date'];
+      }
 
       try {
         final response = await _supabase
@@ -97,6 +106,14 @@ class WarrantyDatabaseService {
       
       final payload = warranty.toJson();
       payload.remove('id');
+
+      // Sanitize date fields to prevent PostgreSQL syntax errors (code 22007)
+      if (payload['expiry_date'] != null) {
+        payload['expiry_date'] = WarrantyUtils.parseAndNormalizeDate(payload['expiry_date'].toString());
+      }
+      if (payload['purchase_date'] != null) {
+        payload['purchase_date'] = WarrantyUtils.parseAndNormalizeDate(payload['purchase_date'].toString()) ?? payload['purchase_date'];
+      }
 
       try {
         await _supabase

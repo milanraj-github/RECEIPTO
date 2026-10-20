@@ -21,7 +21,7 @@ class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
   IconData _getCategoryIcon(String category) {
-    switch (category.toLowerCase()) {
+    switch (category.toLowerCase().trim()) {
       case 'grocery':
       case 'groceries':
         return Icons.shopping_cart;
@@ -41,9 +41,37 @@ class DashboardScreen extends ConsumerWidget {
       case 'utilities':
         return Icons.bolt;
       case 'electronics':
-      case 'mobile & gadgets':
-      case 'computers':
         return Icons.devices;
+      case 'mobile & gadgets':
+        return Icons.phone_android;
+      case 'computers':
+        return Icons.computer;
+      case 'home appliances':
+        return Icons.kitchen;
+      case 'fashion':
+        return Icons.checkroom;
+      case 'furniture':
+        return Icons.chair;
+      case 'beauty & personal care':
+        return Icons.face;
+      case 'travel':
+        return Icons.flight;
+      case 'entertainment':
+        return Icons.movie;
+      case 'education':
+        return Icons.school;
+      case 'sports':
+        return Icons.sports_soccer;
+      case 'automotive':
+        return Icons.directions_car;
+      case 'accessories':
+        return Icons.watch;
+      case 'books':
+        return Icons.book;
+      case 'subscription':
+        return Icons.subscriptions;
+      case 'office supplies':
+        return Icons.edit;
       default:
         return Icons.receipt_long;
     }
@@ -78,22 +106,77 @@ class DashboardScreen extends ConsumerWidget {
       });
     }
 
-    double totalSpending = 0.0;
     double totalSaved = 0.0;
     final List<Map<String, dynamic>> allRows = receiptsAsync.value ?? [];
+    final DateTime now = DateTime.now();
+
+    // 7-month spending trend (index 0 is 6 months ago, index 6 is current month)
+    final List<double> monthlyTotals = List.filled(7, 0.0);
+    int currentMonthReceiptCount = 0;
+
+    DateTime? parseReceiptDate(Map<String, dynamic> r) {
+      final rawDate = r['date']?.toString().trim();
+      if (rawDate != null && rawDate.isNotEmpty) {
+        final parsed = DateTime.tryParse(rawDate);
+        if (parsed != null) return parsed;
+        final parts = rawDate.split(RegExp(r'[/.-]'));
+        if (parts.length == 3) {
+          if (parts[0].length == 4) {
+            final y = int.tryParse(parts[0]);
+            final m = int.tryParse(parts[1]);
+            final d = int.tryParse(parts[2]);
+            if (y != null && m != null && d != null) return DateTime(y, m, d);
+          } else if (parts[2].length == 4) {
+            final d = int.tryParse(parts[0]);
+            final m = int.tryParse(parts[1]);
+            final y = int.tryParse(parts[2]);
+            if (y != null && m != null && d != null) {
+              if (m > 12 && d <= 12) return DateTime(y, d, m);
+              return DateTime(y, m, d);
+            }
+          }
+        }
+      }
+      final rawCreated = r['created_at']?.toString().trim();
+      if (rawCreated != null && rawCreated.isNotEmpty) {
+        final parsed = DateTime.tryParse(rawCreated);
+        if (parsed != null) return parsed;
+      }
+      return null;
+    }
 
     for (final r in allRows) {
       final double amt = ReceiptModel.parseDouble(r['grand_total']) ?? ReceiptModel.parseDouble(r['total']) ?? 0.0;
       final double disc = ReceiptModel.parseDouble(r['discount']) ?? 0.0;
-      totalSpending += amt;
       totalSaved += disc;
+
+      final rDate = parseReceiptDate(r) ?? now;
+      for (int i = 0; i < 7; i++) {
+        final targetMonth = DateTime(now.year, now.month - (6 - i), 1);
+        if (rDate.year == targetMonth.year && rDate.month == targetMonth.month) {
+          monthlyTotals[i] += amt;
+          if (i == 6) {
+            currentMonthReceiptCount++;
+          }
+          break;
+        }
+      }
     }
+
+    final double currentMonthSpending = monthlyTotals[6];
+    final double prevMonthSpending = monthlyTotals[5];
+
+    final double maxMonthlySpend = monthlyTotals.reduce((a, b) => a > b ? a : b);
+    final List<double> sparklineHeights = monthlyTotals.map((val) {
+      if (val <= 0 || maxMonthlySpend <= 0) return 0.08;
+      return (val / maxMonthlySpend).clamp(0.18, 1.0);
+    }).toList();
 
     final List<WarrantyModel> warranties = warrantiesAsync.value ?? [];
     final protectedProductsCount = warranties.length;
-    final activeCount = warranties.where((w) => w.status == 'ACTIVE').length;
-    final expiringSoonCount = warranties.where((w) => w.status == 'EXPIRING SOON').length;
-    final expiredCount = warranties.where((w) => w.status == 'EXPIRED').length;
+    final activeCount = warranties.where((w) => w.isActive).length;
+    final expiringSoonCount = warranties.where((w) => w.isExpiringSoon).length;
+    final expiredCount = warranties.where((w) => w.isExpired).length;
 
     final List<ReceiptData> recentReceipts = allRows.map((row) {
       final double amt = ReceiptModel.parseDouble(row['grand_total']) ?? ReceiptModel.parseDouble(row['total']) ?? 0.0;
@@ -132,7 +215,13 @@ class DashboardScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
 
                   // Monthly Spending Hero Card
-                  _buildMonthlySpendingCard(context, totalSpending),
+                  _buildMonthlySpendingCard(
+                    context: context,
+                    spending: currentMonthSpending,
+                    prevMonthSpending: prevMonthSpending,
+                    receiptCount: currentMonthReceiptCount,
+                    sparklineHeights: sparklineHeights,
+                  ),
                   const SizedBox(height: 24),
 
                   // Stats Grid (Total Saved & Receipts Scanned)
@@ -167,7 +256,16 @@ class DashboardScreen extends ConsumerWidget {
                   const SizedBox(height: 24),
 
                   // AI Suggestions Card
-                  _buildAISuggestion(context),
+                  _buildAISuggestion(
+                    context: context,
+                    suggestion: _generateAISuggestion(
+                      allRows: allRows,
+                      warranties: warranties,
+                      currentMonthSpending: currentMonthSpending,
+                      prevMonthSpending: prevMonthSpending,
+                      totalSaved: totalSaved,
+                    ),
+                  ),
                   const SizedBox(height: 24),
 
                   // Recent Receipts Title & List
@@ -178,13 +276,6 @@ class DashboardScreen extends ConsumerWidget {
                 ],
               ),
             ),
-          ),
-          
-          // Floating Action button overlayed
-          Positioned(
-            bottom: 24,
-            right: 24,
-            child: _buildFAB(context),
           ),
         ],
       ),
@@ -312,9 +403,48 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  // Monthly Spending Glass Card with Sparkline visual
-  Widget _buildMonthlySpendingCard(BuildContext context, double totalSpending) {
+  // Monthly Spending Glass Card with Dynamic Sparkline and Trend
+  Widget _buildMonthlySpendingCard({
+    required BuildContext context,
+    required double spending,
+    required double prevMonthSpending,
+    required int receiptCount,
+    required List<double> sparklineHeights,
+  }) {
     final textTheme = Theme.of(context).textTheme;
+
+    // Determine dynamic trend badge details
+    final IconData badgeIcon;
+    final Color badgeColor;
+    final String badgeText;
+
+    if (prevMonthSpending > 0) {
+      final double diff = spending - prevMonthSpending;
+      final double pct = (diff / prevMonthSpending) * 100;
+      if (pct > 0) {
+        badgeIcon = Icons.trending_up;
+        badgeColor = const Color(0xFFF59E0B);
+        badgeText = '+${pct.toStringAsFixed(1)}% vs last month';
+      } else if (pct < 0) {
+        badgeIcon = Icons.trending_down;
+        badgeColor = AppColors.tertiary;
+        badgeText = '${pct.toStringAsFixed(1)}% vs last month';
+      } else {
+        badgeIcon = Icons.trending_flat;
+        badgeColor = AppColors.onSurfaceVariant;
+        badgeText = '0.0% vs last month';
+      }
+    } else {
+      if (receiptCount > 0) {
+        badgeIcon = Icons.receipt_long_outlined;
+        badgeColor = AppColors.tertiary;
+        badgeText = '$receiptCount ${receiptCount == 1 ? 'receipt' : 'receipts'} this month';
+      } else {
+        badgeIcon = Icons.calendar_today_outlined;
+        badgeColor = AppColors.onSurfaceVariant;
+        badgeText = 'No spending this month';
+      }
+    }
 
     return GlassCard(
       borderRadius: AppRadius.lg,
@@ -360,7 +490,7 @@ class DashboardScreen extends ConsumerWidget {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        CurrencyFormatter.format(totalSpending),
+                        CurrencyFormatter.format(spending),
                         style: textTheme.displayLg.copyWith(
                           color: AppColors.onSurface,
                           fontWeight: FontWeight.bold,
@@ -368,27 +498,28 @@ class DashboardScreen extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.trending_up,
-                          color: AppColors.tertiary,
-                          size: 16,
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
-                          child: Text(
-                            '2.4% vs last month',
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            badgeIcon,
+                            color: badgeColor,
+                            size: 15,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            badgeText,
                             maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
                             style: textTheme.labelMd.copyWith(
-                              color: AppColors.tertiary,
+                              color: badgeColor,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -398,10 +529,11 @@ class DashboardScreen extends ConsumerWidget {
               // Sparkline graph bounded flexibly on the right
               Flexible(
                 child: Container(
-                  constraints: const BoxConstraints(maxWidth: 110, minWidth: 60),
-                  height: 56,
-                  child: const SparklineWidget(
-                    heights: [0.4, 0.6, 0.5, 0.75, 0.65, 0.9, 1.0],
+                  constraints: const BoxConstraints(maxWidth: 100, minWidth: 60),
+                  height: 48,
+                  child: SparklineWidget(
+                    heights: sparklineHeights,
+                    maxHeight: 48,
                   ),
                 ),
               ),
@@ -527,8 +659,126 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 
-  // AI suggestion dialog styled container
-  Widget _buildAISuggestion(BuildContext context) {
+  // Dynamic AI Suggestion Data Container
+  _AISuggestionInfo _generateAISuggestion({
+    required List<Map<String, dynamic>> allRows,
+    required List<WarrantyModel> warranties,
+    required double currentMonthSpending,
+    required double prevMonthSpending,
+    required double totalSaved,
+  }) {
+    // 1. Critical Urgency: Check for warranties expiring soon
+    final expiringSoon = warranties.where((w) => w.isExpiringSoon).toList();
+    if (expiringSoon.isNotEmpty) {
+      final w = expiringSoon.first;
+      int? daysLeft;
+      try {
+        final exp = DateTime.parse(w.expiryDate);
+        daysLeft = exp.difference(DateTime.now()).inDays;
+      } catch (_) {}
+      final String timeStr = (daysLeft != null && daysLeft >= 0) ? 'in $daysLeft days' : 'soon';
+      return _AISuggestionInfo(
+        before: 'Warranty Alert: Your warranty for ',
+        highlight: w.productName,
+        after: ' expires $timeStr. Consider checking claim terms.',
+        highlightColor: const Color(0xFFF59E0B),
+      );
+    }
+
+    // 2. Spending by category breakdown
+    final Map<String, double> categorySpending = {};
+    for (final r in allRows) {
+      final double amt = ReceiptModel.parseDouble(r['grand_total']) ?? ReceiptModel.parseDouble(r['total']) ?? 0.0;
+      final String cat = (r['category'] as String?)?.trim() ?? 'Other';
+      categorySpending[cat] = (categorySpending[cat] ?? 0.0) + amt;
+    }
+
+    String topCategory = '';
+    double topCatSpend = 0.0;
+    categorySpending.forEach((cat, spend) {
+      if (spend > topCatSpend) {
+        topCatSpend = spend;
+        topCategory = cat;
+      }
+    });
+
+    final double totalAll = categorySpending.values.fold(0.0, (sum, val) => sum + val);
+
+    if (totalAll > 0 && topCategory.isNotEmpty) {
+      if (categorySpending.length > 1) {
+        final int pct = ((topCatSpend / totalAll) * 100).round();
+        return _AISuggestionInfo(
+          before: 'Smart Tip: You spent $pct% of your budget on ',
+          highlight: topCategory,
+          after: ' (${CurrencyFormatter.format(topCatSpend)}). Consider setting a category limit.',
+          highlightColor: AppColors.secondary,
+        );
+      } else {
+        return _AISuggestionInfo(
+          before: 'Smart Tip: You spent ${CurrencyFormatter.format(topCatSpend)} on ',
+          highlight: topCategory,
+          after: '. Keep your digital receipts backed up for warranty claims.',
+          highlightColor: AppColors.secondary,
+        );
+      }
+    }
+
+    // 3. Month-over-month trend if prior data exists
+    if (prevMonthSpending > 0) {
+      final double diff = currentMonthSpending - prevMonthSpending;
+      final int pct = ((diff.abs() / prevMonthSpending) * 100).round();
+      if (diff > 0) {
+        return _AISuggestionInfo(
+          before: 'Spending Trend: Your spending is up $pct% vs last month on ',
+          highlight: topCategory.isNotEmpty ? topCategory : 'Purchases',
+          after: '. Try setting a monthly budget limit.',
+          highlightColor: const Color(0xFFF59E0B),
+        );
+      } else if (diff < 0) {
+        return _AISuggestionInfo(
+          before: 'Great Job: You spent $pct% less than last month! You are saving more on ',
+          highlight: topCategory.isNotEmpty ? topCategory : 'Purchases',
+          after: '. Keep up the smart financial habits.',
+          highlightColor: AppColors.tertiary,
+        );
+      }
+    }
+
+    // 4. Discounts / Total Saved highlight
+    if (totalSaved > 0) {
+      return _AISuggestionInfo(
+        before: 'Savings Highlight: You have saved a total of ',
+        highlight: CurrencyFormatter.format(totalSaved),
+        after: ' in discounts and promotions across your receipts!',
+        highlightColor: AppColors.tertiary,
+      );
+    }
+
+    // 5. Active warranties protection
+    if (warranties.isNotEmpty) {
+      final int count = warranties.length;
+      return _AISuggestionInfo(
+        before: 'Protection Active: You have ',
+        highlight: '$count ${count == 1 ? 'product' : 'products'}',
+        after: ' protected with digital receipts for stress-free warranty claims.',
+        highlightColor: AppColors.secondary,
+      );
+    }
+
+    // 6. Zero receipts state
+    return const _AISuggestionInfo(
+      before: 'Smart Tip: Tap the ',
+      highlight: 'Scan button',
+      after: ' below to digitize your bills and unlock real AI financial insights.',
+      highlightColor: AppColors.primary,
+    );
+  }
+
+  // AI suggestion dialog styled container with dynamic content
+  Widget _buildAISuggestion({
+    required BuildContext context,
+    required _AISuggestionInfo suggestion,
+  }) {
     final textTheme = Theme.of(context).textTheme;
 
     return Container(
@@ -588,23 +838,23 @@ class DashboardScreen extends ConsumerWidget {
                   ),
                   const SizedBox(height: 14),
                   
-                  // Content text with highlighted dining
+                  // Content text with dynamic highlight
                   RichText(
                     text: TextSpan(
                       style: textTheme.bodyMd.copyWith(
                         color: AppColors.onSurface,
                         height: 1.4,
                       ),
-                      children: const [
-                        TextSpan(text: 'Smart Tip: You spent 15% more on '),
+                      children: [
+                        TextSpan(text: suggestion.before),
                         TextSpan(
-                          text: 'Dining',
+                          text: suggestion.highlight,
                           style: TextStyle(
-                            color: AppColors.secondary,
+                            color: suggestion.highlightColor,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        TextSpan(text: ' this week. Try a budget limit?'),
+                        TextSpan(text: suggestion.after),
                       ],
                     ),
                   ),
@@ -704,40 +954,6 @@ class DashboardScreen extends ConsumerWidget {
           },
         );
       },
-    );
-  }
-
-  // Floating Action Button
-  Widget _buildFAB(BuildContext context) {
-    return Container(
-      width: 60,
-      height: 60,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: AppGradients.primaryBlueCyan,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primary,
-            blurRadius: 16,
-            spreadRadius: -2,
-            offset: Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => context.go('/scan'),
-          customBorder: const CircleBorder(),
-          child: const Center(
-            child: Icon(
-              Icons.document_scanner_outlined,
-              color: AppColors.onPrimary,
-              size: 28,
-            ),
-          ),
-        ),
-      ),
     );
   }
 
@@ -878,4 +1094,19 @@ class DashboardScreen extends ConsumerWidget {
     );
   }
 }
+
+class _AISuggestionInfo {
+  final String before;
+  final String highlight;
+  final String after;
+  final Color highlightColor;
+
+  const _AISuggestionInfo({
+    required this.before,
+    required this.highlight,
+    required this.after,
+    this.highlightColor = AppColors.secondary,
+  });
+}
+
 

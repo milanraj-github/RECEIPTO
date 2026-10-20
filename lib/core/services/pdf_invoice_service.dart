@@ -157,7 +157,14 @@ class PdfInvoiceService {
                         children: [
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(6),
-                            child: pw.Text(prod.name, style: const pw.TextStyle(fontSize: 10)),
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text(prod.name, style: const pw.TextStyle(fontSize: 10)),
+                                if (prod.warrantyExpiry != null && prod.warrantyExpiry!.isNotEmpty)
+                                  pw.Text('Expiry: ${prod.warrantyExpiry}', style: const pw.TextStyle(fontSize: 8, color: PdfColors.grey700)),
+                              ],
+                            ),
                           ),
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(6),
