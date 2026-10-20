@@ -15,13 +15,16 @@ class GeminiService {
   late final List<String> _apiKeys;
   int _currentKeyIndex = 0;
   final http.Client _client = http.Client();
+  final Map<String, DateTime> _keyCooldowns = {};
 
-  // Fast, low-latency models with auto-failover
+  // High-performance models with active quota and verified multimodal vision support
   static const List<String> _models = [
-    'gemini-3.5-flash-lite', // Primary: ultra-fast (~1.5s), active quota
-    'gemini-3.5-flash',      // Secondary fallback
-    'gemini-2.5-flash',      // Tertiary fallback
+    'gemini-3.5-flash', // Primary: ultra-fast (~3s), verified multimodal active quota
+    'gemini-3.6-flash', // Secondary fallback
+    'gemini-3.8-flash', // Tertiary fallback
   ];
+
+  static const Duration _requestTimeout = Duration(milliseconds: 6500);
 
   static const String _prompt = '''
 You are an expert AI receipt scanner.
@@ -123,15 +126,22 @@ Return ONLY a single, valid JSON object matching this structure:
     }
   }
 
-  /// Returns API keys ordered by round-robin starting position for fair distribution.
+  /// Returns API keys ordered by starting position, filtering out temporarily cooled-down keys.
   List<String> _getRotatedKeys() {
     if (_apiKeys.isEmpty) return [];
-    final startIndex = _currentKeyIndex % _apiKeys.length;
-    _currentKeyIndex = (_currentKeyIndex + 1) % _apiKeys.length;
+    final now = DateTime.now();
+    // Exclude keys currently in cooldown (e.g. rate-limited 429 or timed out)
+    final active = _apiKeys.where((k) {
+      final cd = _keyCooldowns[k];
+      return cd == null || now.isAfter(cd);
+    }).toList();
+
+    final pool = active.isNotEmpty ? active : _apiKeys;
+    final startIndex = _currentKeyIndex % pool.length;
 
     final List<String> rotated = [];
-    for (int i = 0; i < _apiKeys.length; i++) {
-      rotated.add(_apiKeys[(startIndex + i) % _apiKeys.length]);
+    for (int i = 0; i < pool.length; i++) {
+      rotated.add(pool[(startIndex + i) % pool.length]);
     }
     return rotated;
   }
@@ -178,16 +188,18 @@ Return ONLY a single, valid JSON object matching this structure:
     Exception? lastException;
     final keys = _getRotatedKeys();
 
-    // Multi-key failover + multi-model failover
     for (final model in _models) {
+      int consecutiveTimeouts = 0;
+
       for (final apiKey in keys) {
+        final keyPrefix = apiKey.length > 12 ? apiKey.substring(0, 12) : apiKey;
         try {
           final url = 'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
           final response = await _client.post(
             Uri.parse(url),
             headers: {'Content-Type': 'application/json'},
             body: requestBody,
-          ).timeout(const Duration(seconds: 18));
+          ).timeout(_requestTimeout);
 
           if (response.statusCode == 200) {
             final Map<String, dynamic> jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
@@ -202,28 +214,53 @@ Return ONLY a single, valid JSON object matching this structure:
                 if (rawText != null && rawText.trim().isNotEmpty) {
                   final cleanedJson = _cleanJsonResponse(rawText);
                   final Map<String, dynamic> jsonMap = jsonDecode(cleanedJson) as Map<String, dynamic>;
+
+                  // Lock in successful key for instant next scan
+                  final successIdx = _apiKeys.indexOf(apiKey);
+                  if (successIdx != -1) {
+                    _currentKeyIndex = successIdx;
+                    _keyCooldowns.remove(apiKey);
+                  }
+
+                  if (kDebugMode) {
+                    print('[GeminiService] Extracted successfully in fast mode using $model with key $keyPrefix...');
+                  }
                   return ReceiptModel.fromJson(jsonMap);
                 }
               }
             }
           } else if (response.statusCode == 429) {
             if (kDebugMode) {
-              print('[GeminiService] Key ${apiKey.substring(0, 12)}... quota exhausted on $model. Switching to next API key immediately...');
+              print('[GeminiService] Key $keyPrefix... quota exhausted (429). Switching to next key immediately...');
             }
+            _keyCooldowns[apiKey] = DateTime.now().add(const Duration(minutes: 3));
             lastException = GeminiExceptionHandler.handleResponse(response);
-            continue; // Switch to the next key in the pool!
+            continue; // Switch to the next key in the pool immediately!
           } else if (response.statusCode == 404 || response.statusCode == 503) {
             if (kDebugMode) {
               print('[GeminiService] Model $model status ${response.statusCode}, switching model...');
             }
             lastException = GeminiExceptionHandler.handleResponse(response);
-            break; // Switch to next model
+            break; // Switch to next model immediately
           } else {
             throw GeminiExceptionHandler.handleResponse(response);
           }
+        } on TimeoutException {
+          if (kDebugMode) {
+            print('[GeminiService] Model $model timed out with key $keyPrefix (>${_requestTimeout.inSeconds}s). Switching immediately...');
+          }
+          _keyCooldowns[apiKey] = DateTime.now().add(const Duration(minutes: 2));
+          consecutiveTimeouts++;
+          if (consecutiveTimeouts >= 2) {
+            if (kDebugMode) {
+              print('[GeminiService] Model $model had 2 consecutive timeouts. Failing over to next model immediately...');
+            }
+            break; // Failover to next model immediately
+          }
+          continue; // Switch to next key immediately
         } catch (e) {
           if (kDebugMode) {
-            print('[GeminiService] Model $model with key ${apiKey.substring(0, 12)}... error: $e');
+            print('[GeminiService] Model $model with key $keyPrefix... error: $e');
           }
           lastException = e is Exception ? e : Exception(e.toString());
           continue;
@@ -275,6 +312,7 @@ Return ONLY a single, valid JSON object matching this structure:
     final keys = _getRotatedKeys();
 
     for (final model in _models) {
+      int consecutiveTimeouts = 0;
       for (final apiKey in keys) {
         try {
           final url = 'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
@@ -282,7 +320,7 @@ Return ONLY a single, valid JSON object matching this structure:
             Uri.parse(url),
             headers: {'Content-Type': 'application/json'},
             body: requestBody,
-          ).timeout(const Duration(seconds: 15));
+          ).timeout(_requestTimeout);
 
           if (response.statusCode == 200) {
             final Map<String, dynamic> jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
@@ -297,15 +335,27 @@ Return ONLY a single, valid JSON object matching this structure:
                 if (rawText != null && rawText.trim().isNotEmpty) {
                   final cleanedJson = _cleanJsonResponse(rawText);
                   final Map<String, dynamic> jsonMap = jsonDecode(cleanedJson) as Map<String, dynamic>;
+
+                  final successIdx = _apiKeys.indexOf(apiKey);
+                  if (successIdx != -1) {
+                    _currentKeyIndex = successIdx;
+                    _keyCooldowns.remove(apiKey);
+                  }
                   return ReceiptModel.fromJson(jsonMap);
                 }
               }
             }
           } else if (response.statusCode == 429) {
+            _keyCooldowns[apiKey] = DateTime.now().add(const Duration(minutes: 3));
             continue; // Switch to next key
           } else if (response.statusCode == 404 || response.statusCode == 503) {
             break; // Switch to next model
           }
+        } on TimeoutException {
+          _keyCooldowns[apiKey] = DateTime.now().add(const Duration(minutes: 2));
+          consecutiveTimeouts++;
+          if (consecutiveTimeouts >= 2) break;
+          continue;
         } catch (_) {
           continue;
         }
