@@ -16,33 +16,77 @@ class AnimatedNebulaBackground extends StatelessWidget {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // 1. Base dark background
-          const ColoredBox(color: AppColors.background),
+          // 1. Base Void Black canvas
+          const ColoredBox(color: AppColors.voidBlack),
 
-          // 2. Ambient top-left cyan/blue glow
+          // 2. Ambient Top-Right Liquid Aurora Ribbon (Warm Glow -> Neon Pink -> Magenta)
           Positioned(
-            top: -100,
-            left: -100,
+            top: -120,
+            right: -80,
             child: Container(
-              width: 380,
-              height: 380,
+              width: 440,
+              height: 440,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    AppColors.primary.withValues(alpha: 0.12),
+                    AppColors.warmGlow.withValues(alpha: 0.16),
+                    AppColors.neonPink.withValues(alpha: 0.14),
+                    AppColors.prismMagenta.withValues(alpha: 0.08),
                     Colors.transparent,
                   ],
-                  stops: const [0.0, 0.7],
+                  stops: const [0.0, 0.35, 0.65, 1.0],
                 ),
               ),
             ),
           ),
 
-          // 3. Ambient center-right AI purple glow
+          // 3. Ambient Upper-Left Electric Blue & Neon Violet glow
           Positioned(
-            top: 250,
-            right: -100,
+            top: -80,
+            left: -100,
+            child: Container(
+              width: 420,
+              height: 420,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.electricBlue.withValues(alpha: 0.18),
+                    AppColors.neonViolet.withValues(alpha: 0.12),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.45, 0.85],
+                ),
+              ),
+            ),
+          ),
+
+          // 4. Center-Right Cosmic Prism Glow Ribbon
+          Positioned(
+            top: 280,
+            right: -120,
+            child: Container(
+              width: 400,
+              height: 400,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    AppColors.neonViolet.withValues(alpha: 0.14),
+                    AppColors.prismMagenta.withValues(alpha: 0.09),
+                    Colors.transparent,
+                  ],
+                  stops: const [0.0, 0.5, 0.9],
+                ),
+              ),
+            ),
+          ),
+
+          // 5. Lower-Left Laser Cyan Liquid Aura
+          Positioned(
+            bottom: -60,
+            left: -80,
             child: Container(
               width: 360,
               height: 360,
@@ -50,10 +94,11 @@ class AnimatedNebulaBackground extends StatelessWidget {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFF7C4DFF).withValues(alpha: 0.09),
+                    AppColors.laserCyan.withValues(alpha: 0.12),
+                    AppColors.electricBlue.withValues(alpha: 0.07),
                     Colors.transparent,
                   ],
-                  stops: const [0.0, 0.7],
+                  stops: const [0.0, 0.4, 0.85],
                 ),
               ),
             ),

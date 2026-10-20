@@ -35,13 +35,29 @@ class ShellLayout extends StatelessWidget {
             clipBehavior: Clip.none,
             alignment: Alignment.bottomCenter,
             children: [
-              // Glassmorphic Navbar Container
+              // Glassmorphic Navbar Container with Cosmic Prism luminous border
               Positioned(
                 left: 0,
                 right: 0,
                 bottom: 0,
                 child: GlassCard(
                   borderRadius: AppRadius.lg,
+                  backgroundColor: AppColors.glassSurface.withValues(alpha: 0.88),
+                  border: Border.all(
+                    color: const Color(0xFF3867FF).withValues(alpha: 0.22),
+                    width: 1.0,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.5),
+                      blurRadius: 20,
+                      offset: const Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: AppColors.electricBlue.withValues(alpha: 0.08),
+                      blurRadius: 24,
+                    ),
+                  ],
                   padding: EdgeInsets.zero,
                   child: SizedBox(
                     height: 66,
@@ -51,13 +67,13 @@ class ShellLayout extends StatelessWidget {
                         _buildNavItem(
                           index: 0,
                           icon: Icons.dashboard_outlined,
-                          activeIcon: Icons.dashboard,
+                          activeIcon: Icons.dashboard_rounded,
                           label: 'Dashboard',
                         ),
                         _buildNavItem(
                           index: 1,
                           icon: Icons.receipt_long_outlined,
-                          activeIcon: Icons.receipt_long,
+                          activeIcon: Icons.receipt_long_rounded,
                           label: 'Receipts',
                         ),
                         // Spacer for Floating Center Scan Button
@@ -65,13 +81,13 @@ class ShellLayout extends StatelessWidget {
                         _buildNavItem(
                           index: 3,
                           icon: Icons.analytics_outlined,
-                          activeIcon: Icons.analytics,
+                          activeIcon: Icons.analytics_rounded,
                           label: 'Analytics',
                         ),
                         _buildNavItem(
                           index: 4,
-                          icon: Icons.person_outline,
-                          activeIcon: Icons.person,
+                          icon: Icons.person_outline_rounded,
+                          activeIcon: Icons.person_rounded,
                           label: 'Profile',
                         ),
                       ],
@@ -80,7 +96,7 @@ class ShellLayout extends StatelessWidget {
                 ),
               ),
 
-              // Floating Center Circular Scan Button
+              // Floating Center Circular Scan Button with Cosmic Prism Glow
               Positioned(
                 top: 0,
                 child: _buildFloatingScanButton(currentIndex == 2),
@@ -99,7 +115,7 @@ class ShellLayout extends StatelessWidget {
     required String label,
   }) {
     final isActive = index == navigationShell.currentIndex;
-    final color = isActive ? AppColors.primary : AppColors.onSurfaceVariant;
+    final color = isActive ? AppColors.laserCyan : AppColors.onSurfaceVariant;
 
     return Expanded(
       child: GestureDetector(
@@ -111,18 +127,43 @@ class ShellLayout extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                isActive ? activeIcon : icon,
-                color: color,
-                size: 23,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: isActive
+                    ? BoxDecoration(
+                        color: AppColors.laserCyan.withValues(alpha: 0.12),
+                        borderRadius: AppRadius.full,
+                      )
+                    : null,
+                child: Icon(
+                  isActive ? activeIcon : icon,
+                  color: color,
+                  size: 22,
+                  shadows: isActive
+                      ? [
+                          Shadow(
+                            color: AppColors.laserCyan.withValues(alpha: 0.6),
+                            blurRadius: 10,
+                          ),
+                        ]
+                      : null,
+                ),
               ),
-              const SizedBox(height: 4),
+              const SizedBox(height: 2),
               Text(
                 label,
                 style: GoogleFonts.inter(
                   color: color,
                   fontSize: 10.5,
-                  fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+                  fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
+                  shadows: isActive
+                      ? [
+                          Shadow(
+                            color: AppColors.laserCyan.withValues(alpha: 0.5),
+                            blurRadius: 8,
+                          ),
+                        ]
+                      : null,
                 ),
               ),
             ],
@@ -145,13 +186,19 @@ class ShellLayout extends StatelessWidget {
             height: 64,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              gradient: AppGradients.primaryBlueCyan,
+              gradient: AppGradients.primaryBlueViolet,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.primary.withValues(alpha: isActive ? 0.5 : 0.3),
-                  blurRadius: isActive ? 18 : 12,
-                  spreadRadius: isActive ? 2 : 0,
+                  color: AppColors.electricBlue.withValues(alpha: isActive ? 0.6 : 0.4),
+                  blurRadius: isActive ? 22 : 16,
+                  spreadRadius: isActive ? 3 : 1,
                   offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: AppColors.prismMagenta.withValues(alpha: isActive ? 0.4 : 0.25),
+                  blurRadius: 18,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 2),
                 ),
               ],
             ),
@@ -178,9 +225,9 @@ class ShellLayout extends StatelessWidget {
         Text(
           'Scan',
           style: GoogleFonts.inter(
-            color: isActive ? AppColors.primary : AppColors.onSurfaceVariant,
+            color: isActive ? AppColors.laserCyan : AppColors.onSurfaceVariant,
             fontSize: 10.5,
-            fontWeight: isActive ? FontWeight.bold : FontWeight.w500,
+            fontWeight: isActive ? FontWeight.w700 : FontWeight.w500,
           ),
         ),
       ],

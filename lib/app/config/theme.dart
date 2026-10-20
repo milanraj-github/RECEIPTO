@@ -13,7 +13,6 @@ class AppTheme {
       primaryColor: AppColors.primary,
       
       colorScheme: const ColorScheme.dark(
-        background: AppColors.background,
         surface: AppColors.cardSurface,
         onSurface: AppColors.onSurface,
         onSurfaceVariant: AppColors.onSurfaceVariant,
@@ -40,46 +39,46 @@ class AppTheme {
       // Text Theme mapping to design system
       textTheme: TextTheme(
         // display-lg (Large financial totals)
-        displayLarge: GoogleFonts.hankenGrotesk(
-          fontSize: 48,
+        displayLarge: GoogleFonts.inter(
+          fontSize: 44,
           fontWeight: FontWeight.w700,
-          height: 56 / 48,
-          letterSpacing: -0.02 * 48,
+          height: 52 / 44,
+          letterSpacing: -0.02 * 44,
           color: AppColors.onSurface,
         ),
         // headline-lg
-        headlineLarge: GoogleFonts.hankenGrotesk(
-          fontSize: 32,
-          fontWeight: FontWeight.w600,
-          height: 40 / 32,
-          letterSpacing: -0.01 * 32,
+        headlineLarge: GoogleFonts.inter(
+          fontSize: 30,
+          fontWeight: FontWeight.w700,
+          height: 38 / 30,
+          letterSpacing: -0.01 * 30,
           color: AppColors.onSurface,
         ),
-        // headline-md / headline-lg-mobile
-        headlineMedium: GoogleFonts.hankenGrotesk(
-          fontSize: 24,
+        // headline-md
+        headlineMedium: GoogleFonts.inter(
+          fontSize: 22,
           fontWeight: FontWeight.w600,
-          height: 32 / 24,
+          height: 28 / 22,
           color: AppColors.onSurface,
         ),
         // body-lg
         bodyLarge: GoogleFonts.inter(
-          fontSize: 18,
+          fontSize: 17,
           fontWeight: FontWeight.w400,
-          height: 28 / 18,
+          height: 26 / 17,
           color: AppColors.onSurface,
         ),
         // body-md
         bodyMedium: GoogleFonts.inter(
-          fontSize: 16,
+          fontSize: 15,
           fontWeight: FontWeight.w400,
-          height: 24 / 16,
+          height: 22 / 15,
           color: AppColors.onSurface,
         ),
         // label-md (Geist font fallback)
         labelLarge: AppFonts.geist(
           fontSize: 14,
-          fontWeight: FontWeight.w500,
+          fontWeight: FontWeight.w600,
           height: 20 / 14,
           letterSpacing: 0.02 * 14,
           color: AppColors.onSurface,
@@ -87,32 +86,32 @@ class AppTheme {
         // code-sm (Geist font fallback)
         labelMedium: AppFonts.geist(
           fontSize: 12,
-          fontWeight: FontWeight.w400,
+          fontWeight: FontWeight.w500,
           height: 16 / 12,
           color: AppColors.onSurfaceVariant,
         ),
       ),
       
-      // Inputs styling
+      // Inputs styling: Dark translucent glass with subtle luminous borders
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: AppColors.inputBackground,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        fillColor: AppColors.inputBackground.withValues(alpha: 0.85),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         hintStyle: GoogleFonts.inter(
-          color: AppColors.onSurfaceVariant.withValues(alpha: 0.5),
-          fontSize: 16,
+          color: AppColors.onSurfaceVariant.withValues(alpha: 0.45),
+          fontSize: 15,
         ),
         border: OutlineInputBorder(
           borderRadius: AppRadius.md,
-          borderSide: const BorderSide(color: AppColors.outlineVariant),
+          borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.6)),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: AppRadius.md,
-          borderSide: const BorderSide(color: AppColors.outlineVariant),
+          borderSide: BorderSide(color: AppColors.outlineVariant.withValues(alpha: 0.6)),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: AppRadius.md,
-          borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.laserCyan, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: AppRadius.md,

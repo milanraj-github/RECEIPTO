@@ -15,7 +15,7 @@ class GradientButton extends StatelessWidget {
     super.key,
     required this.text,
     this.onPressed,
-    this.gradient = AppGradients.primaryBlueCyan,
+    this.gradient = AppGradients.primaryBlueViolet,
     this.isLoading = false,
     this.height = 54.0,
     this.width,
@@ -37,12 +37,15 @@ class GradientButton extends StatelessWidget {
             ? null
             : [
                 BoxShadow(
-                  color: (gradient == AppGradients.primaryBlueCyan
-                          ? AppColors.primary
-                          : const Color(0xFF7C4DFF))
-                      .withValues(alpha: 0.15),
-                  blurRadius: 12,
+                  color: AppColors.electricBlue.withValues(alpha: 0.35),
+                  blurRadius: 16,
                   offset: const Offset(0, 4),
+                ),
+                BoxShadow(
+                  color: AppColors.neonViolet.withValues(alpha: 0.25),
+                  blurRadius: 24,
+                  spreadRadius: 1,
+                  offset: const Offset(0, 2),
                 ),
               ],
       ),
@@ -57,7 +60,7 @@ class GradientButton extends StatelessWidget {
                     width: 24,
                     height: 24,
                     child: CircularProgressIndicator(
-                      color: AppColors.onPrimary,
+                      color: Colors.white,
                       strokeWidth: 2.5,
                     ),
                   )
@@ -69,23 +72,19 @@ class GradientButton extends StatelessWidget {
                           icon,
                           color: disabled
                               ? AppColors.onSurfaceVariant.withValues(alpha: 0.5)
-                              : (gradient == AppGradients.primaryBlueCyan
-                                  ? AppColors.onPrimary
-                                  : Colors.white),
+                              : Colors.white,
                           size: 20,
                         ),
                         const SizedBox(width: 8),
                       ],
                       Text(
                         text,
-                        style: GoogleFonts.hankenGrotesk(
+                        style: GoogleFonts.inter(
                           color: disabled
                               ? AppColors.onSurfaceVariant.withValues(alpha: 0.5)
-                              : (gradient == AppGradients.primaryBlueCyan
-                                  ? AppColors.onPrimary
-                                  : Colors.white),
+                              : Colors.white,
                           fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontWeight: FontWeight.w700,
                           letterSpacing: 0.5,
                         ),
                       ),

@@ -757,14 +757,25 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with TickerProviderStat
                         left: 10,
                         right: 10,
                         child: Container(
-                          height: 2,
+                          height: 2.5,
                           decoration: BoxDecoration(
-                            color: AppColors.primary,
+                            gradient: const LinearGradient(
+                              colors: [
+                                AppColors.laserCyan,
+                                AppColors.prismMagenta,
+                                AppColors.laserCyan,
+                              ],
+                            ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.primary.withValues(alpha: 0.9),
+                                color: AppColors.laserCyan.withValues(alpha: 0.8),
                                 blurRadius: 10,
                                 spreadRadius: 2,
+                              ),
+                              BoxShadow(
+                                color: AppColors.prismMagenta.withValues(alpha: 0.6),
+                                blurRadius: 16,
+                                spreadRadius: 1,
                               ),
                             ],
                           ),
@@ -873,18 +884,27 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with TickerProviderStat
   Widget _buildCorner(Alignment alignment) {
     final isTop = alignment.y < 0;
     final isLeft = alignment.x < 0;
+    // Top corners: Laser Cyan glow; Bottom corners: Prism Magenta / Neon Pink glow
+    final cornerColor = isTop ? AppColors.laserCyan : AppColors.prismMagenta;
 
     return Align(
       alignment: alignment,
       child: Container(
-        width: 24,
-        height: 24,
+        width: 26,
+        height: 26,
         decoration: BoxDecoration(
+          boxShadow: [
+            BoxShadow(
+              color: cornerColor.withValues(alpha: 0.5),
+              blurRadius: 8,
+              spreadRadius: 1,
+            ),
+          ],
           border: Border(
-            top: isTop ? const BorderSide(color: AppColors.primary, width: 4) : BorderSide.none,
-            bottom: !isTop ? const BorderSide(color: AppColors.primary, width: 4) : BorderSide.none,
-            left: isLeft ? const BorderSide(color: AppColors.primary, width: 4) : BorderSide.none,
-            right: !isLeft ? const BorderSide(color: AppColors.primary, width: 4) : BorderSide.none,
+            top: isTop ? BorderSide(color: cornerColor, width: 3.5) : BorderSide.none,
+            bottom: !isTop ? BorderSide(color: cornerColor, width: 3.5) : BorderSide.none,
+            left: isLeft ? BorderSide(color: cornerColor, width: 3.5) : BorderSide.none,
+            right: !isLeft ? BorderSide(color: cornerColor, width: 3.5) : BorderSide.none,
           ),
         ),
       ),

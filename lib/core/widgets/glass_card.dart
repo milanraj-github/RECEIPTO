@@ -29,7 +29,29 @@ class GlassCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveRadius = borderRadius ?? AppRadius.lg;
-    final fallbackColor = AppColors.cardSurface.withValues(alpha: 0.85);
+    // Translucent dark glass surface (78–85% opacity as specified)
+    final fallbackColor = AppColors.glassSurface.withValues(alpha: 0.82);
+
+    // Subtle luminous glass border (soft light on top/edge)
+    final effectiveBorder = border ??
+        Border.all(
+          color: const Color(0xFF3867FF).withValues(alpha: 0.18),
+          width: 1.0,
+        );
+
+    // Soft dark shadow plus restrained colored ambient glow
+    final effectiveShadow = boxShadow ?? [
+      BoxShadow(
+        color: Colors.black.withValues(alpha: 0.45),
+        blurRadius: 18,
+        offset: const Offset(0, 6),
+      ),
+      BoxShadow(
+        color: const Color(0xFF3867FF).withValues(alpha: 0.04),
+        blurRadius: 28,
+        spreadRadius: 1,
+      ),
+    ];
 
     // Apply BackdropFilter only if blur is explicitly requested > 0.1
     if (blur > 0.1) {
@@ -38,7 +60,7 @@ class GlassCard extends StatelessWidget {
         height: height,
         decoration: BoxDecoration(
           borderRadius: effectiveRadius,
-          boxShadow: boxShadow,
+          boxShadow: effectiveShadow,
         ),
         child: ClipRRect(
           borderRadius: effectiveRadius,
@@ -49,11 +71,7 @@ class GlassCard extends StatelessWidget {
               decoration: BoxDecoration(
                 color: backgroundColor ?? fallbackColor,
                 borderRadius: effectiveRadius,
-                border: border ??
-                    Border.all(
-                      color: Colors.white.withValues(alpha: 0.1),
-                      width: 1.0,
-                    ),
+                border: effectiveBorder,
               ),
               child: child,
             ),
@@ -69,18 +87,8 @@ class GlassCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor ?? fallbackColor,
           borderRadius: effectiveRadius,
-          boxShadow: boxShadow ?? [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.2),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-          border: border ??
-              Border.all(
-                color: Colors.white.withValues(alpha: 0.08),
-                width: 1.0,
-              ),
+          boxShadow: effectiveShadow,
+          border: effectiveBorder,
         ),
         child: child,
       );
