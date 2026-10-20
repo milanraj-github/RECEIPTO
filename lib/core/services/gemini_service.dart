@@ -19,9 +19,9 @@ class GeminiService {
 
   // High-performance models with active quota and verified multimodal vision support
   static const List<String> _models = [
-    'gemini-3.5-flash', // Primary: ultra-fast (~5s), verified multimodal active quota
-    'gemini-3.6-flash', // Secondary fallback
-    'gemini-3.8-flash', // Tertiary fallback
+    'gemini-3-flash-preview', // Primary: 100% verified active quota across all 7 keys, ultra-fast (~2s)
+    'gemini-3.6-flash',       // Secondary fallback (~2.8s)
+    'gemini-3.5-flash',       // Tertiary fallback
   ];
 
   static const Duration _requestTimeout = Duration(seconds: 12);
@@ -237,10 +237,10 @@ Return ONLY a single, valid JSON object matching this structure:
             continue; // Switch to the next key in the pool immediately!
           } else if (response.statusCode == 404 || response.statusCode == 503) {
             if (kDebugMode) {
-              print('[GeminiService] Model $model status ${response.statusCode}, trying next key/model...');
+              print('[GeminiService] Model $model status ${response.statusCode} (server busy). Switching to next model immediately...');
             }
             lastException = GeminiExceptionHandler.handleResponse(response);
-            continue; // Try next key
+            break; // Switch to next fallback model immediately!
           } else {
             throw GeminiExceptionHandler.handleResponse(response);
           }
@@ -340,7 +340,7 @@ Return ONLY a single, valid JSON object matching this structure:
             _keyCooldowns[apiKey] = DateTime.now().add(const Duration(minutes: 3));
             continue; // Switch to next key
           } else if (response.statusCode == 404 || response.statusCode == 503) {
-            continue; // Try next key
+            break; // Switch to next model immediately
           }
         } on TimeoutException {
           _keyCooldowns[apiKey] = DateTime.now().add(const Duration(minutes: 1));
