@@ -19,12 +19,12 @@ class GeminiService {
 
   // High-performance models with active quota and verified multimodal vision support
   static const List<String> _models = [
-    'gemini-3.5-flash', // Primary: ultra-fast (~3s), verified multimodal active quota
+    'gemini-3.5-flash', // Primary: ultra-fast (~5s), verified multimodal active quota
     'gemini-3.6-flash', // Secondary fallback
     'gemini-3.8-flash', // Tertiary fallback
   ];
 
-  static const Duration _requestTimeout = Duration(milliseconds: 6500);
+  static const Duration _requestTimeout = Duration(seconds: 12);
 
   static const String _prompt = '''
 You are an expert AI receipt scanner.
@@ -186,10 +186,9 @@ Return ONLY a single, valid JSON object matching this structure:
     final String requestBody = jsonEncode(payload);
 
     Exception? lastException;
-    final keys = _getRotatedKeys();
 
     for (final model in _models) {
-      int consecutiveTimeouts = 0;
+      final keys = _getRotatedKeys();
 
       for (final apiKey in keys) {
         final keyPrefix = apiKey.length > 12 ? apiKey.substring(0, 12) : apiKey;
@@ -223,7 +222,7 @@ Return ONLY a single, valid JSON object matching this structure:
                   }
 
                   if (kDebugMode) {
-                    print('[GeminiService] Extracted successfully in fast mode using $model with key $keyPrefix...');
+                    print('[GeminiService] Extracted successfully using $model with key $keyPrefix...');
                   }
                   return ReceiptModel.fromJson(jsonMap);
                 }
@@ -238,25 +237,18 @@ Return ONLY a single, valid JSON object matching this structure:
             continue; // Switch to the next key in the pool immediately!
           } else if (response.statusCode == 404 || response.statusCode == 503) {
             if (kDebugMode) {
-              print('[GeminiService] Model $model status ${response.statusCode}, switching model...');
+              print('[GeminiService] Model $model status ${response.statusCode}, trying next key/model...');
             }
             lastException = GeminiExceptionHandler.handleResponse(response);
-            break; // Switch to next model immediately
+            continue; // Try next key
           } else {
             throw GeminiExceptionHandler.handleResponse(response);
           }
         } on TimeoutException {
           if (kDebugMode) {
-            print('[GeminiService] Model $model timed out with key $keyPrefix (>${_requestTimeout.inSeconds}s). Switching immediately...');
+            print('[GeminiService] Model $model timed out with key $keyPrefix (>${_requestTimeout.inSeconds}s). Switching to next key...');
           }
-          _keyCooldowns[apiKey] = DateTime.now().add(const Duration(minutes: 2));
-          consecutiveTimeouts++;
-          if (consecutiveTimeouts >= 2) {
-            if (kDebugMode) {
-              print('[GeminiService] Model $model had 2 consecutive timeouts. Failing over to next model immediately...');
-            }
-            break; // Failover to next model immediately
-          }
+          _keyCooldowns[apiKey] = DateTime.now().add(const Duration(minutes: 1));
           continue; // Switch to next key immediately
         } catch (e) {
           if (kDebugMode) {
@@ -309,10 +301,9 @@ Return ONLY a single, valid JSON object matching this structure:
     };
 
     final String requestBody = jsonEncode(requestPayload);
-    final keys = _getRotatedKeys();
 
     for (final model in _models) {
-      int consecutiveTimeouts = 0;
+      final keys = _getRotatedKeys();
       for (final apiKey in keys) {
         try {
           final url = 'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey';
@@ -349,12 +340,10 @@ Return ONLY a single, valid JSON object matching this structure:
             _keyCooldowns[apiKey] = DateTime.now().add(const Duration(minutes: 3));
             continue; // Switch to next key
           } else if (response.statusCode == 404 || response.statusCode == 503) {
-            break; // Switch to next model
+            continue; // Try next key
           }
         } on TimeoutException {
-          _keyCooldowns[apiKey] = DateTime.now().add(const Duration(minutes: 2));
-          consecutiveTimeouts++;
-          if (consecutiveTimeouts >= 2) break;
+          _keyCooldowns[apiKey] = DateTime.now().add(const Duration(minutes: 1));
           continue;
         } catch (_) {
           continue;
