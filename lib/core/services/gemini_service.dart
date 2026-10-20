@@ -19,12 +19,13 @@ class GeminiService {
 
   // High-performance models with active quota and verified multimodal vision support
   static const List<String> _models = [
-    'gemini-3-flash-preview', // Primary: 100% verified active quota across all 7 keys, ultra-fast (~2s)
-    'gemini-3.6-flash',       // Secondary fallback (~2.8s)
-    'gemini-3.5-flash',       // Tertiary fallback
+    'gemini-3-flash-preview', // Primary: 100% verified, ultra-fast (~3s), handles URL & bytes
+    'gemini-3.5-flash',       // Secondary fallback
+    'gemini-3.6-flash',       // Tertiary fallback
   ];
 
-  static const Duration _requestTimeout = Duration(seconds: 12);
+  // Longer timeout for mobile networks — Gemini processes in ~3s but upload can be slow
+  static const Duration _requestTimeout = Duration(seconds: 45);
 
   static const String _prompt = '''
 You are an expert AI receipt scanner.
@@ -180,8 +181,10 @@ Return ONLY a single, valid JSON object matching this structure:
   Future<ReceiptModel> _analyzeWithModelFailover({
     required Map<String, dynamic> Function(String base64Image) buildRequestPayload,
     required Uint8List imageBytes,
+    bool useUrlMode = false,
   }) async {
-    final String base64Image = base64.encode(imageBytes);
+    // In URL mode, skip base64 encoding entirely (payload is pre-built with fileData URL)
+    final String base64Image = useUrlMode ? '' : base64.encode(imageBytes);
     final payload = buildRequestPayload(base64Image);
     final String requestBody = jsonEncode(payload);
 
@@ -263,7 +266,7 @@ Return ONLY a single, valid JSON object matching this structure:
     throw lastException ?? Exception('All Gemini vision models and API keys failed to process receipt.');
   }
 
-  /// Sends the receipt image URL to Gemini Vision REST API for scanning (fallback).
+  /// Sends the receipt image URL to Gemini Vision REST API for scanning (downloads then sends bytes).
   Future<ReceiptModel> analyzeReceipt({
     required String imageUrl,
   }) async {

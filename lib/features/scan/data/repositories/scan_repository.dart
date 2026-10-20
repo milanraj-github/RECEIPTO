@@ -163,19 +163,24 @@ class ScanRepository {
     ReceiptModel receipt;
 
     if (['jpg', 'jpeg', 'png', 'webp', 'heic'].contains(extension)) {
-      // 1. Storage Upload in parallel with fast image optimization & Gemini AI Vision
+      // Strategy: Aggressively compress image first (target ~80-140KB),
+      // then run Supabase upload + Gemini AI analysis in parallel.
+      // Compressed bytes = tiny Gemini payload, fast on mobile data even alongside upload.
+      final optimizedBytes = await _prepareOptimizedImageBytes(imageFile);
+
+      if (kDebugMode) {
+        print('[ScanRepository] Image compressed: ${(optimizedBytes.length / 1024).toStringAsFixed(1)} KB (base64: ${(optimizedBytes.length * 4 / 3 / 1024).toStringAsFixed(1)} KB sent to Gemini)');
+      }
+
       final uploadFuture = _storageService.uploadReceiptFile(
         file: imageFile,
         userId: userId,
       );
 
-      final analyzeFuture = () async {
-        final optimizedBytes = await _prepareOptimizedImageBytes(imageFile);
-        return await _geminiService.analyzeReceiptBytes(
-          imageBytes: optimizedBytes,
-          mimeType: 'image/jpeg',
-        );
-      }();
+      final analyzeFuture = _geminiService.analyzeReceiptBytes(
+        imageBytes: optimizedBytes,
+        mimeType: 'image/jpeg',
+      );
 
       final results = await Future.wait([uploadFuture, analyzeFuture]);
       publicUrl = results[0] as String;
@@ -535,14 +540,11 @@ class ScanRepository {
   }
 
   /// Optimizes image bytes for ultra-fast upload & AI processing without UI thread blocking.
+  /// Target: < 150KB output (base64 = ~200KB) to avoid mobile data saturation on Gemini API call.
   Future<Uint8List> _prepareOptimizedImageBytes(File file) async {
     try {
       final rawBytes = await file.readAsBytes();
-      // If smaller than 400KB, it's already fast and compact
-      if (rawBytes.lengthInBytes <= 400 * 1024) {
-        return rawBytes;
-      }
-      // Offload downscaling and compression to background isolate via compute
+      // Always compress — even small images benefit from downscaling for faster API transfer
       final optimized = await compute(_downscaleImageBytes, rawBytes);
       return optimized ?? rawBytes;
     } catch (e) {
@@ -719,14 +721,15 @@ class ScanRepository {
 }
 
 /// Standalone top-level isolate worker function for fast image downscaling.
+/// Targets < 150KB output for minimal Gemini API payload over mobile data.
 Uint8List? _downscaleImageBytes(Uint8List rawBytes) {
   try {
     final image = img.decodeImage(rawBytes);
     if (image == null) return null;
 
     img.Image processed = image;
-    // Downscale if dimension exceeds 1400px (ideal balance of OCR clarity and minimal payload size)
-    const maxDim = 1400;
+    // Downscale to max 1024px — sufficient for OCR clarity, greatly reduces payload
+    const maxDim = 1024;
     if (image.width > maxDim || image.height > maxDim) {
       if (image.width >= image.height) {
         processed = img.copyResize(image, width: maxDim);
@@ -735,8 +738,8 @@ Uint8List? _downscaleImageBytes(Uint8List rawBytes) {
       }
     }
 
-    // JPEG encode with 80% quality compression (typically 150KB - 250KB)
-    return Uint8List.fromList(img.encodeJpg(processed, quality: 80));
+    // JPEG encode at 72% quality — sharp enough for OCR, typically 80-140KB output
+    return Uint8List.fromList(img.encodeJpg(processed, quality: 72));
   } catch (_) {
     return null;
   }
