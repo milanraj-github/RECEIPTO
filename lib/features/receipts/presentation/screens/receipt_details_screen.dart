@@ -19,10 +19,12 @@ import 'package:receipto/features/receipts/presentation/widgets/document_viewer_
 import 'package:receipto/features/receipts/presentation/widgets/pdf_viewer_dialog.dart';
 import 'package:receipto/features/receipts/presentation/widgets/share_options_bottom_sheet.dart';
 import 'package:receipto/core/services/receipt_export_service.dart';
+import 'package:receipto/features/scan/data/repositories/scan_repository.dart';
 import 'package:receipto/features/scan/domain/models/receipt_model.dart';
 import 'package:receipto/features/scan/presentation/providers/scan_provider.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 import 'package:receipto/features/warranty/presentation/providers/warranty_provider.dart';
+import 'package:receipto/features/warranty/presentation/widgets/manual_warranty_modal.dart';
 
 final receiptDetailsProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, id) async {
   final dbService = ref.watch(receiptDatabaseServiceProvider);
@@ -1134,28 +1136,193 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
 
     return warrantiesAsync.when(
       data: (warranties) {
-        if (warranties.isEmpty) return const SizedBox.shrink();
-
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(bottom: 12.0),
-              child: Text(
-                'Protected Products',
-                style: GoogleFonts.hankenGrotesk(
-                  color: AppColors.onSurface,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+        // ── Has warranties: show existing warranty cards as before ──
+        if (warranties.isNotEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12.0),
+                child: Text(
+                  'Protected Products',
+                  style: GoogleFonts.hankenGrotesk(
+                    color: AppColors.onSurface,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
-            ),
-            ...warranties.map((w) => AnimatedWarrantyCard(warranty: w)),
-          ],
-        );
+              ...warranties.map((w) => AnimatedWarrantyCard(warranty: w)),
+            ],
+          );
+        }
+
+        // ── No warranties: show "Add Warranty" banner ──
+        // Only show if the receipt has items (nothing to warrant on empty receipt)
+        if (detail.items.isEmpty) return const SizedBox.shrink();
+
+        return _buildAddWarrantyBanner(context, ref, detail);
       },
       loading: () => const SizedBox.shrink(),
       error: (_, __) => const SizedBox.shrink(),
+    );
+  }
+
+  /// Banner shown when a receipt has no warranties — lets the user add them manually.
+  Widget _buildAddWarrantyBanner(BuildContext context, WidgetRef ref, ReceiptDetailViewModel detail) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: AppRadius.lg,
+        border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
+        gradient: LinearGradient(
+          colors: [
+            AppColors.primary.withValues(alpha: 0.07),
+            AppColors.cardSurface.withValues(alpha: 0.6),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: AppRadius.lg,
+        child: InkWell(
+          borderRadius: AppRadius.lg,
+          onTap: () => _showAddWarrantyModal(context, ref, detail),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.shield_outlined,
+                    color: AppColors.primary,
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'No Warranty Detected',
+                        style: GoogleFonts.hankenGrotesk(
+                          color: AppColors.onSurface,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Tap to add warranty for this receipt or individual products.',
+                        style: GoogleFonts.inter(
+                          color: AppColors.onSurfaceVariant,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: AppRadius.full,
+                  ),
+                  child: Text(
+                    'Add',
+                    style: GoogleFonts.hankenGrotesk(
+                      color: Colors.white,
+                      fontSize: 13,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Opens the ManualWarrantyModal bottom sheet for the given receipt.
+  void _showAddWarrantyModal(BuildContext context, WidgetRef ref, ReceiptDetailViewModel detail) {
+    // Build ReceiptItemModel list from the detail view model items
+    final items = detail.items.map((p) => ReceiptItemModel(
+      name: p.name,
+      quantity: p.qty,
+      unitPrice: p.unitPrice,
+      totalPrice: p.price,
+    )).toList();
+
+    // Extract purchase date — strip time portion if present
+    final purchaseDate = detail.purchaseDate.split(' • ').first.trim();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => ManualWarrantyModal(
+        eligibleItems: items,
+        purchaseDate: purchaseDate.isNotEmpty ? purchaseDate : DateTime.now().toIso8601String().split('T').first,
+        merchantName: detail.merchant,
+        onSave: (selections) async {
+          Navigator.of(context).pop();
+          if (selections.isEmpty) return;
+
+          final user = ref.read(firebaseAuthServiceProvider).currentUser;
+          if (user == null) return;
+
+          try {
+            final repo = ref.read(scanRepositoryProvider);
+            await repo.saveManualWarranties(
+              receiptId: detail.id,
+              userId: user.uid,
+              merchantName: detail.merchant,
+              invoiceNumber: detail.invoiceNumber,
+              purchaseDate: purchaseDate.isNotEmpty ? purchaseDate : DateTime.now().toIso8601String().split('T').first,
+              imageUrl: detail.receiptImageUrl,
+              selections: selections,
+            );
+
+            // Refresh warranties to show the newly added ones
+            ref.invalidate(dbWarrantiesProvider);
+
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '${selections.length} warrant${selections.length == 1 ? 'y' : 'ies'} added successfully!',
+                    style: GoogleFonts.inter(color: Colors.white),
+                  ),
+                  backgroundColor: Colors.greenAccent.shade700,
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: AppRadius.md),
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to save warranty: $e'),
+                  backgroundColor: AppColors.error,
+                ),
+              );
+            }
+          }
+        },
+        onSkip: () => Navigator.of(context).pop(),
+      ),
     );
   }
 }
