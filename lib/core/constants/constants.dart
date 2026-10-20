@@ -26,6 +26,11 @@ class AppColors {
   static const Color neonPink = Color(0xFFFF5DA8); // #FF5DA8
   static const Color warmGlow = Color(0xFFFFAD73); // #FFAD73
 
+  // Aliases for cosmic accent tokens
+  static const Color accentCyan = laserCyan;
+  static const Color accentBlue = electricBlue;
+  static const Color cardSurfaceElevated = elevatedSurface;
+
   // Brand accents mapped to design tokens
   static const Color primary = laserCyan; // Primary luminous neon accent
   static const Color onPrimary = Color(0xFF05070D);

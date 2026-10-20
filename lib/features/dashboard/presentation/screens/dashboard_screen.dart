@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/app/config/theme.dart';
 import 'package:receipto/core/widgets/glass_card.dart';
+import 'package:receipto/core/widgets/subtle_neural_mesh.dart';
 import 'package:receipto/features/dashboard/presentation/widgets/sparkline_widget.dart';
 import 'package:receipto/features/dashboard/presentation/widgets/receipt_list_item.dart';
 import 'package:receipto/core/services/firebase_auth_service.dart';
@@ -195,7 +196,14 @@ class DashboardScreen extends ConsumerWidget {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: Stack(
+        fit: StackFit.expand,
         children: [
+          // Subtle Living Neural Mesh background
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: SubtleNeuralMesh(),
+            ),
+          ),
           // Background content
           SafeArea(
             child: SingleChildScrollView(

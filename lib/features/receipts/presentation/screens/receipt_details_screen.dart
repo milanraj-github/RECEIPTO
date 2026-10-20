@@ -1196,12 +1196,12 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.primary.withValues(alpha: 0.15),
+                    color: AppColors.accentCyan.withValues(alpha: 0.15),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.shield_outlined,
-                    color: AppColors.primary,
+                    color: AppColors.accentCyan,
                     size: 24,
                   ),
                 ),
@@ -1231,14 +1231,21 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
                 ),
                 const SizedBox(width: 12),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.primary,
+                    gradient: AppGradients.primaryBlueViolet,
                     borderRadius: AppRadius.full,
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.accentBlue.withValues(alpha: 0.35),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Text(
                     'Add',
-                    style: GoogleFonts.hankenGrotesk(
+                    style: GoogleFonts.inter(
                       color: Colors.white,
                       fontSize: 13,
                       fontWeight: FontWeight.bold,

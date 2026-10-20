@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:receipto/core/constants/constants.dart';
+import 'package:receipto/core/widgets/subtle_neural_mesh.dart';
 import 'package:receipto/core/services/firebase_auth_service.dart';
 import 'package:receipto/core/services/receipt_database_service.dart';
 import 'package:receipto/features/analytics/data/services/financial_analytics_service.dart';
@@ -179,9 +180,18 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> with SingleTi
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        bottom: false,
-        child: receiptsAsync.when(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Subtle Living Neural Mesh background
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: SubtleNeuralMesh(),
+            ),
+          ),
+          SafeArea(
+            bottom: false,
+            child: receiptsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
           error: (err, stack) => Center(
             child: Padding(
@@ -307,6 +317,8 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> with SingleTi
           },
         ),
       ),
+        ],
+      ),
       floatingActionButton: _buildFAB(),
     );
   }
@@ -405,8 +417,17 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> with SingleTi
         dividerColor: Colors.transparent,
         indicatorSize: TabBarIndicatorSize.tab,
         indicator: BoxDecoration(
-          color: AppColors.primary,
+          gradient: const LinearGradient(
+            colors: [AppColors.accentCyan, AppColors.accentBlue],
+          ),
           borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.accentCyan.withValues(alpha: 0.35),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         labelColor: Colors.black,
         unselectedLabelColor: AppColors.onSurfaceVariant,
@@ -441,15 +462,26 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> with SingleTi
 
   Widget _buildFAB() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 80),
+      margin: const EdgeInsets.only(bottom: 96, right: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.accentCyan.withValues(alpha: 0.35),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
       child: FloatingActionButton.extended(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.black,
-        elevation: 4,
+        backgroundColor: AppColors.accentCyan,
+        foregroundColor: AppColors.background,
+        elevation: 0,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         icon: const Icon(Icons.add, size: 20),
         label: Text(
           'Log Expense',
-          style: GoogleFonts.inter(fontWeight: FontWeight.bold, fontSize: 13),
+          style: GoogleFonts.inter(fontWeight: FontWeight.w700, fontSize: 13, letterSpacing: 0.3),
         ),
         onPressed: _openAddManualExpense,
       ),

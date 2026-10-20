@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:receipto/core/constants/constants.dart';
+import 'package:receipto/core/widgets/subtle_neural_mesh.dart';
 
 class AnimatedNebulaBackground extends StatelessWidget {
   final double opacity;
@@ -101,6 +102,13 @@ class AnimatedNebulaBackground extends StatelessWidget {
                   stops: const [0.0, 0.4, 0.85],
                 ),
               ),
+            ),
+          ),
+
+          // 6. Subtle Living Neural Mesh layer
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: SubtleNeuralMesh(),
             ),
           ),
         ],

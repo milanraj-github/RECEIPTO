@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/core/widgets/glass_card.dart';
+import 'package:receipto/core/widgets/subtle_neural_mesh.dart';
 import 'package:receipto/core/services/firebase_auth_service.dart';
 import 'package:receipto/core/services/notification_service.dart';
 import 'package:receipto/core/services/email_service.dart';
@@ -44,9 +45,18 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        bottom: false,
-        child: SingleChildScrollView(
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Subtle Living Neural Mesh background
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: SubtleNeuralMesh(),
+            ),
+          ),
+          SafeArea(
+            bottom: false,
+            child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(
             horizontal: AppSpacing.gutter,
@@ -225,6 +235,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ],
           ),
         ),
+      ),
+        ],
       ),
     );
   }

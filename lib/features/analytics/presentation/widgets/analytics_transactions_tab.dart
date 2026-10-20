@@ -263,7 +263,7 @@ class _AnalyticsTransactionsTabState extends State<AnalyticsTransactionsTab> {
               },
             ),
           ],
-          const SizedBox(height: 100),
+          const SizedBox(height: 140),
         ],
       ),
     );

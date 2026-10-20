@@ -157,10 +157,10 @@ class ReceiptCardItemState extends State<ReceiptCardItem> with SingleTickerProvi
         margin: const EdgeInsets.symmetric(vertical: 3),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
         decoration: BoxDecoration(
-          color: AppColors.primary.withValues(alpha: 0.12),
+          color: AppColors.accentCyan.withValues(alpha: 0.12),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: AppColors.primary.withValues(alpha: 0.4),
+            color: AppColors.accentCyan.withValues(alpha: 0.35),
             width: 1,
           ),
         ),
@@ -169,13 +169,13 @@ class ReceiptCardItemState extends State<ReceiptCardItem> with SingleTickerProvi
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
               decoration: BoxDecoration(
-                color: AppColors.primary.withValues(alpha: 0.25),
+                color: AppColors.accentCyan.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
                 subItem.category,
                 style: GoogleFonts.inter(
-                  color: AppColors.primary,
+                  color: AppColors.accentCyan,
                   fontSize: 10,
                   fontWeight: FontWeight.bold,
                 ),
@@ -198,7 +198,7 @@ class ReceiptCardItemState extends State<ReceiptCardItem> with SingleTickerProvi
             Text(
               CurrencyFormatter.format(subItem.price, currency: widget.item.currency),
               style: GoogleFonts.inter(
-                color: AppColors.primary,
+                color: AppColors.accentCyan,
                 fontSize: 13,
                 fontWeight: FontWeight.bold,
               ),
@@ -273,12 +273,15 @@ class ReceiptCardItemState extends State<ReceiptCardItem> with SingleTickerProvi
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
-                  color: AppColors.surfaceVariant,
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.cardSurfaceElevated,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: AppColors.accentBlue.withValues(alpha: 0.25),
+                  ),
                 ),
                 child: Icon(
                   widget.item.icon,
-                  color: AppColors.primary,
+                  color: AppColors.accentCyan,
                   size: 24,
                 ),
               ),

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/app/config/theme.dart';
+import 'package:receipto/core/widgets/subtle_neural_mesh.dart';
 import 'package:receipto/features/receipts/presentation/widgets/receipt_card_item.dart';
 import 'package:receipto/core/services/firebase_auth_service.dart';
 import 'package:receipto/core/services/receipt_database_service.dart';
@@ -335,8 +336,17 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(
-        bottom: false,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Subtle Living Neural Mesh background
+          const Positioned.fill(
+            child: IgnorePointer(
+              child: SubtleNeuralMesh(),
+            ),
+          ),
+          SafeArea(
+            bottom: false,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
@@ -470,7 +480,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                       padding: const EdgeInsets.only(
                         left: AppSpacing.gutter,
                         right: AppSpacing.gutter,
-                        bottom: 110,
+                        bottom: 120,
                       ),
                       itemCount: filteredItems.length,
                       separatorBuilder: (context, index) => const SizedBox(height: 12),
@@ -492,6 +502,8 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
             ),
           ],
         ),
+      ),
+        ],
       ),
     );
   }
