@@ -31,22 +31,20 @@
 5. [Feature Matrix & Implementation Status](#-feature-matrix--implementation-status)
 6. [Tech Stack & Dependencies](#-tech-stack--dependencies)
 7. [Directory Structure](#-directory-structure)
-8. [Prerequisites & System Requirements](#-prerequisites--system-requirements)
-9. [Step-by-Step Setup Guide](#-step-by-step-setup-guide)
-   - [1. Flutter SDK & Development Environment](#1-flutter-sdk--development-environment)
-   - [2. Physical Android Device & USB Debugging](#2-physical-android-device--usb-debugging)
-   - [3. Firebase Authentication Setup](#3-firebase-authentication-setup)
-   - [4. Supabase Database & Storage Setup](#4-supabase-database--storage-setup)
-   - [5. Google Gemini AI API Configuration](#5-google-gemini-ai-api-configuration)
-   - [6. Automated SMTP Email Alert Setup](#6-automated-smtp-email-alert-setup)
-   - [7. Environment Configuration (.env)](#7-environment-configuration-env)
-10. [Complete Supabase Production SQL Schema](#-complete-supabase-production-sql-schema)
-11. [Testing & Quality Verification](#-testing--quality-verification)
-12. [Compiling & Releasing Production APK](#-compiling--releasing-production-apk)
-13. [Troubleshooting & FAQs](#-troubleshooting--faqs)
-14. [Security & Privacy Standards](#-security--privacy-standards)
-15. [Future Roadmap](#-future-roadmap)
-16. [License & Acknowledgments](#-license--acknowledgments)
+8. [Quick Start & Setup Guide](#-quick-start--setup-guide)
+   - [1. Clone & Fetch Dependencies](#1-clone--fetch-dependencies)
+   - [2. Environment Configuration (.env)](#2-environment-configuration-env)
+   - [3. Firebase Authentication](#3-firebase-authentication)
+   - [4. Supabase Backend Services](#4-supabase-backend-services)
+   - [5. Google Gemini AI API](#5-google-gemini-ai-api)
+   - [6. SMTP Notification Dispatcher](#6-smtp-notification-dispatcher)
+9. [Complete Supabase Production SQL Schema](#-complete-supabase-production-sql-schema)
+10. [Testing & Quality Verification](#-testing--quality-verification)
+11. [Compiling & Releasing Production APK](#-compiling--releasing-production-apk)
+12. [Troubleshooting & FAQs](#-troubleshooting--faqs)
+13. [Security & Privacy Standards](#-security--privacy-standards)
+14. [Future Roadmap](#-future-roadmap)
+15. [License & Acknowledgments](#-license--acknowledgments)
 
 ---
 
@@ -270,9 +268,9 @@ flowchart LR
 
 ```
 RECEIPTO/
-├── android/                         # Android native project & Gradle build scripts
-├── ios/                             # iOS Xcode project workspace
-├── assets/                          # Static assets
+├── android/                         # Android native workspace & Gradle configuration
+├── ios/                             # iOS native workspace
+├── assets/                          # Static branding, fonts & animations
 │   ├── animations/                  # Lottie / loading animations
 │   ├── fonts/                       # Embedded typography
 │   ├── icons/                       # App icons & badges
@@ -330,72 +328,21 @@ RECEIPTO/
 
 ---
 
-## ⚙️ Prerequisites & System Requirements
+## 🚀 Quick Start & Setup Guide
 
-- **Operating System**: Windows 10/11, macOS 12+, or Linux (Ubuntu 22.04+)
-- **Flutter SDK**: `v3.29.0` or higher
-- **Dart SDK**: `v3.7.0` or higher
-- **Java Development Kit**: OpenJDK 17 or 21
-- **Android Studio / Command Line Tools**: Build Tools `34.0.0+`
-- **Target Android Version**: Android 8.0+ (API Level 26+)
-- **Git**: `v2.40+`
+### 1. Clone & Fetch Dependencies
+```bash
+git clone https://github.com/milanraj-github/RECEIPTO.git
+cd RECEIPTO
+flutter pub get
+```
 
----
-
-## 🚀 Step-by-Step Setup Guide
-
-### 1. Flutter SDK & Development Environment
-1. Download Flutter from the official [Flutter Install Guide](https://docs.flutter.dev/get-started/install).
-2. Add Flutter's `bin` directory to your system environment `PATH`.
-3. Verify your installation:
-   ```bash
-   flutter doctor
-   flutter doctor --android-licenses
-   ```
-
-### 2. Physical Android Device & USB Debugging
-1. On your phone, go to **Settings > About Phone** and tap **Build Number** 7 times.
-2. In **Settings > System > Developer Options**, enable **USB Debugging**.
-3. Connect your phone via USB cable and allow USB debugging when prompted.
-4. Verify your device is detected:
-   ```bash
-   flutter devices
-   ```
-
-### 3. Firebase Authentication Setup
-1. Open the [Firebase Console](https://console.firebase.google.com/) and create a new project.
-2. Register an Android application with package name `com.receipto.receipto`.
-3. Obtain your debug SHA-1 signing key:
-   ```bash
-   cd android
-   ./gradlew signingReport
-   ```
-4. Add the SHA-1 fingerprint to your Firebase Android app settings.
-5. Download `google-services.json` and save it to `android/app/google-services.json`.
-6. Enable **Email/Password** and **Google Sign-In** under **Build > Authentication > Sign-in method**.
-
-### 4. Supabase Database & Storage Setup
-1. Create a project at [supabase.com](https://supabase.com).
-2. Under **Project Settings > API**, copy your **Project URL** and **anon public key**.
-3. Under **Storage**, create a public bucket named `receipts`.
-4. Open **SQL Editor** and execute the [Complete Supabase Production SQL Schema](#-complete-supabase-production-sql-schema) provided below.
-
-### 5. Google Gemini AI API Configuration
-1. Navigate to [Google AI Studio](https://aistudio.google.com/).
-2. Click **Create API Key**.
-3. Save this key for your `.env` file (`GEMINI_API_KEY`).
-
-### 6. Automated SMTP Email Alert Setup
-1. Open your Google Account security settings.
-2. Ensure **2-Step Verification** is enabled.
-3. Search for **App passwords**, create an app password labeled `Receipto`, and save the 16-character token for `SMTP_PASSWORD`.
-
-### 7. Environment Configuration (.env)
-Create a `.env` file in the root directory:
+### 2. Environment Configuration (.env)
+Create a `.env` file in the project root:
 
 ```env
 # =================================================================
-# SUPABASE CONFIGURATION
+# SUPABASE BACKEND CONFIGURATION
 # =================================================================
 SUPABASE_URL=https://your-project-id.supabase.co
 SUPABASE_ANON_KEY=your-supabase-anon-key
@@ -413,6 +360,31 @@ SMTP_PORT=587
 SMTP_USERNAME=your-email@gmail.com
 SMTP_PASSWORD=your-16-character-app-password
 SMTP_SENDER=your-email@gmail.com
+```
+
+### 3. Firebase Authentication
+1. Create a project in the [Firebase Console](https://console.firebase.google.com/).
+2. Register an Android application with package name `com.receipto.receipto`.
+3. Add your debug SHA-1 signing key (`cd android && ./gradlew signingReport`).
+4. Place your downloaded `google-services.json` inside `android/app/`.
+5. Enable **Email/Password** and **Google Sign-In** under **Authentication > Sign-in method**.
+
+### 4. Supabase Backend Services
+1. Create a project at [supabase.com](https://supabase.com).
+2. Under **Storage**, create a public bucket named `receipts`.
+3. Under **SQL Editor**, execute the [Complete Supabase Production SQL Schema](#-complete-supabase-production-sql-schema) below.
+
+### 5. Google Gemini AI API
+1. Generate an API Key from [Google AI Studio](https://aistudio.google.com/).
+2. Assign the key to `GEMINI_API_KEY` in your `.env` file.
+
+### 6. SMTP Notification Dispatcher
+1. Generate an **App Password** from your Google Account Security dashboard.
+2. Assign the 16-character password to `SMTP_PASSWORD` in your `.env` file.
+
+### 7. Run the Application
+```bash
+flutter run
 ```
 
 ---
@@ -602,11 +574,6 @@ The compiled release APK will be generated at:
 build/app/outputs/flutter-apk/app-release.apk
 ```
 
-To install directly to a connected physical device:
-```bash
-flutter install
-```
-
 ---
 
 ## 🛠️ Troubleshooting & FAQs
@@ -618,13 +585,6 @@ flutter install
 ### 2. Gemini API Quota Limit (HTTP 429)
 - **Reason**: Google AI Studio free tier requests per minute exceeded.
 - **Remedy**: Receipto includes automatic local parser fallbacks. You can also generate an additional API key from [Google AI Studio](https://aistudio.google.com) and update `GEMINI_API_KEY` in `.env`.
-
-### 3. Physical Device Not Recognized via ADB
-- **Reason**: Faulty USB cable or disabled USB Debugging permissions.
-- **Remedy**: Ensure USB debugging is toggled ON in Developer Options, select "File Transfer / MTP" mode, and restart the ADB server:
-  ```bash
-  adb kill-server && adb start-server
-  ```
 
 ---
 
