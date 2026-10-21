@@ -53,7 +53,6 @@ class EmailService {
     final String portStr = dotenv.env['SMTP_PORT'] ?? prefs.getString('env_SMTP_PORT') ?? '587';
     final String username = dotenv.env['SMTP_USERNAME'] ?? prefs.getString('env_SMTP_USERNAME') ?? 'b2786c001@smtp-brevo.com';
     final String password = dotenv.env['SMTP_PASSWORD'] ?? prefs.getString('env_SMTP_PASSWORD') ?? 'xsmtpsib-6bd2aa412b0e2539075028fa719ed8d47586bb0a898b5f4d814ddcb7c39def54-uf5X2irs5yjLkMMZ';
-    final String sender = dotenv.env['SMTP_SENDER'] ?? prefs.getString('env_SMTP_SENDER') ?? 'receiptotechexplorers@gmail.com';
 
     // Validate that all required environment variables exist or have fallbacks
     if (username.isEmpty || password.isEmpty) {
