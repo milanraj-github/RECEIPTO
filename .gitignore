@@ -52,9 +52,16 @@ app.*.map.json
 hs_err_pid*
 replay_pid*
 
-# Gradle
+# Gradle & Native Builds
 .gradle/
 android/.gradle/
+android/build/
+ios/build/
+
+# Scratch & Temporary Logs
+scratch/
+buildlog.txt
+deps.txt
 
 # Flutter
 build/
