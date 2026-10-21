@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path/path.dart' as p;
+import 'package:pdfx/pdfx.dart';
 import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/core/widgets/glass_card.dart';
+import 'package:receipto/core/widgets/nebula_background.dart';
 import 'package:receipto/features/scan/presentation/providers/scan_provider.dart';
 import 'package:receipto/features/scan/data/repositories/scan_repository.dart';
 import 'package:receipto/features/scan/domain/models/receipt_model.dart';
@@ -33,26 +36,31 @@ class PreviewScanScreen extends ConsumerWidget {
     final scanState = ref.watch(scanProvider);
     final bottomPadding = MediaQuery.of(context).padding.bottom + 100;
 
+    final String ext = p.extension(imageFile.path).toLowerCase().replaceAll('.', '');
+    final bool isImage = ['jpg', 'jpeg', 'png', 'webp', 'heic'].contains(ext);
+
     return Scaffold(
       backgroundColor: Colors.black,
       body: Stack(
         children: [
-          // 1. Dark Blurred Background
+          // 1. Dark Blurred Background for images, or Cosmic Nebula for documents/PDFs
           Positioned.fill(
-            child: Container(
-              decoration: BoxDecoration(
-                image: DecorationImage(
-                  image: FileImage(imageFile),
-                  fit: BoxFit.cover,
-                ),
-              ),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                child: Container(
-                  color: Colors.black.withValues(alpha: 0.65),
-                ),
-              ),
-            ),
+            child: isImage
+                ? Container(
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: FileImage(imageFile),
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                      child: Container(
+                        color: Colors.black.withValues(alpha: 0.65),
+                      ),
+                    ),
+                  )
+                : const AnimatedNebulaBackground(),
           ),
 
           // 2. Entire Scrollable SafeArea Body
@@ -95,7 +103,7 @@ class PreviewScanScreen extends ConsumerWidget {
                       ),
                       const SizedBox(height: 16),
 
-                      // Image preview frame
+                      // File preview frame
                       Container(
                         constraints: BoxConstraints(
                           maxHeight: MediaQuery.of(context).size.height * 0.55,
@@ -114,10 +122,7 @@ class PreviewScanScreen extends ConsumerWidget {
                               tag: 'scan_preview_hero',
                               child: ClipRRect(
                                 borderRadius: BorderRadius.circular(16),
-                                child: Image.file(
-                                  imageFile,
-                                  fit: BoxFit.contain,
-                                ),
+                                child: _ReceiptFilePreview(file: imageFile),
                               ),
                             ),
                           ),
@@ -824,4 +829,280 @@ class PreviewScanScreen extends ConsumerWidget {
       ],
     );
   }
+}
+
+class _ReceiptFilePreview extends StatelessWidget {
+  final File file;
+
+  const _ReceiptFilePreview({required this.file});
+
+  @override
+  Widget build(BuildContext context) {
+    final String ext = p.extension(file.path).toLowerCase().replaceAll('.', '');
+    final bool isImage = ['jpg', 'jpeg', 'png', 'webp', 'heic'].contains(ext);
+    final bool isPdf = ext == 'pdf';
+
+    if (isImage) {
+      return Image.file(
+        file,
+        fit: BoxFit.contain,
+        errorBuilder: (context, error, stackTrace) {
+          return _buildDocumentCard(
+            context,
+            ext: ext,
+            icon: Icons.image_not_supported_outlined,
+            label: 'Image File',
+            file: file,
+          );
+        },
+      );
+    }
+
+    if (isPdf) {
+      return _PdfPreviewWidget(file: file);
+    }
+
+    IconData docIcon = Icons.description_rounded;
+    if (['xls', 'xlsx'].contains(ext)) {
+      docIcon = Icons.table_chart_rounded;
+    } else if (['txt', 'csv'].contains(ext)) {
+      docIcon = Icons.article_rounded;
+    }
+
+    return _buildDocumentCard(
+      context,
+      ext: ext,
+      icon: docIcon,
+      label: '${ext.toUpperCase()} Document',
+      file: file,
+    );
+  }
+}
+
+class _PdfPreviewWidget extends StatefulWidget {
+  final File file;
+
+  const _PdfPreviewWidget({required this.file});
+
+  @override
+  State<_PdfPreviewWidget> createState() => _PdfPreviewWidgetState();
+}
+
+class _PdfPreviewWidgetState extends State<_PdfPreviewWidget> {
+  Uint8List? _firstPageBytes;
+  int _pageCount = 1;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPdfThumbnail();
+  }
+
+  Future<void> _loadPdfThumbnail() async {
+    try {
+      final doc = await PdfDocument.openFile(widget.file.path);
+      _pageCount = doc.pagesCount;
+      if (doc.pagesCount > 0) {
+        final page = await doc.getPage(1);
+        final pageRender = await page.render(
+          width: page.width * 1.5,
+          height: page.height * 1.5,
+          format: PdfPageImageFormat.jpeg,
+        );
+        await page.close();
+        await doc.close();
+        if (mounted && pageRender != null) {
+          setState(() {
+            _firstPageBytes = pageRender.bytes;
+            _isLoading = false;
+          });
+          return;
+        }
+      }
+      await doc.close();
+    } catch (e) {
+      if (kDebugMode) print('[_PdfPreviewWidget] Thumbnail error: $e');
+    }
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_firstPageBytes != null) {
+      return Stack(
+        fit: StackFit.expand,
+        alignment: Alignment.center,
+        children: [
+          Image.memory(
+            _firstPageBytes!,
+            fit: BoxFit.contain,
+          ),
+          Positioned(
+            top: 12,
+            left: 12,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.75),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFFFF6174), size: 14),
+                  const SizedBox(width: 6),
+                  Text(
+                    'PDF • Page 1 of $_pageCount',
+                    style: GoogleFonts.inter(
+                      color: Colors.white,
+                      fontSize: 11,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
+    }
+
+    return _buildDocumentCard(
+      context,
+      ext: 'pdf',
+      icon: Icons.picture_as_pdf_rounded,
+      label: 'PDF Receipt',
+      file: widget.file,
+    );
+  }
+}
+
+Widget _buildDocumentCard(
+  BuildContext context, {
+  required String ext,
+  required IconData icon,
+  required String label,
+  File? file,
+}) {
+  final fileName = file != null ? p.basename(file.path) : 'Selected Document';
+  String fileSizeStr = '';
+  if (file != null) {
+    try {
+      final bytes = file.lengthSync();
+      if (bytes > 1024 * 1024) {
+        fileSizeStr = '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+      } else {
+        fileSizeStr = '${(bytes / 1024).toStringAsFixed(0)} KB';
+      }
+    } catch (_) {}
+  }
+
+  final Color accentColor = ext == 'pdf'
+      ? const Color(0xFFFF6174)
+      : (['xls', 'xlsx', 'csv'].contains(ext) ? const Color(0xFF42E6A4) : AppColors.accentCyan);
+
+  return Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+    decoration: BoxDecoration(
+      color: AppColors.glassSurface.withValues(alpha: 0.85),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(color: accentColor.withValues(alpha: 0.25)),
+    ),
+    child: Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Glowing Icon Orb
+        Container(
+          width: 76,
+          height: 76,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: accentColor.withValues(alpha: 0.12),
+            border: Border.all(color: accentColor.withValues(alpha: 0.4), width: 1.5),
+            boxShadow: [
+              BoxShadow(
+                color: accentColor.withValues(alpha: 0.25),
+                blurRadius: 18,
+                spreadRadius: 2,
+              ),
+            ],
+          ),
+          child: Icon(icon, color: accentColor, size: 36),
+        ),
+        const SizedBox(height: 16),
+
+        // File Name
+        Text(
+          fileName,
+          maxLines: 2,
+          textAlign: TextAlign.center,
+          overflow: TextOverflow.ellipsis,
+          style: GoogleFonts.hankenGrotesk(
+            color: Colors.white,
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 6),
+
+        // File Size & Type Badge
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
+              decoration: BoxDecoration(
+                color: accentColor.withValues(alpha: 0.15),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: accentColor.withValues(alpha: 0.3)),
+              ),
+              child: Text(
+                label.toUpperCase(),
+                style: GoogleFonts.inter(
+                  color: accentColor,
+                  fontSize: 10.5,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            if (fileSizeStr.isNotEmpty) ...[
+              const SizedBox(width: 8),
+              Text(
+                fileSizeStr,
+                style: GoogleFonts.inter(
+                  color: AppColors.onSurfaceVariant,
+                  fontSize: 12,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 14),
+
+        // Prompt
+        Text(
+          'Tap "Use Receipt" below to parse all details',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            color: AppColors.onSurfaceVariant.withValues(alpha: 0.8),
+            fontSize: 12,
+          ),
+        ),
+      ],
+    ),
+  );
 }

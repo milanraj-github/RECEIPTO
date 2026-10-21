@@ -13,6 +13,8 @@ import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/core/widgets/glass_card.dart';
 import 'package:receipto/core/widgets/nebula_background.dart';
 import 'package:receipto/core/widgets/gradient_button.dart';
+import 'package:receipto/features/receipts/presentation/widgets/document_viewer_dialog.dart';
+import 'package:receipto/features/receipts/presentation/widgets/pdf_viewer_dialog.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 import 'package:receipto/features/warranty/presentation/providers/warranty_provider.dart';
 import 'package:receipto/core/utils/warranty_utils.dart';
@@ -472,7 +474,7 @@ class WarrantyDetailsScreen extends ConsumerWidget {
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(16),
-        child: _PdfViewerDialog(pdfUrl: pdfUrl),
+        child: PdfViewerDialog(pdfUrl: pdfUrl),
       ),
     );
   }
@@ -483,7 +485,7 @@ class WarrantyDetailsScreen extends ConsumerWidget {
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(16),
-        child: _DocumentViewerDialog(fileUrl: fileUrl),
+        child: DocumentViewerDialog(fileUrl: fileUrl),
       ),
     );
   }
@@ -508,253 +510,6 @@ class WarrantyDetailsScreen extends ConsumerWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _PdfViewerDialog extends StatefulWidget {
-  final String pdfUrl;
-  const _PdfViewerDialog({required this.pdfUrl});
-
-  @override
-  State<_PdfViewerDialog> createState() => _PdfViewerDialogState();
-}
-
-class _PdfViewerDialogState extends State<_PdfViewerDialog> {
-  PdfController? _pdfController;
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadPdf();
-  }
-
-  Future<void> _loadPdf() async {
-    try {
-      final response = await http.get(Uri.parse(widget.pdfUrl));
-      if (response.statusCode != 200) {
-        throw Exception('Failed to download PDF document.');
-      }
-      final tempDir = await getTemporaryDirectory();
-      final tempFile = File('${tempDir.path}/temp_view_${DateTime.now().millisecondsSinceEpoch}.pdf');
-      await tempFile.writeAsBytes(response.bodyBytes);
-
-      _pdfController = PdfController(
-        document: PdfDocument.openFile(tempFile.path),
-      );
-      setState(() {
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _error = e.toString();
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _pdfController?.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: MediaQuery.of(context).size.height * 0.8,
-      decoration: BoxDecoration(
-        borderRadius: AppRadius.lg,
-        color: Colors.black.withValues(alpha: 0.9),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: Stack(
-        alignment: Alignment.topRight,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 50.0),
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.secondary))
-                : _error != null
-                    ? Center(child: Text('Error loading PDF: $_error', style: const TextStyle(color: Colors.white)))
-                    : PdfView(
-                        controller: _pdfController!,
-                      ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: CircleAvatar(
-              backgroundColor: Colors.black54,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DocumentViewerDialog extends StatefulWidget {
-  final String fileUrl;
-  const _DocumentViewerDialog({required this.fileUrl});
-
-  @override
-  State<_DocumentViewerDialog> createState() => _DocumentViewerDialogState();
-}
-
-class _DocumentViewerDialogState extends State<_DocumentViewerDialog> {
-  String _content = '';
-  bool _isLoading = true;
-  String? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadDocument();
-  }
-
-  Future<void> _loadDocument() async {
-    try {
-      final response = await http.get(Uri.parse(widget.fileUrl));
-      if (response.statusCode != 200) {
-        throw Exception('Failed to download document.');
-      }
-      
-      final String filename = widget.fileUrl.split('/').last.split('?').first;
-      final String ext = filename.split('.').last.toLowerCase();
-      String parsedText = '';
-
-      if (ext == 'docx') {
-        final archive = ZipDecoder().decodeBytes(response.bodyBytes);
-        final docFile = archive.findFile('word/document.xml');
-        if (docFile != null) {
-          final xmlStr = utf8.decode(docFile.content as List<int>);
-          final document = xml.XmlDocument.parse(xmlStr);
-          parsedText = document.findAllElements('w:t').map((node) => node.innerText).join('\n');
-        }
-      } else if (ext == 'xlsx') {
-        final archive = ZipDecoder().decodeBytes(response.bodyBytes);
-        final List<String> sharedStrings = [];
-        final stringsFile = archive.findFile('xl/sharedStrings.xml');
-        if (stringsFile != null) {
-          final xmlStr = utf8.decode(stringsFile.content as List<int>);
-          final document = xml.XmlDocument.parse(xmlStr);
-          for (final node in document.findAllElements('t')) {
-            sharedStrings.add(node.innerText);
-          }
-        }
-        final sheetFile = archive.findFile('xl/worksheets/sheet1.xml');
-        if (sheetFile != null) {
-          final xmlStr = utf8.decode(sheetFile.content as List<int>);
-          final document = xml.XmlDocument.parse(xmlStr);
-          final List<String> rows = [];
-          for (final rowNode in document.findAllElements('row')) {
-            final List<String> cells = [];
-            for (final cellNode in rowNode.findElements('c')) {
-              final String? type = cellNode.getAttribute('t');
-              final valNode = cellNode.findElements('v').firstOrNull;
-              if (valNode != null) {
-                final String val = valNode.innerText;
-                if (type == 's') {
-                  final int idx = int.tryParse(val) ?? -1;
-                  if (idx >= 0 && idx < sharedStrings.length) {
-                    cells.add(sharedStrings[idx]);
-                  } else {
-                    cells.add('');
-                  }
-                } else {
-                  cells.add(val);
-                }
-              } else {
-                cells.add('');
-              }
-            }
-            rows.add(cells.join(' | '));
-          }
-          parsedText = rows.join('\n');
-        }
-      } else if (['txt', 'csv'].contains(ext)) {
-        parsedText = utf8.decode(response.bodyBytes);
-      } else {
-        final buffer = StringBuffer();
-        int consecutivePrintable = 0;
-        final currentWord = StringBuffer();
-        
-        for (final byte in response.bodyBytes) {
-          if (byte >= 32 && byte <= 126) {
-            currentWord.writeCharCode(byte);
-            consecutivePrintable++;
-          } else {
-            if (consecutivePrintable >= 4) {
-              buffer.write(currentWord.toString());
-              buffer.write(' ');
-            }
-            currentWord.clear();
-            consecutivePrintable = 0;
-          }
-        }
-        parsedText = buffer.toString();
-      }
-
-      setState(() {
-        _content = parsedText.isNotEmpty ? parsedText : 'Empty document contents.';
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _error = e.toString();
-      });
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: MediaQuery.of(context).size.height * 0.8,
-      decoration: BoxDecoration(
-        borderRadius: AppRadius.lg,
-        color: Colors.black.withValues(alpha: 0.9),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
-      ),
-      child: Stack(
-        alignment: Alignment.topRight,
-        children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 50.0, left: 16, right: 16, bottom: 16),
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator(color: AppColors.secondary))
-                : _error != null
-                    ? Center(child: Text('Error loading document: $_error', style: const TextStyle(color: Colors.white)))
-                    : SingleChildScrollView(
-                        child: Text(
-                          _content,
-                          style: GoogleFonts.firaCode(
-                            color: Colors.white.withValues(alpha: 0.9),
-                            fontSize: 13,
-                          ),
-                        ),
-                      ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(12.0),
-            child: CircleAvatar(
-              backgroundColor: Colors.black54,
-              child: IconButton(
-                icon: const Icon(Icons.close, color: Colors.white),
-                onPressed: () => Navigator.of(context).pop(),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }

@@ -4,7 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:http/http.dart' as http;
 import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdfx/pdfx.dart';
 import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/core/services/pdf_invoice_service.dart';
 import 'package:receipto/core/services/receipt_database_service.dart';
@@ -553,11 +556,14 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
       );
     }
 
-    final String filename = imageUrl.split('/').last.split('?').first.toLowerCase();
-    final String extension = filename.split('.').last;
+    final Uri? parsedUri = Uri.tryParse(imageUrl);
+    final String pathPart = parsedUri?.path ?? imageUrl;
+    final String rawFilename = pathPart.split('/').last.split('?').first.toLowerCase();
+    final String extension = rawFilename.contains('.') ? rawFilename.split('.').last : '';
     
     final bool isImage = ['jpg', 'jpeg', 'png', 'webp', 'heic'].contains(extension);
     final bool isPdf = extension == 'pdf';
+    final bool isDoc = !isImage && !isPdf;
 
     return GestureDetector(
       onTap: () {
@@ -566,7 +572,7 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
         } else if (isPdf) {
           _showPdfViewer(context, imageUrl);
         } else {
-          _showDocumentViewer(context, imageUrl);
+          _openOriginalDocument(context, imageUrl);
         }
       },
       child: Container(
@@ -613,26 +619,20 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
                           );
                         },
                       )
-                    : Container(
-                        color: AppColors.surfaceVariant,
-                        child: Center(
-                          child: Icon(
-                            isPdf ? Icons.picture_as_pdf_outlined : Icons.description_outlined,
-                            color: AppColors.primary,
-                            size: 48,
-                          ),
-                        ),
-                      ),
+                    : isPdf
+                        ? _RemotePdfThumbnail(pdfUrl: imageUrl)
+                        : _buildDocumentPreviewCard(extension: extension),
               ),
               
+              // Gradient Overlay
               Positioned.fill(
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        Colors.black.withValues(alpha: 0.6),
+                        Colors.black.withValues(alpha: isDoc ? 0.35 : 0.6),
                         Colors.black.withValues(alpha: 0.2),
-                        Colors.black.withValues(alpha: 0.7),
+                        Colors.black.withValues(alpha: isDoc ? 0.5 : 0.7),
                       ],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
@@ -641,27 +641,42 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
                 ),
               ),
               
+              // Action Pill
               Center(
                 child: Container(
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                   decoration: BoxDecoration(
-                    color: AppColors.background.withValues(alpha: 0.8),
+                    color: AppColors.background.withValues(alpha: 0.85),
                     borderRadius: AppRadius.full,
-                    border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.3),
+                        blurRadius: 10,
+                      ),
+                    ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isImage ? Icons.fullscreen : Icons.open_in_new,
-                        color: AppColors.primary,
-                        size: 20,
+                        isImage
+                            ? Icons.fullscreen
+                            : isPdf
+                                ? Icons.picture_as_pdf_rounded
+                                : Icons.open_in_new_rounded,
+                        color: isPdf ? const Color(0xFFFF6174) : AppColors.primary,
+                        size: 18,
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        isImage ? 'View Original Scan' : isPdf ? 'Open PDF Viewer' : 'Open Document Viewer',
+                        isImage
+                            ? 'View Original Scan'
+                            : isPdf
+                                ? 'Open PDF Viewer'
+                                : 'Open Original Document',
                         style: GoogleFonts.inter(
-                          color: AppColors.primary,
+                          color: isPdf ? const Color(0xFFFF6174) : AppColors.primary,
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
                         ),
@@ -675,6 +690,150 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildDocumentPreviewCard({required String extension}) {
+    final isWord = ['doc', 'docx'].contains(extension);
+    final isExcel = ['xls', 'xlsx', 'csv'].contains(extension);
+    final accentColor = isWord
+        ? const Color(0xFF2B579A)
+        : isExcel
+            ? const Color(0xFF217346)
+            : AppColors.secondary;
+    final iconData = isWord
+        ? Icons.description_rounded
+        : isExcel
+            ? Icons.table_chart_rounded
+            : Icons.article_rounded;
+    final typeLabel = isWord
+        ? 'WORD INVOICE DOCUMENT'
+        : isExcel
+            ? 'EXCEL / SPREADSHEET'
+            : (extension.isNotEmpty ? '${extension.toUpperCase()} DOCUMENT' : 'DOCUMENT');
+
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            accentColor.withValues(alpha: 0.28),
+            const Color(0xFF131522),
+            const Color(0xFF0C0E17),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: accentColor.withValues(alpha: 0.18),
+                border: Border.all(color: accentColor.withValues(alpha: 0.45), width: 1.5),
+                boxShadow: [
+                  BoxShadow(
+                    color: accentColor.withValues(alpha: 0.35),
+                    blurRadius: 16,
+                  ),
+                ],
+              ),
+              child: Icon(iconData, color: accentColor, size: 26),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              typeLabel,
+              style: GoogleFonts.inter(
+                color: accentColor,
+                fontSize: 10.5,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.6,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              'Tap to open original document file',
+              style: GoogleFonts.inter(
+                color: AppColors.onSurfaceVariant,
+                fontSize: 11,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openOriginalDocument(BuildContext context, String fileUrl) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => PopScope(
+        canPop: false,
+        child: Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+            decoration: BoxDecoration(
+              color: AppColors.cardSurface,
+              borderRadius: AppRadius.md,
+              border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(color: AppColors.secondary, strokeWidth: 2.5),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  'Opening original document...',
+                  style: GoogleFonts.inter(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w500),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    File? localFile;
+    try {
+      final response = await http.get(Uri.parse(fileUrl));
+      if (response.statusCode == 200) {
+        final filename = fileUrl.split('/').last.split('?').first;
+        final tempDir = await getTemporaryDirectory();
+        localFile = File('${tempDir.path}/$filename');
+        await localFile.writeAsBytes(response.bodyBytes);
+      }
+    } catch (e) {
+      if (kDebugMode) print('Error downloading original document: $e');
+    }
+
+    if (context.mounted) {
+      Navigator.of(context, rootNavigator: true).pop(); // dismiss loading dialog
+    }
+
+    if (localFile != null && await localFile.exists()) {
+      try {
+        final openResult = await OpenFilex.open(localFile.path);
+        if (openResult.type != ResultType.done && context.mounted) {
+          _showDocumentViewer(context, fileUrl, localFile: localFile);
+        }
+      } catch (e) {
+        if (context.mounted) {
+          _showDocumentViewer(context, fileUrl, localFile: localFile);
+        }
+      }
+    } else {
+      if (context.mounted) {
+        _showDocumentViewer(context, fileUrl);
+      }
+    }
   }
 
   void _showFullScreenImage(BuildContext context, String imageUrl) {
@@ -741,13 +900,16 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
     );
   }
 
-  void _showDocumentViewer(BuildContext context, String fileUrl) {
+  void _showDocumentViewer(BuildContext context, String fileUrl, {File? localFile}) {
     showDialog(
       context: context,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
         insetPadding: const EdgeInsets.all(16),
-        child: DocumentViewerDialog(fileUrl: fileUrl),
+        child: DocumentViewerDialog(
+          fileUrl: fileUrl,
+          preloadedFile: localFile,
+        ),
       ),
     );
   }
@@ -1329,6 +1491,89 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
           }
         },
         onSkip: () => Navigator.of(context).pop(),
+      ),
+    );
+  }
+}
+
+class _RemotePdfThumbnail extends StatefulWidget {
+  final String pdfUrl;
+  const _RemotePdfThumbnail({required this.pdfUrl});
+
+  @override
+  State<_RemotePdfThumbnail> createState() => _RemotePdfThumbnailState();
+}
+
+class _RemotePdfThumbnailState extends State<_RemotePdfThumbnail> {
+  Uint8List? _thumbnailBytes;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadThumbnail();
+  }
+
+  Future<void> _loadThumbnail() async {
+    try {
+      final response = await http.get(Uri.parse(widget.pdfUrl));
+      if (response.statusCode == 200) {
+        final tempDir = await getTemporaryDirectory();
+        final filename = 'thumb_${widget.pdfUrl.hashCode}.pdf';
+        final tempFile = File('${tempDir.path}/$filename');
+        await tempFile.writeAsBytes(response.bodyBytes);
+
+        final doc = await PdfDocument.openFile(tempFile.path);
+        final page = await doc.getPage(1);
+        final pageImage = await page.render(
+          width: page.width * 1.5,
+          height: page.height * 1.5,
+          format: PdfPageImageFormat.jpeg,
+        );
+        await doc.close();
+        if (mounted && pageImage?.bytes != null) {
+          setState(() {
+            _thumbnailBytes = pageImage!.bytes;
+            _isLoading = false;
+          });
+          return;
+        }
+      }
+    } catch (e) {
+      if (kDebugMode) print('[ReceiptDetails] RemotePdfPreview error: $e');
+    }
+    if (mounted) {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_thumbnailBytes != null) {
+      return Image.memory(
+        _thumbnailBytes!,
+        fit: BoxFit.cover,
+        width: double.infinity,
+        height: double.infinity,
+      );
+    }
+    return Container(
+      color: AppColors.surfaceVariant,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (_isLoading)
+              const CircularProgressIndicator(color: AppColors.secondary, strokeWidth: 2)
+            else
+              const Icon(Icons.picture_as_pdf_rounded, color: Color(0xFFFF6174), size: 48),
+            const SizedBox(height: 8),
+            Text(
+              _isLoading ? 'Loading PDF preview...' : 'Original PDF Document',
+              style: GoogleFonts.inter(color: AppColors.onSurfaceVariant, fontSize: 12),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -24,8 +24,8 @@ class GeminiService {
     'gemini-3.6-flash',       // Tertiary fallback
   ];
 
-  // Longer timeout for mobile networks — Gemini processes in ~3s but upload can be slow
-  static const Duration _requestTimeout = Duration(seconds: 45);
+  // Extended timeout for mobile networks & multi-page document/PDF extractions (up to 1m20s)
+  static const Duration _requestTimeout = Duration(seconds: 80);
 
   static const String _prompt = '''
 You are an expert AI receipt scanner.
@@ -151,6 +151,7 @@ Return ONLY a single, valid JSON object matching this structure:
   Future<ReceiptModel> analyzeReceiptBytes({
     required Uint8List imageBytes,
     String mimeType = 'image/jpeg',
+    Duration? timeout,
   }) async {
     return _analyzeWithModelFailover(
       buildRequestPayload: (base64Image) => {
@@ -175,6 +176,7 @@ Return ONLY a single, valid JSON object matching this structure:
         }
       },
       imageBytes: imageBytes,
+      timeout: timeout,
     );
   }
 
@@ -182,7 +184,9 @@ Return ONLY a single, valid JSON object matching this structure:
     required Map<String, dynamic> Function(String base64Image) buildRequestPayload,
     required Uint8List imageBytes,
     bool useUrlMode = false,
+    Duration? timeout,
   }) async {
+    final effectiveTimeout = timeout ?? _requestTimeout;
     // In URL mode, skip base64 encoding entirely (payload is pre-built with fileData URL)
     final String base64Image = useUrlMode ? '' : base64.encode(imageBytes);
     final payload = buildRequestPayload(base64Image);
@@ -201,7 +205,7 @@ Return ONLY a single, valid JSON object matching this structure:
             Uri.parse(url),
             headers: {'Content-Type': 'application/json'},
             body: requestBody,
-          ).timeout(_requestTimeout);
+          ).timeout(effectiveTimeout);
 
           if (response.statusCode == 200) {
             final Map<String, dynamic> jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;
@@ -249,7 +253,7 @@ Return ONLY a single, valid JSON object matching this structure:
           }
         } on TimeoutException {
           if (kDebugMode) {
-            print('[GeminiService] Model $model timed out with key $keyPrefix (>${_requestTimeout.inSeconds}s). Switching to next key...');
+            print('[GeminiService] Model $model timed out with key $keyPrefix (>${effectiveTimeout.inSeconds}s). Switching to next key...');
           }
           _keyCooldowns[apiKey] = DateTime.now().add(const Duration(minutes: 1));
           continue; // Switch to next key immediately
@@ -269,6 +273,7 @@ Return ONLY a single, valid JSON object matching this structure:
   /// Sends the receipt image URL to Gemini Vision REST API for scanning (downloads then sends bytes).
   Future<ReceiptModel> analyzeReceipt({
     required String imageUrl,
+    Duration? timeout,
   }) async {
     final http.Response downloadRes = await _client.get(Uri.parse(imageUrl));
     if (downloadRes.statusCode != 200) {
@@ -280,13 +285,16 @@ Return ONLY a single, valid JSON object matching this structure:
     return analyzeReceiptBytes(
       imageBytes: downloadRes.bodyBytes,
       mimeType: 'image/jpeg',
+      timeout: timeout,
     );
   }
 
   /// Sends the receipt plain text contents to Gemini REST API for scanning and data extraction.
   Future<ReceiptModel> analyzeReceiptText({
     required String text,
+    Duration? timeout,
   }) async {
+    final effectiveTimeout = timeout ?? _requestTimeout;
     final Map<String, dynamic> requestPayload = {
       "contents": [
         {
@@ -314,7 +322,7 @@ Return ONLY a single, valid JSON object matching this structure:
             Uri.parse(url),
             headers: {'Content-Type': 'application/json'},
             body: requestBody,
-          ).timeout(_requestTimeout);
+          ).timeout(effectiveTimeout);
 
           if (response.statusCode == 200) {
             final Map<String, dynamic> jsonResponse = jsonDecode(response.body) as Map<String, dynamic>;

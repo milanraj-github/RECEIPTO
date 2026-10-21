@@ -186,35 +186,53 @@ class ScanRepository {
       publicUrl = results[0] as String;
       receipt = results[1] as ReceiptModel;
     } else if (extension == 'pdf') {
-      // PDF: Launch upload and parallel page rendering/analysis
+      // PDF: Launch upload and parallel page rendering/analysis with 90s (1.5 min) timeout
       final uploadFuture = _storageService.uploadReceiptFile(
         file: imageFile,
         userId: userId,
       );
 
-      final List<File> pageImages = await _fileProcessorService.convertPdfToImages(imageFile);
-      if (pageImages.isEmpty) {
-        throw Exception('Failed to render pages from PDF file.');
+      List<File> pageImages = [];
+      try {
+        pageImages = await _fileProcessorService.convertPdfToImages(imageFile);
+      } catch (e) {
+        if (kDebugMode) print('[ScanRepository] convertPdfToImages error: $e');
       }
 
-      final pageAnalyzeFutures = pageImages.map((img) async {
-        final bytes = await img.readAsBytes();
-        final pageReceipt = await _geminiService.analyzeReceiptBytes(
-          imageBytes: bytes,
-          mimeType: 'image/jpeg',
-        );
-        try {
-          await img.delete();
-        } catch (_) {}
-        return pageReceipt;
-      }).toList();
+      if (pageImages.isNotEmpty) {
+        // Limit to first 3 pages and compress each page to ~100KB for rapid AI vision transmission
+        final pagesToProcess = pageImages.take(3).toList();
+        final pageAnalyzeFutures = pagesToProcess.map((img) async {
+          final optimizedBytes = await _prepareOptimizedImageBytes(img);
+          final pageReceipt = await _geminiService.analyzeReceiptBytes(
+            imageBytes: optimizedBytes,
+            mimeType: 'image/jpeg',
+            timeout: const Duration(seconds: 90), // 1.5 min timeout for PDF pages
+          );
+          try {
+            await img.delete();
+          } catch (_) {}
+          return pageReceipt;
+        }).toList();
 
-      final results = await Future.wait([uploadFuture, Future.wait(pageAnalyzeFutures)]);
-      publicUrl = results[0] as String;
-      final List<ReceiptModel> pageReceipts = results[1] as List<ReceiptModel>;
-      receipt = _mergeReceiptModels(pageReceipts);
+        final results = await Future.wait([uploadFuture, Future.wait(pageAnalyzeFutures)]);
+        publicUrl = results[0] as String;
+        final List<ReceiptModel> pageReceipts = results[1] as List<ReceiptModel>;
+        receipt = _mergeReceiptModels(pageReceipts);
+      } else {
+        // Direct PDF fallback: Gemini 1.5 / 2.0 / 3.0 supports application/pdf natively
+        final pdfBytes = await imageFile.readAsBytes();
+        final analyzeFuture = _geminiService.analyzeReceiptBytes(
+          imageBytes: pdfBytes,
+          mimeType: 'application/pdf',
+          timeout: const Duration(seconds: 90), // 1.5 min timeout
+        );
+        final results = await Future.wait([uploadFuture, analyzeFuture]);
+        publicUrl = results[0] as String;
+        receipt = results[1] as ReceiptModel;
+      }
     } else if (['doc', 'docx', 'xls', 'xlsx', 'txt', 'csv'].contains(extension)) {
-      // Documents: Process text and upload in parallel
+      // Documents: Process text and upload in parallel with 90s (1.5 min) timeout
       final uploadFuture = _storageService.uploadReceiptFile(
         file: imageFile,
         userId: userId,
@@ -229,7 +247,10 @@ class ScanRepository {
         throw Exception('This document format is not supported');
       }
 
-      final analyzeFuture = _geminiService.analyzeReceiptText(text: extractedText);
+      final analyzeFuture = _geminiService.analyzeReceiptText(
+        text: extractedText,
+        timeout: const Duration(seconds: 90), // 1.5 min timeout for document text
+      );
       final results = await Future.wait([uploadFuture, analyzeFuture]);
       publicUrl = results[0] as String;
       receipt = results[1] as ReceiptModel;
