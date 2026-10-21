@@ -77,12 +77,12 @@ class GeminiExceptionHandler {
       case 401:
       case 403:
         return GeminiException(
-          "Gemini API key is invalid or unauthorized.",
+          "AI service authentication failed.",
           statusCode: code,
         );
       case 404:
         return GeminiException(
-          "Requested AI model is unavailable.",
+          "Requested AI service is unavailable.",
           statusCode: code,
         );
       case 408:
@@ -92,7 +92,7 @@ class GeminiExceptionHandler {
         );
       case 429:
         return GeminiException(
-          "AI Service Busy. The free Gemini API request limit has been reached. Please wait a few moments and try again.",
+          "AI Service Busy. The request limit has been reached. Please wait a few moments and try again.",
           statusCode: code,
           retryAfterSeconds: retryAfter,
         );

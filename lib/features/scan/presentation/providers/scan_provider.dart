@@ -19,6 +19,7 @@ class ScanState {
   
   // Preview state parameters
   final File? capturedImage;
+  final List<File>? capturedImages;
   final bool isProcessing;
   final bool isAccepted;
   final String? uploadedUrl;
@@ -39,6 +40,7 @@ class ScanState {
     this.isLoading = false,
     this.errorMessage,
     this.capturedImage,
+    this.capturedImages,
     this.isProcessing = false,
     this.isAccepted = false,
     this.uploadedUrl,
@@ -56,6 +58,7 @@ class ScanState {
     bool? isLoading,
     String? errorMessage,
     File? capturedImage,
+    List<File>? capturedImages,
     bool? isProcessing,
     bool? isAccepted,
     String? uploadedUrl,
@@ -63,6 +66,7 @@ class ScanState {
     String? savedReceiptId,
     String? statusMessage,
     bool clearCapturedImage = false,
+    bool clearCapturedImages = false,
     bool clearAll = false,
   }) {
     if (clearAll) {
@@ -77,6 +81,7 @@ class ScanState {
       isLoading: isLoading ?? this.isLoading,
       errorMessage: errorMessage ?? this.errorMessage,
       capturedImage: clearCapturedImage ? null : (capturedImage ?? this.capturedImage),
+      capturedImages: clearCapturedImages ? null : (capturedImages ?? this.capturedImages),
       isProcessing: isProcessing ?? this.isProcessing,
       isAccepted: isAccepted ?? this.isAccepted,
       uploadedUrl: uploadedUrl ?? this.uploadedUrl,
@@ -97,6 +102,7 @@ class ScanNotifier extends StateNotifier<ScanState> {
   void setCapturedImage(File file) {
     state = ScanState(
       capturedImage: file,
+      capturedImages: [file],
       selectedImage: file,
       selectedFilePath: file.path,
       selectedFileName: file.path.split('/').last.split('\\').last,
@@ -106,6 +112,51 @@ class ScanNotifier extends StateNotifier<ScanState> {
       errorMessage: null,
       statusMessage: null,
     );
+  }
+
+  /// Set multiple captured images awaiting preview confirmation (Batch scan)
+  void setCapturedImages(List<File> files) {
+    state = ScanState(
+      capturedImage: files.isNotEmpty ? files.first : null,
+      capturedImages: List.from(files),
+      selectedImage: files.isNotEmpty ? files.first : null,
+      selectedFilePath: files.isNotEmpty ? files.first.path : null,
+      selectedFileName: files.isNotEmpty ? files.first.path.split('/').last.split('\\').last : null,
+      isAccepted: false,
+      isProcessing: false,
+      isLoading: false,
+      errorMessage: null,
+      statusMessage: null,
+    );
+  }
+
+  /// Append a new captured page to the existing batch list
+  void addCapturedImage(File file) {
+    final currentList = state.capturedImages != null ? List<File>.from(state.capturedImages!) : <File>[];
+    if (state.capturedImage != null && currentList.isEmpty) {
+      currentList.add(state.capturedImage!);
+    }
+    currentList.add(file);
+    state = state.copyWith(
+      capturedImages: currentList,
+      capturedImage: currentList.first,
+    );
+  }
+
+  /// Remove a captured page at a specific index from the batch
+  void removeCapturedImage(int index) {
+    if (state.capturedImages == null || index < 0 || index >= state.capturedImages!.length) return;
+    final updatedList = List<File>.from(state.capturedImages!)..removeAt(index);
+    if (updatedList.isEmpty) {
+      state = const ScanState();
+    } else {
+      state = state.copyWith(
+        capturedImages: updatedList,
+        capturedImage: updatedList.first,
+        selectedImage: updatedList.first,
+        selectedFilePath: updatedList.first.path,
+      );
+    }
   }
 
   /// Reset/delete the captured image awaiting preview
@@ -194,6 +245,82 @@ class ScanNotifier extends StateNotifier<ScanState> {
     }
   }
 
+  /// Run the entire AI pipeline for multiple continuous pages (Batch Scan):
+  /// Upload all page images in parallel -> run unified Gemini Vision analysis -> save to Supabase DB.
+  Future<bool> acceptAndProcessBatchReceipt({
+    required List<File> files,
+    required String userId,
+  }) async {
+    final activeUid = FirebaseAuth.instance.currentUser?.uid ?? userId;
+    if (activeUid.isEmpty || activeUid == 'guest') {
+      throw Exception('Authentication required: Cannot save receipt without active user login.');
+    }
+
+    if (files.isEmpty) return false;
+
+    if (files.length == 1) {
+      return acceptAndProcessReceipt(userId: activeUid);
+    }
+
+    state = state.copyWith(
+      isLoading: true,
+      isProcessing: true,
+      isAccepted: false,
+      errorMessage: null,
+      statusMessage: 'Preparing ${files.length} Pages...',
+      capturedImages: files,
+    );
+
+    try {
+      int totalSize = 0;
+      for (final f in files) {
+        totalSize += await f.length();
+      }
+
+      state = state.copyWith(statusMessage: 'Extracting Multi-Page Receipt...');
+
+      // Centralized multi-page repository workflow
+      final Map<String, dynamic> result = await _repository.processAndSaveBatchReceiptFlow(
+        files: files,
+        userId: activeUid,
+        totalFileSize: totalSize,
+      );
+
+      final ReceiptModel receipt = result['receipt'] as ReceiptModel;
+      final String dbId = result['id'] as String;
+      final String publicUrl = result['imageUrl'] as String;
+
+      state = state.copyWith(
+        selectedImage: files.first,
+        selectedFilePath: files.first.path,
+        selectedFileName: 'batch_scan_${files.length}_pages.jpg',
+        selectedFileType: 'Image',
+        extractedContent: 'Multi-page batch receipt (${files.length} pages) extracted.',
+        uploadedUrl: publicUrl,
+        extractedReceipt: receipt,
+        savedReceiptId: dbId,
+        isAccepted: true,
+        statusMessage: 'Completed',
+      );
+
+      // Invalidate the lists provider to trigger dynamic refreshes across Dashboard, Receipts & Analytics
+      _ref.invalidate(dbReceiptsListProvider);
+
+      return true;
+    } catch (e) {
+      state = state.copyWith(
+        isAccepted: false,
+        errorMessage: e.toString().replaceAll('Exception: ', '').replaceAll('HttpException: ', ''),
+      );
+      rethrow;
+    } finally {
+      state = state.copyWith(
+        isLoading: false,
+        isProcessing: false,
+      );
+    }
+  }
+
   /// Runs ONLY extraction and uploads the file to storage without saving it to database.
   Future<ReceiptModel?> extractReceiptOnly({required String userId}) async {
     final activeUid = FirebaseAuth.instance.currentUser?.uid ?? userId;
@@ -256,6 +383,65 @@ class ScanNotifier extends StateNotifier<ScanState> {
     }
   }
 
+  /// Runs multi-page extraction and uploads all pages without saving to database immediately.
+  Future<ReceiptModel?> extractBatchReceiptOnly({
+    required List<File> files,
+    required String userId,
+  }) async {
+    final activeUid = FirebaseAuth.instance.currentUser?.uid ?? userId;
+    if (files.isEmpty) return null;
+
+    if (files.length == 1) {
+      state = state.copyWith(capturedImage: files.first);
+      return extractReceiptOnly(userId: activeUid);
+    }
+
+    state = state.copyWith(
+      isLoading: true,
+      isProcessing: true,
+      isAccepted: false,
+      errorMessage: null,
+      statusMessage: 'Extracting ${files.length} Pages with AI...',
+      capturedImages: files,
+      capturedImage: files.first,
+    );
+
+    try {
+      final extractResult = await _repository.extractBatchReceiptAndUpload(
+        files: files,
+        userId: activeUid,
+      );
+
+      final ReceiptModel receipt = extractResult['receipt'] as ReceiptModel;
+      final String publicUrl = extractResult['imageUrl'] as String;
+
+      state = state.copyWith(
+        selectedImage: files.first,
+        selectedFilePath: files.first.path,
+        selectedFileName: 'batch_scan_${files.length}_pages.jpg',
+        selectedFileType: 'Image',
+        extractedContent: 'Multi-page batch receipt (${files.length} pages)',
+        uploadedUrl: publicUrl,
+        extractedReceipt: receipt,
+        isAccepted: false,
+        statusMessage: 'Analyzing Products...',
+      );
+
+      return receipt;
+    } catch (e) {
+      state = state.copyWith(
+        isAccepted: false,
+        errorMessage: e.toString().replaceAll('Exception: ', '').replaceAll('HttpException: ', ''),
+      );
+      rethrow;
+    } finally {
+      state = state.copyWith(
+        isLoading: false,
+        isProcessing: false,
+      );
+    }
+  }
+
   /// Saves the already extracted receipt inside state to the database.
   Future<bool> saveExtracted({required String userId}) async {
     final activeUid = FirebaseAuth.instance.currentUser?.uid ?? userId;
@@ -286,7 +472,13 @@ class ScanNotifier extends StateNotifier<ScanState> {
 
     try {
       int? size;
-      if (state.capturedImage != null) {
+      if (state.capturedImages != null && state.capturedImages!.isNotEmpty) {
+        int sum = 0;
+        for (final f in state.capturedImages!) {
+          sum += await f.length();
+        }
+        size = sum;
+      } else if (state.capturedImage != null) {
         size = await state.capturedImage!.length();
       }
       final dbId = await _repository.saveExtractedReceiptFlow(

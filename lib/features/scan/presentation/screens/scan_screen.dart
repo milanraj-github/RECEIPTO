@@ -37,6 +37,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with TickerProviderStat
   bool _isCameraInitializing = false;
   bool _isFlashSupported = true;
   bool _isRearCamera = true;
+  bool _isBatchMode = false;
+  final List<File> _batchFiles = [];
 
   // Camera Flash Modes cycle: Off(0) -> Auto(1) -> On(2) -> Off(0)
   // Stored as the current FlashMode enum directly for reliable hardware mapping
@@ -481,6 +483,40 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with TickerProviderStat
 
       final File file = File(rawImage.path);
 
+      if (_isBatchMode) {
+        setState(() {
+          _batchFiles.add(file);
+        });
+        ref.read(scanProvider.notifier).setCapturedImages(_batchFiles);
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).hideCurrentSnackBar();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: AppColors.secondary, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Page ${_batchFiles.length} captured! Snap next or review.',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.w600, fontSize: 13, color: Colors.white),
+                  ),
+                ],
+              ),
+              backgroundColor: const Color(0xFF1E202C),
+              behavior: SnackBarBehavior.floating,
+              margin: const EdgeInsets.only(bottom: 230, left: 24, right: 24),
+              duration: const Duration(seconds: 2),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: BorderSide(color: AppColors.secondary.withValues(alpha: 0.4)),
+              ),
+            ),
+          );
+        }
+        return;
+      }
+
       ref.read(scanProvider.notifier).setCapturedImage(file);
 
       if (mounted) {
@@ -507,6 +543,29 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with TickerProviderStat
         );
       }
     }
+  }
+
+  /// Opens the batch review screen with all sequentially captured pages
+  void _openBatchReview() {
+    if (_batchFiles.isEmpty) return;
+    ref.read(scanProvider.notifier).setCapturedImages(_batchFiles);
+    Navigator.of(context).push(
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) => PreviewScanScreen(
+          imageFile: _batchFiles.first,
+          batchFiles: List.from(_batchFiles),
+        ),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    ).then((_) {
+      if (mounted && (ref.read(scanProvider).isAccepted || ref.read(scanProvider).capturedImages == null)) {
+        setState(() {
+          _batchFiles.clear();
+        });
+      }
+    });
   }
 
   /// Universal Document & File Upload Picker: supports Images (jpg, png, heic), PDFs, Documents, File Manager
@@ -802,78 +861,312 @@ class _ScanScreenState extends ConsumerState<ScanScreen> with TickerProviderStat
             ),
           ),
 
-          // 6. Consolidated Premium Glass Control Panel (Upload, Capture, Flip Camera)
+          // 6. Unified Camera Bottom Panel: Batch Review Badge + Mode Switcher + Shutter Controls
           Positioned(
-            bottom: 105, // Positioned comfortably above Bottom Navigation Bar
+            bottom: 95, // Positioned comfortably above Bottom Navigation Bar
             left: 20,
             right: 20,
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.65),
-                  borderRadius: BorderRadius.circular(36),
-                  border: Border.all(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      blurRadius: 24,
-                      spreadRadius: 2,
-                    ),
-                  ],
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(36),
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        // Upload Button (Images, PDFs, Documents, File Manager)
-                        IconButton(
-                          icon: const Icon(Icons.file_upload_outlined, color: Colors.white, size: 26),
-                          onPressed: _triggerUpload,
-                          tooltip: 'Upload Receipt (Image/PDF/Doc)',
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Floating Batch Review Action Button (shown when batch has captured pages)
+                if (_isBatchMode && _batchFiles.isNotEmpty) ...[
+                  GestureDetector(
+                    onTap: _openBatchReview,
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [AppColors.secondary, AppColors.primary],
                         ),
-
-                        // Center Manual Shutter Capture Button
-                        GestureDetector(
-                          onTap: _triggerCapture,
-                          child: Container(
-                            width: 68,
-                            height: 68,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.secondary.withValues(alpha: 0.45),
+                            blurRadius: 14,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                             decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              border: Border.all(color: Colors.white, width: 3.5),
-                              color: Colors.transparent,
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Center(
-                              child: Container(
-                                width: 54,
-                                height: 54,
-                                decoration: const BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white,
-                                ),
+                            child: Text(
+                              '${_batchFiles.length}',
+                              style: GoogleFonts.inter(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 11,
                               ),
                             ),
                           ),
-                        ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Review ${_batchFiles.length} ${_batchFiles.length == 1 ? "Page" : "Pages"}',
+                            style: GoogleFonts.inter(
+                              color: Colors.black,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          const Icon(Icons.arrow_forward_rounded, color: Colors.black, size: 16),
+                          const SizedBox(width: 10),
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _batchFiles.clear();
+                              });
+                              ref.read(scanProvider.notifier).resetCapturedImage();
+                            },
+                            child: const Icon(Icons.close_rounded, color: Colors.black87, size: 18),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
 
-                        // Flip Camera Button (Right)
-                        IconButton(
-                          icon: const Icon(Icons.cameraswitch_outlined, color: Colors.white, size: 26),
-                          onPressed: _flipCamera,
-                          tooltip: 'Flip Camera',
-                        ),
-                      ],
+                // Single vs Batch Mode Segmented Pill (strictly placed ABOVE shutter controls)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.16),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.4),
+                        blurRadius: 14,
+                        offset: const Offset(0, 3),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(24),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Single Mode
+                          GestureDetector(
+                            onTap: () {
+                              if (_isBatchMode) {
+                                setState(() {
+                                  _isBatchMode = false;
+                                });
+                              }
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: !_isBatchMode ? AppColors.primary : Colors.transparent,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.crop_portrait_rounded,
+                                    size: 14,
+                                    color: !_isBatchMode ? Colors.black : Colors.white70,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Single',
+                                    style: GoogleFonts.inter(
+                                      color: !_isBatchMode ? Colors.black : Colors.white70,
+                                      fontSize: 12,
+                                      fontWeight: !_isBatchMode ? FontWeight.bold : FontWeight.w500,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+
+                          // Batch Mode (Multi-Page)
+                          GestureDetector(
+                            onTap: () {
+                              if (!_isBatchMode) {
+                                setState(() {
+                                  _isBatchMode = true;
+                                });
+                              }
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                              decoration: BoxDecoration(
+                                color: _isBatchMode ? AppColors.secondary : Colors.transparent,
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.auto_awesome_motion_rounded,
+                                    size: 14,
+                                    color: _isBatchMode ? Colors.black : Colors.white70,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    'Batch (Multi-Page)',
+                                    style: GoogleFonts.inter(
+                                      color: _isBatchMode ? Colors.black : Colors.white70,
+                                      fontSize: 12,
+                                      fontWeight: _isBatchMode ? FontWeight.bold : FontWeight.w500,
+                                    ),
+                                  ),
+                                  if (_batchFiles.isNotEmpty) ...[
+                                    const SizedBox(width: 5),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+                                      decoration: BoxDecoration(
+                                        color: Colors.black,
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                      child: Text(
+                                        '${_batchFiles.length}',
+                                        style: GoogleFonts.inter(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
+
+                // Consolidated Premium Glass Control Panel (Upload, Capture, Flip Camera)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.65),
+                    borderRadius: BorderRadius.circular(36),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        blurRadius: 24,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(36),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 15, sigmaY: 15),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Upload Button (Images, PDFs, Documents, File Manager)
+                          IconButton(
+                            icon: const Icon(Icons.file_upload_outlined, color: Colors.white, size: 26),
+                            onPressed: _triggerUpload,
+                            tooltip: 'Upload Receipt (Image/PDF/Doc)',
+                          ),
+
+                          // Center Manual Shutter Capture Button
+                          GestureDetector(
+                            onTap: _triggerCapture,
+                            child: Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  width: 68,
+                                  height: 68,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: _isBatchMode ? AppColors.secondary : Colors.white,
+                                      width: 3.5,
+                                    ),
+                                    color: Colors.transparent,
+                                  ),
+                                  child: Center(
+                                    child: Container(
+                                      width: 54,
+                                      height: 54,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: _isBatchMode ? AppColors.secondary : Colors.white,
+                                      ),
+                                      child: _isBatchMode
+                                          ? const Center(
+                                              child: Icon(
+                                                Icons.add_a_photo_outlined,
+                                                size: 24,
+                                                color: Colors.black,
+                                              ),
+                                            )
+                                          : null,
+                                    ),
+                                  ),
+                                ),
+                                if (_isBatchMode && _batchFiles.isNotEmpty)
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: const BoxDecoration(
+                                        color: Colors.redAccent,
+                                        shape: BoxShape.circle,
+                                      ),
+                                      constraints: const BoxConstraints(minWidth: 20, minHeight: 20),
+                                      child: Center(
+                                        child: Text(
+                                          '${_batchFiles.length}',
+                                          style: GoogleFonts.inter(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 10,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+
+                          // Flip Camera Button (Right)
+                          IconButton(
+                            icon: const Icon(Icons.cameraswitch_outlined, color: Colors.white, size: 26),
+                            onPressed: _flipCamera,
+                            tooltip: 'Flip Camera',
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ],

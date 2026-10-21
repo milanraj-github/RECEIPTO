@@ -260,10 +260,10 @@ class ScanRepository {
 
     // Validation checks
     if (receipt.merchantName == null || receipt.merchantName!.trim().isEmpty) {
-      throw Exception('Gemini extraction failed: Merchant name was not identified.');
+      throw Exception('Merchant name was not identified.');
     }
     if (receipt.total != null && receipt.total! <= 0.0) {
-      throw Exception('Gemini extraction failed: Total amount must be greater than zero.');
+      throw Exception('Total amount must be greater than zero.');
     }
 
     // Standardize and intelligently categorize the receipt and its individual items
@@ -271,6 +271,83 @@ class ScanRepository {
 
     return {
       'receipt': categorizedReceipt,
+      'imageUrl': publicUrl,
+    };
+  }
+
+  /// Extracts receipt details and uploads multiple sequential pages (Batch scan).
+  Future<Map<String, dynamic>> extractBatchReceiptAndUpload({
+    required List<File> files,
+    required String userId,
+  }) async {
+    if (files.isEmpty) {
+      throw Exception('No images provided for batch extraction.');
+    }
+    if (files.length == 1) {
+      return extractReceiptAndUpload(imageFile: files.first, userId: userId);
+    }
+
+    // 1. Compress each image in parallel for fast transmission
+    final optimizedBytesFutures = files.map((f) => _prepareOptimizedImageBytes(f)).toList();
+    final optimizedBytesList = await Future.wait(optimizedBytesFutures);
+
+    // 2. Upload all images to Supabase Storage in parallel
+    final uploadFutures = files.map((f) => _storageService.uploadReceiptFile(file: f, userId: userId)).toList();
+
+    // 3. Send all image bytes to Gemini Vision in unified multi-page prompt
+    final analyzeFuture = _geminiService.analyzeMultipleReceiptBytes(
+      imagesBytesList: optimizedBytesList,
+      mimeType: 'image/jpeg',
+      timeout: const Duration(seconds: 90),
+    );
+
+    final results = await Future.wait([Future.wait(uploadFutures), analyzeFuture]);
+    final List<String> publicUrls = results[0] as List<String>;
+    final ReceiptModel receipt = results[1] as ReceiptModel;
+
+    // Validation checks
+    if (receipt.merchantName == null || receipt.merchantName!.trim().isEmpty) {
+      throw Exception('Merchant name was not identified across scanned pages.');
+    }
+    if (receipt.total != null && receipt.total! <= 0.0) {
+      throw Exception('Total amount must be greater than zero.');
+    }
+
+    // Standardize and intelligently categorize the receipt
+    final categorizedReceipt = await _aiCategorizerService.categorize(receipt);
+    final String combinedPublicUrl = publicUrls.join(',');
+
+    return {
+      'receipt': categorizedReceipt,
+      'imageUrl': combinedPublicUrl,
+      'imageUrls': publicUrls,
+    };
+  }
+
+  /// Processes and saves a multi-page batch receipt flow into Supabase DB.
+  Future<Map<String, dynamic>> processAndSaveBatchReceiptFlow({
+    required List<File> files,
+    required String userId,
+    int? totalFileSize,
+  }) async {
+    final result = await extractBatchReceiptAndUpload(files: files, userId: userId);
+    final ReceiptModel receipt = result['receipt'] as ReceiptModel;
+    final String publicUrl = result['imageUrl'] as String;
+    final String originalFileName = 'batch_scan_${files.length}_pages.jpg';
+
+    final categorizedReceipt = await _aiCategorizerService.categorize(receipt);
+
+    final String dbId = await saveExtractedReceiptFlow(
+      categorizedReceipt,
+      publicUrl,
+      userId,
+      originalFileName: originalFileName,
+      fileSize: totalFileSize,
+    );
+
+    return {
+      'receipt': categorizedReceipt,
+      'id': dbId,
       'imageUrl': publicUrl,
     };
   }
@@ -688,7 +765,10 @@ class ScanRepository {
       print('Deleting storage image...');
       if (imageUrl != null && imageUrl.isNotEmpty) {
         try {
-          await _storageService.deleteReceiptFileByUrl(imageUrl);
+          final urls = imageUrl.contains(',') ? imageUrl.split(',').map((u) => u.trim()).where((u) => u.isNotEmpty).toList() : [imageUrl];
+          for (final u in urls) {
+            await _storageService.deleteReceiptFileByUrl(u);
+          }
         } catch (e, stackTrace) {
           print('=== Deletion Failed at storage ===');
           print('Receipt ID: $receiptId');

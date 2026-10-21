@@ -556,6 +556,14 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
       );
     }
 
+    // Support multi-page batch scanned receipts
+    if (imageUrl.contains(',')) {
+      final urls = imageUrl.split(',').map((u) => u.trim()).where((u) => u.isNotEmpty).toList();
+      if (urls.length > 1) {
+        return _MultiPageReceiptCarousel(urls: urls);
+      }
+    }
+
     final Uri? parsedUri = Uri.tryParse(imageUrl);
     final String pathPart = parsedUri?.path ?? imageUrl;
     final String rawFilename = pathPart.split('/').last.split('?').first.toLowerCase();
@@ -1577,4 +1585,308 @@ class _RemotePdfThumbnailState extends State<_RemotePdfThumbnail> {
       ),
     );
   }
+}
+
+/// Swipeable preview carousel for multi-page batch scanned receipts
+class _MultiPageReceiptCarousel extends StatefulWidget {
+  final List<String> urls;
+
+  const _MultiPageReceiptCarousel({required this.urls});
+
+  @override
+  State<_MultiPageReceiptCarousel> createState() => _MultiPageReceiptCarouselState();
+}
+
+class _MultiPageReceiptCarouselState extends State<_MultiPageReceiptCarousel> {
+  late PageController _controller;
+  int _currentIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = PageController();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 200,
+      decoration: BoxDecoration(
+        borderRadius: AppRadius.lg,
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.primary.withValues(alpha: 0.08),
+            blurRadius: 20,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: AppRadius.lg,
+        child: Stack(
+          children: [
+            // PageView of receipt images
+            PageView.builder(
+              controller: _controller,
+              itemCount: widget.urls.length,
+              onPageChanged: (i) => setState(() => _currentIndex = i),
+              itemBuilder: (context, idx) {
+                final url = widget.urls[idx];
+                return GestureDetector(
+                  onTap: () => _showFullScreenBatchCarousel(context, widget.urls, initialIndex: idx),
+                  child: Image.network(
+                    url,
+                    fit: BoxFit.cover,
+                    loadingBuilder: (context, child, loadingProgress) {
+                      if (loadingProgress == null) return child;
+                      return const Center(child: CircularProgressIndicator(color: AppColors.secondary));
+                    },
+                    errorBuilder: (context, error, stackTrace) {
+                      return Container(
+                        color: AppColors.surfaceVariant,
+                        child: const Center(
+                          child: Icon(Icons.broken_image_rounded, color: Colors.white54, size: 36),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            ),
+
+            // Top Gradient & Page Count Pill
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.black.withValues(alpha: 0.7), Colors.transparent],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.secondary.withValues(alpha: 0.5)),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.auto_awesome_motion_rounded, color: AppColors.secondary, size: 14),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Page ${_currentIndex + 1} of ${widget.urls.length}',
+                            style: GoogleFonts.inter(
+                              color: AppColors.secondary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        'Multi-Page Bill',
+                        style: GoogleFonts.inter(
+                          color: Colors.white70,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // Center Tap-to-Expand Pill
+            Center(
+              child: IgnorePointer(
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                  decoration: BoxDecoration(
+                    color: AppColors.background.withValues(alpha: 0.82),
+                    borderRadius: AppRadius.full,
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.18)),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.fullscreen, color: AppColors.primary, size: 16),
+                      const SizedBox(width: 6),
+                      Text(
+                        'View Fullscreen',
+                        style: GoogleFonts.inter(
+                          color: AppColors.primary,
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Bottom Dots Indicator
+            Positioned(
+              bottom: 10,
+              left: 0,
+              right: 0,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(widget.urls.length, (i) {
+                  final isActive = i == _currentIndex;
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    width: isActive ? 16 : 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(3),
+                      color: isActive ? AppColors.secondary : Colors.white38,
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Fullscreen zoomable carousel modal for multi-page batch receipts
+void _showFullScreenBatchCarousel(BuildContext context, List<String> urls, {int initialIndex = 0}) {
+  showDialog(
+    context: context,
+    builder: (context) {
+      int active = initialIndex;
+      final PageController ctrl = PageController(initialPage: initialIndex);
+      return StatefulBuilder(
+        builder: (context, setDialogState) {
+          return Dialog(
+            backgroundColor: Colors.transparent,
+            insetPadding: const EdgeInsets.all(12),
+            child: Stack(
+              alignment: Alignment.topRight,
+              children: [
+                Container(
+                  width: double.infinity,
+                  height: MediaQuery.of(context).size.height * 0.78,
+                  decoration: BoxDecoration(
+                    borderRadius: AppRadius.lg,
+                    color: Colors.black.withValues(alpha: 0.95),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: AppRadius.lg,
+                    child: Stack(
+                      children: [
+                        PageView.builder(
+                          controller: ctrl,
+                          itemCount: urls.length,
+                          onPageChanged: (i) => setDialogState(() => active = i),
+                          itemBuilder: (context, idx) {
+                            return InteractiveViewer(
+                              maxScale: 4.5,
+                              minScale: 1.0,
+                              child: Center(
+                                child: Image.network(
+                                  urls[idx],
+                                  fit: BoxFit.contain,
+                                  loadingBuilder: (context, child, lp) =>
+                                      lp == null ? child : const Center(child: CircularProgressIndicator(color: AppColors.secondary)),
+                                  errorBuilder: (context, err, st) => const Center(
+                                    child: Icon(Icons.broken_image, color: Colors.white54, size: 48),
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                        // Page indicator badge
+                        Positioned(
+                          top: 16,
+                          left: 16,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.7),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: AppColors.secondary.withValues(alpha: 0.4)),
+                            ),
+                            child: Text(
+                              'Page ${active + 1} of ${urls.length}',
+                              style: GoogleFonts.inter(
+                                color: AppColors.secondary,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ),
+                        ),
+                        // Dots at bottom
+                        Positioned(
+                          bottom: 16,
+                          left: 0,
+                          right: 0,
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: List.generate(urls.length, (i) {
+                              final isActive = i == active;
+                              return Container(
+                                margin: const EdgeInsets.symmetric(horizontal: 3),
+                                width: isActive ? 18 : 6,
+                                height: 6,
+                                decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(3),
+                                  color: isActive ? AppColors.secondary : Colors.white38,
+                                ),
+                              );
+                            }),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(12.0),
+                  child: CircleAvatar(
+                    backgroundColor: Colors.black87,
+                    child: IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Colors.white, size: 20),
+                      onPressed: () => Navigator.of(context).pop(),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    },
+  );
 }

@@ -23,21 +23,64 @@ import 'package:receipto/core/services/receipt_database_service.dart';
 import 'package:receipto/features/warranty/presentation/providers/warranty_provider.dart';
 import 'package:receipto/features/notifications/presentation/providers/notification_provider.dart';
 
-class PreviewScanScreen extends ConsumerWidget {
+class PreviewScanScreen extends ConsumerStatefulWidget {
   final File imageFile;
+  final List<File>? batchFiles;
 
   const PreviewScanScreen({
     super.key,
     required this.imageFile,
+    this.batchFiles,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PreviewScanScreen> createState() => _PreviewScanScreenState();
+}
+
+class _PreviewScanScreenState extends ConsumerState<PreviewScanScreen> {
+  late List<File> _files;
+  late PageController _pageController;
+  int _currentPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _files = widget.batchFiles != null && widget.batchFiles!.isNotEmpty
+        ? List<File>.from(widget.batchFiles!)
+        : [widget.imageFile];
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _deleteCurrentPage() {
+    if (_files.length <= 1) {
+      ref.read(scanProvider.notifier).resetCapturedImage();
+      Navigator.of(context).pop();
+      return;
+    }
+    setState(() {
+      _files.removeAt(_currentPage);
+      if (_currentPage >= _files.length) {
+        _currentPage = _files.length - 1;
+      }
+    });
+    ref.read(scanProvider.notifier).setCapturedImages(_files);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final scanState = ref.watch(scanProvider);
     final bottomPadding = MediaQuery.of(context).padding.bottom + 100;
 
-    final String ext = p.extension(imageFile.path).toLowerCase().replaceAll('.', '');
+    final currentFile = _files.isNotEmpty ? _files[_currentPage] : widget.imageFile;
+    final String ext = p.extension(currentFile.path).toLowerCase().replaceAll('.', '');
     final bool isImage = ['jpg', 'jpeg', 'png', 'webp', 'heic'].contains(ext);
+    final bool isMultiPage = _files.length > 1;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -49,7 +92,7 @@ class PreviewScanScreen extends ConsumerWidget {
                 ? Container(
                     decoration: BoxDecoration(
                       image: DecorationImage(
-                        image: FileImage(imageFile),
+                        image: FileImage(currentFile),
                         fit: BoxFit.cover,
                       ),
                     ),
@@ -91,44 +134,131 @@ class PreviewScanScreen extends ConsumerWidget {
                                   },
                           ),
                           const SizedBox(width: 8),
-                          Text(
-                            'Preview Receipt',
-                            style: GoogleFonts.hankenGrotesk(
-                              color: Colors.white,
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
+                          Expanded(
+                            child: Text(
+                              isMultiPage
+                                  ? 'Review Batch (${_files.length} Pages)'
+                                  : 'Preview Receipt',
+                              style: GoogleFonts.hankenGrotesk(
+                                color: Colors.white,
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          if (isMultiPage && !scanState.isProcessing) ...[
+                            // Delete Current Page Icon Button
+                            IconButton(
+                              icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 22),
+                              tooltip: 'Remove current page',
+                              onPressed: _deleteCurrentPage,
+                            ),
+                          ],
                         ],
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 12),
+
+                      // Multi-Page Page Indicator Header if multiple pages
+                      if (isMultiPage) ...[
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              decoration: BoxDecoration(
+                                color: AppColors.secondary.withValues(alpha: 0.2),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: AppColors.secondary.withValues(alpha: 0.4)),
+                              ),
+                              child: Text(
+                                'Page ${_currentPage + 1} of ${_files.length}',
+                                style: GoogleFonts.inter(
+                                  color: AppColors.secondary,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              'Swipe to view pages',
+                              style: GoogleFonts.inter(
+                                color: Colors.white60,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                      ],
 
                       // File preview frame
                       Container(
                         constraints: BoxConstraints(
-                          maxHeight: MediaQuery.of(context).size.height * 0.55,
+                          maxHeight: MediaQuery.of(context).size.height * 0.52,
                         ),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
+                          border: Border.all(color: Colors.white.withValues(alpha: 0.12)),
                           borderRadius: BorderRadius.circular(16),
                         ),
                         child: ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: InteractiveViewer(
-                            clipBehavior: Clip.none,
-                            maxScale: 4.5,
-                            minScale: 1.0,
-                            child: Hero(
-                              tag: 'scan_preview_hero',
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(16),
-                                child: _ReceiptFilePreview(file: imageFile),
-                              ),
-                            ),
-                          ),
+                          child: isMultiPage
+                              ? PageView.builder(
+                                  controller: _pageController,
+                                  itemCount: _files.length,
+                                  onPageChanged: (i) {
+                                    setState(() {
+                                      _currentPage = i;
+                                    });
+                                  },
+                                  itemBuilder: (context, idx) {
+                                    final f = _files[idx];
+                                    return InteractiveViewer(
+                                      clipBehavior: Clip.none,
+                                      maxScale: 4.5,
+                                      minScale: 1.0,
+                                      child: _ReceiptFilePreview(file: f),
+                                    );
+                                  },
+                                )
+                              : InteractiveViewer(
+                                  clipBehavior: Clip.none,
+                                  maxScale: 4.5,
+                                  minScale: 1.0,
+                                  child: Hero(
+                                    tag: 'scan_preview_hero',
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(16),
+                                      child: _ReceiptFilePreview(file: currentFile),
+                                    ),
+                                  ),
+                                ),
                         ),
                       ),
-                      const SizedBox(height: 20),
+
+                      // Multi-Page Dots Indicator
+                      if (isMultiPage) ...[
+                        const SizedBox(height: 10),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: List.generate(_files.length, (i) {
+                            final isActive = i == _currentPage;
+                            return AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              margin: const EdgeInsets.symmetric(horizontal: 4),
+                              width: isActive ? 18 : 6,
+                              height: 6,
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(3),
+                                color: isActive ? AppColors.secondary : Colors.white24,
+                              ),
+                            );
+                          }),
+                        ),
+                      ],
+
+                      const SizedBox(height: 16),
 
                       // Premium Bottom Glassmorphic Actions Panel
                       GlassCard(
@@ -179,9 +309,16 @@ class PreviewScanScreen extends ConsumerWidget {
 
                                   Future<void> performExtraction() async {
                                     try {
+                                      final bool isBatch = _files.length > 1;
+                                      final String statusMsg = isBatch
+                                          ? 'Extracting ${_files.length} Pages with AI...'
+                                          : 'Extracting receipt with AI...';
+
                                       // 1. Direct fast AI extraction (includes receipt validation in a single roundtrip)
-                                      ref.read(scanProvider.notifier).setProcessing(true, statusMessage: 'Extracting receipt with AI...');
-                                      final receipt = await ref.read(scanProvider.notifier).extractReceiptOnly(userId: userId);
+                                      ref.read(scanProvider.notifier).setProcessing(true, statusMessage: statusMsg);
+                                      final receipt = isBatch
+                                          ? await ref.read(scanProvider.notifier).extractBatchReceiptOnly(files: _files, userId: userId)
+                                          : await ref.read(scanProvider.notifier).extractReceiptOnly(userId: userId);
                                       if (receipt == null) {
                                         if (context.mounted) {
                                           ScaffoldMessenger.of(context).showSnackBar(
@@ -206,11 +343,15 @@ class PreviewScanScreen extends ConsumerWidget {
                                       if (!context.mounted) return;
 
                                       ref.read(scanProvider.notifier).setStatusMessage('Analyzing Products...');
-                                      final originalFileName = imageFile.path.split('/').last.split('\\').last;
-                                      final fileSizeFuture = imageFile.length();
+                                      final originalFileName = isBatch
+                                          ? 'batch_scan_${_files.length}_pages.jpg'
+                                          : widget.imageFile.path.split('/').last.split('\\').last;
+                                      int fileSize = 0;
+                                      for (final f in _files) {
+                                        fileSize += await f.length();
+                                      }
                                       final rawText = ref.read(scanProvider).extractedContent;
                                       
-                                      final fileSize = await fileSizeFuture;
                                       final dupResult = await ref.read(duplicateReceiptServiceProvider).checkDuplicate(
                                             receipt: receipt,
                                             userId: userId,
@@ -380,7 +521,7 @@ class PreviewScanScreen extends ConsumerWidget {
                                                 ),
                                               ),
                                               content: Text(
-                                                'The free Gemini API request limit has been reached.\n\nPlease wait a few moments and try again.\n\nRetry After:\n5 seconds',
+                                                'The AI service is temporarily busy.\n\nPlease wait a few moments and try again.\n\nRetry After:\n5 seconds',
                                                 style: GoogleFonts.inter(color: AppColors.onSurfaceVariant),
                                               ),
                                               actions: [
@@ -416,21 +557,37 @@ class PreviewScanScreen extends ConsumerWidget {
                                           },
                                         );
                                       } else {
-                                        // Regular error dialog
+                                        // Regular user-friendly error dialog
+                                        String displayMsg = errorMessage;
+                                        String dialogTitle = 'Receipt Not Detected';
+
+                                        if (displayMsg.toLowerCase().contains('merchant name was not identified')) {
+                                          dialogTitle = 'Receipt Not Detected';
+                                          displayMsg = 'Could not detect a valid receipt or bill in this image.\n\nPlease make sure the receipt is clearly visible and well-lit, then try again.';
+                                        } else if (displayMsg.toLowerCase().contains('total amount must be greater than zero')) {
+                                          dialogTitle = 'Receipt Not Detected';
+                                          displayMsg = 'Could not detect valid pricing details in this image. Please ensure the receipt is flat and numbers are legible.';
+                                        } else {
+                                          dialogTitle = 'Analysis Failed';
+                                          displayMsg = displayMsg
+                                              .replaceAll(RegExp(r'gemini extraction failed:\s*', caseSensitive: false), '')
+                                              .replaceAll(RegExp(r'gemini', caseSensitive: false), 'AI');
+                                        }
+
                                         showDialog(
                                           context: context,
                                           builder: (dialogContext) {
                                             return AlertDialog(
                                               backgroundColor: AppColors.background,
                                               title: Text(
-                                                'Analysis Failed',
+                                                dialogTitle,
                                                 style: GoogleFonts.hankenGrotesk(
                                                   color: Colors.white,
                                                   fontWeight: FontWeight.bold,
                                                 ),
                                               ),
                                               content: Text(
-                                                errorMessage,
+                                                displayMsg,
                                                 style: GoogleFonts.inter(color: AppColors.onSurfaceVariant),
                                               ),
                                               actions: [

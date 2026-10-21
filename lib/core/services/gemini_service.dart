@@ -180,6 +180,64 @@ Return ONLY a single, valid JSON object matching this structure:
     );
   }
 
+  /// Sends multiple images (e.g. multi-page batch scan) to Gemini Vision in a single request.
+  Future<ReceiptModel> analyzeMultipleReceiptBytes({
+    required List<Uint8List> imagesBytesList,
+    String mimeType = 'image/jpeg',
+    Duration? timeout,
+  }) async {
+    if (imagesBytesList.isEmpty) {
+      throw GeminiException('No images provided for batch extraction.');
+    }
+    if (imagesBytesList.length == 1) {
+      return analyzeReceiptBytes(
+        imageBytes: imagesBytesList.first,
+        mimeType: mimeType,
+        timeout: timeout,
+      );
+    }
+
+    final effectiveTimeout = timeout ?? const Duration(seconds: 90);
+
+    return _analyzeWithModelFailover(
+      buildRequestPayload: (_) {
+        final List<Map<String, dynamic>> parts = [
+          {
+            "text": "$_prompt\n\nIMPORTANT MULTI-PAGE INSTRUCTION:\n"
+                "The user has provided ${imagesBytesList.length} sequential pages of the SAME invoice/receipt. "
+                "Consolidate and extract all line items across all pages into a single unified list. "
+                "Compute subtotals, taxes, and final grand total accurately without duplicating line items. "
+                "Extract any warranty terms or guarantees present on any page."
+          },
+        ];
+
+        for (final bytes in imagesBytesList) {
+          parts.add({
+            "inlineData": {
+              "mimeType": mimeType,
+              "data": base64.encode(bytes),
+            }
+          });
+        }
+
+        return {
+          "contents": [
+            {
+              "parts": parts,
+            }
+          ],
+          "generationConfig": {
+            "temperature": 0.1,
+            "responseMimeType": "application/json"
+          }
+        };
+      },
+      imageBytes: Uint8List(0),
+      useUrlMode: true,
+      timeout: effectiveTimeout,
+    );
+  }
+
   Future<ReceiptModel> _analyzeWithModelFailover({
     required Map<String, dynamic> Function(String base64Image) buildRequestPayload,
     required Uint8List imageBytes,
