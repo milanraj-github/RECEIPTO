@@ -7,6 +7,7 @@ import 'package:receipto/features/analytics/domain/models/financial_filter.dart'
 import 'package:receipto/features/analytics/domain/models/financial_overview_data.dart';
 import 'package:receipto/features/analytics/domain/models/savings_goal_model.dart';
 import 'package:receipto/features/analytics/domain/models/recurring_expense_model.dart';
+import 'package:receipto/features/analytics/presentation/widgets/custom_date_range_sheet.dart';
 
 class AnalyticsOverviewTab extends StatefulWidget {
   final FinancialOverviewData data;
@@ -130,9 +131,9 @@ class _AnalyticsOverviewTabState extends State<AnalyticsOverviewTab> {
               color: isSelected ? AppColors.primary : Colors.white.withValues(alpha: 0.08),
             ),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            onSelected: (_) async {
+            onSelected: (_) {
               if (isCustom) {
-                await _pickCustomDateRange();
+                _pickCustomDateRange();
               } else {
                 widget.onPeriodChanged(p, null);
               }
@@ -143,50 +144,19 @@ class _AnalyticsOverviewTabState extends State<AnalyticsOverviewTab> {
     );
   }
 
-  Future<void> _pickCustomDateRange() async {
-    final now = DateTime.now();
-    final initialRange = widget.customRange ??
-        DateTimeRange(
-          start: DateTime(now.year, now.month - 1, now.day),
-          end: now,
-        );
-
-    final picked = await showDateRangePicker(
+  void _pickCustomDateRange() {
+    showModalBottomSheet(
       context: context,
-      initialDateRange: initialRange,
-      // Support selecting dates from 2000 to future years (covers 6 years ago, 10 years ago, etc.)
-      firstDate: DateTime(2000, 1, 1),
-      lastDate: DateTime(now.year + 5, 12, 31),
-      helpText: 'SELECT CUSTOM DATE RANGE',
-      cancelText: 'CANCEL',
-      confirmText: 'APPLY',
-      saveText: 'APPLY',
-      builder: (context, child) {
-        return Theme(
-          data: ThemeData.dark().copyWith(
-            scaffoldBackgroundColor: AppColors.background,
-            dialogTheme: const DialogThemeData(backgroundColor: AppColors.cardSurface),
-            colorScheme: const ColorScheme.dark(
-              primary: AppColors.primary,
-              onPrimary: Colors.black,
-              surface: AppColors.cardSurface,
-              onSurface: Colors.white,
-              secondary: AppColors.primary,
-            ),
-            appBarTheme: const AppBarTheme(
-              backgroundColor: AppColors.background,
-              foregroundColor: Colors.white,
-              elevation: 0,
-            ),
-          ),
-          child: child!,
-        );
-      },
+      useRootNavigator: true,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => CustomDateRangeSheet(
+        initialRange: widget.customRange,
+        onApply: (range) {
+          widget.onPeriodChanged(FinancialPeriod.custom, range);
+        },
+      ),
     );
-
-    if (picked != null) {
-      widget.onPeriodChanged(FinancialPeriod.custom, picked);
-    }
   }
 
   Widget _buildHeroSpendingCard(FinancialOverviewData data) {
