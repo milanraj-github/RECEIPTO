@@ -66,3 +66,7 @@ deps.txt
 # Flutter
 build/
 .dart_tool/
+
+# Private Project Documentation
+PROJECT_SUMMARY.md
+
