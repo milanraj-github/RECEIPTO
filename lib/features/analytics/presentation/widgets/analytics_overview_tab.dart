@@ -11,7 +11,8 @@ import 'package:receipto/features/analytics/domain/models/recurring_expense_mode
 class AnalyticsOverviewTab extends StatefulWidget {
   final FinancialOverviewData data;
   final FinancialPeriod selectedPeriod;
-  final Function(FinancialPeriod period) onPeriodChanged;
+  final DateTimeRange? customRange;
+  final void Function(FinancialPeriod period, DateTimeRange? customRange) onPeriodChanged;
   final VoidCallback onOpenCalendar;
   final VoidCallback onOpenExport;
   final VoidCallback onEditBudget;
@@ -24,6 +25,7 @@ class AnalyticsOverviewTab extends StatefulWidget {
     super.key,
     required this.data,
     required this.selectedPeriod,
+    this.customRange,
     required this.onPeriodChanged,
     required this.onOpenCalendar,
     required this.onOpenExport,
@@ -96,9 +98,25 @@ class _AnalyticsOverviewTabState extends State<AnalyticsOverviewTab> {
         itemBuilder: (context, index) {
           final p = FinancialPeriod.values[index];
           final isSelected = widget.selectedPeriod == p;
+          final isCustom = p == FinancialPeriod.custom;
+
+          String labelText = p.label;
+          if (isCustom && isSelected && widget.customRange != null) {
+            final s = widget.customRange!.start;
+            final e = widget.customRange!.end;
+            labelText = 'Custom (${s.day}/${s.month}/${s.year % 100} - ${e.day}/${e.month}/${e.year % 100})';
+          }
+
           return ChoiceChip(
+            avatar: isCustom
+                ? Icon(
+                    Icons.date_range,
+                    size: 14,
+                    color: isSelected ? Colors.black : AppColors.primary,
+                  )
+                : null,
             label: Text(
-              p.label,
+              labelText,
               style: GoogleFonts.inter(
                 color: isSelected ? Colors.black : Colors.white70,
                 fontSize: 12,
@@ -112,11 +130,63 @@ class _AnalyticsOverviewTabState extends State<AnalyticsOverviewTab> {
               color: isSelected ? AppColors.primary : Colors.white.withValues(alpha: 0.08),
             ),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            onSelected: (_) => widget.onPeriodChanged(p),
+            onSelected: (_) async {
+              if (isCustom) {
+                await _pickCustomDateRange();
+              } else {
+                widget.onPeriodChanged(p, null);
+              }
+            },
           );
         },
       ),
     );
+  }
+
+  Future<void> _pickCustomDateRange() async {
+    final now = DateTime.now();
+    final initialRange = widget.customRange ??
+        DateTimeRange(
+          start: DateTime(now.year, now.month - 1, now.day),
+          end: now,
+        );
+
+    final picked = await showDateRangePicker(
+      context: context,
+      initialDateRange: initialRange,
+      // Support selecting dates from 2000 to future years (covers 6 years ago, 10 years ago, etc.)
+      firstDate: DateTime(2000, 1, 1),
+      lastDate: DateTime(now.year + 5, 12, 31),
+      helpText: 'SELECT CUSTOM DATE RANGE',
+      cancelText: 'CANCEL',
+      confirmText: 'APPLY',
+      saveText: 'APPLY',
+      builder: (context, child) {
+        return Theme(
+          data: ThemeData.dark().copyWith(
+            scaffoldBackgroundColor: AppColors.background,
+            dialogTheme: const DialogThemeData(backgroundColor: AppColors.cardSurface),
+            colorScheme: const ColorScheme.dark(
+              primary: AppColors.primary,
+              onPrimary: Colors.black,
+              surface: AppColors.cardSurface,
+              onSurface: Colors.white,
+              secondary: AppColors.primary,
+            ),
+            appBarTheme: const AppBarTheme(
+              backgroundColor: AppColors.background,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      widget.onPeriodChanged(FinancialPeriod.custom, picked);
+    }
   }
 
   Widget _buildHeroSpendingCard(FinancialOverviewData data) {
@@ -129,13 +199,33 @@ class _AnalyticsOverviewTabState extends State<AnalyticsOverviewTab> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text(
-                'Total Expenditure',
-                style: GoogleFonts.inter(
-                  color: AppColors.onSurfaceVariant,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w500,
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Total Expenditure',
+                    style: GoogleFonts.inter(
+                      color: AppColors.onSurfaceVariant,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  if (widget.selectedPeriod == FinancialPeriod.custom && widget.customRange != null) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                      ),
+                      child: Text(
+                        '${widget.customRange!.start.day}/${widget.customRange!.start.month}/${widget.customRange!.start.year} - ${widget.customRange!.end.day}/${widget.customRange!.end.month}/${widget.customRange!.end.year}',
+                        style: const TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.w600),
+                      ),
+                    ),
+                  ],
+                ],
               ),
               if (data.totalRefunds > 0)
                 Container(

@@ -239,7 +239,15 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> with SingleTi
                           AnalyticsOverviewTab(
                             data: overviewData,
                             selectedPeriod: _selectedPeriod,
-                            onPeriodChanged: (p) => setState(() => _selectedPeriod = p),
+                            customRange: _customRange,
+                            onPeriodChanged: (p, range) {
+                              setState(() {
+                                _selectedPeriod = p;
+                                if (range != null) {
+                                  _customRange = range;
+                                }
+                              });
+                            },
                             onOpenCalendar: () => _openSpendingCalendar(receipts),
                             onOpenExport: () => _openExportReports(receipts),
                             onEditBudget: () => _showAddEditBudgetDialog(

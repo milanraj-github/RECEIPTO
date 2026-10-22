@@ -32,7 +32,9 @@ extension FinancialPeriodExtension on FinancialPeriod {
 
   DateTimeRange getDateRange(DateTime now, {DateTimeRange? customRange}) {
     if (this == FinancialPeriod.custom && customRange != null) {
-      return customRange;
+      final start = DateTime(customRange.start.year, customRange.start.month, customRange.start.day, 0, 0, 0, 0);
+      final end = DateTime(customRange.end.year, customRange.end.month, customRange.end.day, 23, 59, 59, 999);
+      return DateTimeRange(start: start, end: end);
     }
 
     switch (this) {
