@@ -88,8 +88,7 @@ class ReceiptEnhancerService {
       final int height = src.height;
       if (width < 300 || height < 300) return src;
 
-      // Sample border pixel luminance on 4 edges
-      final int maxCropX = (width * 0.08).round();
+      // Sample border pixel luminance on edges
       final int maxCropY = (height * 0.08).round();
 
       int top = 0;

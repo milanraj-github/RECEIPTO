@@ -186,11 +186,7 @@ class EmailService {
   }
 
   void _validateRecipient(String recipientEmail) {
-    if (recipientEmail == null) {
-      print("Recipient is NULL");
-      throw Exception("Recipient is NULL");
-    }
-    if (recipientEmail.isEmpty) {
+    if (recipientEmail.trim().isEmpty) {
       print("Recipient is EMPTY");
       throw Exception("Recipient is EMPTY");
     }
