@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 import 'package:receipto/features/warranty/data/services/brand_support_directory.dart';
+import 'package:receipto/features/warranty/data/services/warranty_claim_categories.dart';
 
 final warrantyClaimDispatcherServiceProvider = Provider<WarrantyClaimDispatcherService>((ref) {
   return WarrantyClaimDispatcherService();
@@ -20,8 +21,14 @@ class WarrantyClaimDispatcherService {
     String? customerEmail,
     String? customModel,
     String? customSerial,
+    ClaimCategoryConfig? categoryConfig,
   }) {
     final effectiveBrand = warranty.brand?.isNotEmpty == true ? warranty.brand! : supportInfo.brandName;
+    final isCustomCategory = categoryConfig != null && categoryConfig.type != ClaimCategoryType.electronics;
+
+    final firstSpecLabel = isCustomCategory ? categoryConfig.firstSpecLabel : 'Model Number';
+    final secondSpecLabel = isCustomCategory ? categoryConfig.secondSpecLabel : 'Serial Number';
+
     final effectiveModel = (customModel != null && customModel.isNotEmpty)
         ? customModel
         : (warranty.model?.isNotEmpty == true ? warranty.model! : 'Specified on Tax Invoice');
@@ -32,6 +39,22 @@ class WarrantyClaimDispatcherService {
     final name = customerName?.isNotEmpty == true ? customerName! : '[Customer Name]';
     final phone = customerPhone?.isNotEmpty == true ? customerPhone! : '[Contact Phone]';
     final email = customerEmail?.isNotEmpty == true ? customerEmail! : '[Contact Email]';
+
+    final reliefPoints = isCustomCategory
+        ? categoryConfig.requestedRelief.asMap().entries.map((e) => '${e.key + 1}. ${e.value}').join('\n')
+        : '''1. Inspection by an authorized $effectiveBrand service technician.
+2. Free-of-cost repair or replacement of defective components under warranty terms.
+3. Written confirmation and ticket number acknowledging this warranty claim.''';
+
+    final legalText = isCustomCategory
+        ? '''This formal grievance is submitted in accordance with statutory consumer protections, including the Consumer Protection Act, 2019 (Section 2(47) & Chapter VI - Product Liability & Defect Redressal) along with applicable merchantability and safety standards. 
+
+${categoryConfig.legalSubtitle}
+
+As a verified consumer holding valid proof of purchase within the active guarantee/warranty timeline, I am legally entitled to prompt grievance resolution without unreasonable delay.'''
+        : '''This warranty service request is formally filed in accordance with the express warranty terms provided at the time of purchase and applicable statutory consumer safeguards, including the Consumer Protection Act, 2019 (Section 2(47) & Chapter VI - Product Liability & Defect Redressal). 
+
+As a verified consumer holding proof of purchase within the active warranty timeline, I am legally entitled to prompt, unhindered repair or replacement of defective components using authentic manufacturer parts without unreasonable delay.''';
 
     return '''
 To,
@@ -48,8 +71,8 @@ PRODUCT & PURCHASE CREDENTIALS:
 -----------------------------------------------------------
 • Product Name: ${warranty.productName}
 • Brand / Manufacturer: $effectiveBrand
-• Model Number: $effectiveModel
-• Serial Number: $effectiveSerial
+• $firstSpecLabel: $effectiveModel
+• $secondSpecLabel: $effectiveSerial
 • Place of Purchase / Merchant: ${warranty.merchantName}
 • Invoice / Receipt Number: ${warranty.invoiceNumber ?? 'Verified on record'}
 • Date of Purchase: ${warranty.purchaseDate}
@@ -63,15 +86,11 @@ $issueDescription
 
 STATUTORY RIGHTS & LEGAL CITATION:
 -----------------------------------------------------------
-This warranty service request is formally filed in accordance with the express warranty terms provided at the time of purchase and applicable statutory consumer safeguards, including the Consumer Protection Act, 2019 (Section 2(47) & Chapter VI - Product Liability & Defect Redressal). 
-
-As a verified consumer holding proof of purchase within the active warranty timeline, I am legally entitled to prompt, unhindered repair or replacement of defective components using authentic manufacturer parts without unreasonable delay.
+$legalText
 
 REQUESTED RELIEF:
 -----------------------------------------------------------
-1. Inspection by an authorized $effectiveBrand service technician.
-2. Free-of-cost repair or replacement of defective components under warranty terms.
-3. Written confirmation and ticket number acknowledging this warranty claim.
+$reliefPoints
 
 Attached with this communication is the original tax invoice and proof of purchase record verified via the Receipto platform.
 

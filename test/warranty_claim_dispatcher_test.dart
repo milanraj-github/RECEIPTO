@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 import 'package:receipto/features/warranty/data/services/brand_support_directory.dart';
 import 'package:receipto/features/warranty/data/services/warranty_claim_dispatcher_service.dart';
+import 'package:receipto/features/warranty/data/services/warranty_claim_categories.dart';
 
 void main() {
   group('AI 1-Click Warranty Claim Dispatcher Tests', () {
@@ -125,6 +126,66 @@ void main() {
       expect(claimLetter, contains('2. Free-of-cost repair or replacement of defective components'));
       expect(claimLetter, contains('3. Written confirmation and ticket number'));
       expect(claimLetter, contains('Receipto Mobile Vault'));
+    });
+
+    test('5. Detects grocery category for Nestle Curd and provides food-specific defect symptoms & claims', () {
+      final curdCategory = WarrantyClaimCategories.detectCategory(
+        productName: 'Nestle Curd (400 g)',
+        brand: 'Nestle',
+        merchantName: 'Blinkit Instant Commerce',
+      );
+
+      expect(curdCategory.type, ClaimCategoryType.groceries);
+      expect(curdCategory.displayName, 'Groceries & FMCG');
+      expect(curdCategory.firstSpecLabel, 'Batch / Lot Number');
+      expect(curdCategory.secondSpecLabel, 'Mfg / Expiry Date');
+      expect(curdCategory.symptoms.any((s) => s.title.contains('Spoiled')), true);
+      expect(curdCategory.symptoms.any((s) => s.title.contains('Foreign Object')), true);
+      expect(curdCategory.symptoms.any((s) => s.title.contains('FSSAI')), true);
+
+      final warranty = WarrantyModel(
+        id: '202',
+        userId: 'usr_test_curd',
+        productName: 'Nestle Curd (400 g)',
+        merchantName: 'Blinkit Instant Commerce',
+        invoiceNumber: 'BLK-9988-CURD',
+        purchaseDate: '2026-10-20',
+        warrantyPeriod: 7,
+        warrantyUnit: 'days',
+        expiryDate: '2026-10-27',
+        status: 'ACTIVE',
+        brand: 'Nestle',
+      );
+
+      final supportInfo = BrandSupportDirectory.resolveBrandSupport(
+        brand: warranty.brand,
+        productName: warranty.productName,
+      );
+
+      expect(supportInfo.supportEmail, 'wecare@in.nestle.com');
+      expect(supportInfo.tollFreePhone, '1800 103 1947');
+
+      final claimLetter = dispatcherService.generateClaimLetter(
+        warranty: warranty,
+        supportInfo: supportInfo,
+        issueDescription: 'The curd was completely spoiled and fermented upon opening prior to the best before date.',
+        customerName: 'Milan Raj',
+        customerPhone: '+91 98765 43210',
+        customerEmail: 'milan@example.com',
+        customModel: 'BATCH-N26-OCT',
+        customSerial: 'Best Before 27-Oct-2026',
+        categoryConfig: curdCategory,
+      );
+
+      // Verify grocery fields
+      expect(claimLetter, contains('Nestle'));
+      expect(claimLetter, contains('Nestle Curd (400 g)'));
+      expect(claimLetter, contains('Batch / Lot Number: BATCH-N26-OCT'));
+      expect(claimLetter, contains('Mfg / Expiry Date: Best Before 27-Oct-2026'));
+      expect(claimLetter, contains('The curd was completely spoiled and fermented'));
+      expect(claimLetter, contains('Food Safety and Standards Act'));
+      expect(claimLetter, contains('Immediate product replacement or full refund'));
+      expect(claimLetter, contains('Batch quality audit and defect investigation'));
     });
   });
 }

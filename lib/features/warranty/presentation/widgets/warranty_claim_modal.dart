@@ -7,6 +7,7 @@ import 'package:receipto/core/widgets/glass_card.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 import 'package:receipto/features/warranty/data/services/brand_support_directory.dart';
 import 'package:receipto/features/warranty/data/services/warranty_claim_dispatcher_service.dart';
+import 'package:receipto/features/warranty/data/services/warranty_claim_categories.dart';
 
 class WarrantyClaimModal extends ConsumerStatefulWidget {
   final WarrantyModel warranty;
@@ -31,6 +32,7 @@ class WarrantyClaimModal extends ConsumerStatefulWidget {
 
 class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
   late BrandSupportInfo _supportInfo;
+  late ClaimCategoryConfig _currentCategory;
   late final TextEditingController _issueController;
   late final TextEditingController _emailController;
   late final TextEditingController _modelController;
@@ -39,19 +41,7 @@ class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
   late final TextEditingController _phoneController;
 
   bool _isLetterExpanded = false;
-  String _selectedIssueChip = 'Device Not Powering On';
-
-  final List<String> _quickIssues = [
-    'Device Not Powering On',
-    'Display / Screen Failure',
-    'Physical Hardware Defect',
-    'Battery / Charging Issue',
-    'Excessive Overheating',
-    'Audio / Sound Distortion',
-    'Motor / Mechanical Failure',
-    'Water / Liquid Leakage',
-    'Performance & Freezing',
-  ];
+  late String _selectedIssueChip;
 
   @override
   void initState() {
@@ -62,11 +52,19 @@ class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
       merchantName: widget.warranty.merchantName,
     );
 
+    // Auto-detect product category (Groceries, Electronics, Fashion, Auto, General)
+    _currentCategory = WarrantyClaimCategories.detectCategory(
+      productName: widget.warranty.productName,
+      merchantName: widget.warranty.merchantName,
+      brand: widget.warranty.brand,
+    );
+
+    final initialSymptom = _currentCategory.symptoms.first;
+    _selectedIssueChip = initialSymptom.title;
+    _issueController = TextEditingController(text: initialSymptom.detailedDescription);
+
     final user = ref.read(firebaseAuthServiceProvider).currentUser;
 
-    _issueController = TextEditingController(
-      text: 'The device stopped working during normal usage. It fails to power on and is unresponsive despite standard troubleshooting.',
-    );
     _emailController = TextEditingController(text: _supportInfo.supportEmail ?? '');
     _modelController = TextEditingController(text: widget.warranty.model ?? '');
     _serialController = TextEditingController(text: widget.warranty.serialNumber ?? '');
@@ -85,47 +83,19 @@ class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
     super.dispose();
   }
 
-  void _onIssueChipSelected(String issue) {
+  void _onCategorySelected(ClaimCategoryConfig newCategory) {
     setState(() {
-      _selectedIssueChip = issue;
-      switch (issue) {
-        case 'Device Not Powering On':
-          _issueController.text =
-              'The device stopped powering on during normal indoor usage. There is no indicator light and it remains completely unresponsive.';
-          break;
-        case 'Display / Screen Failure':
-          _issueController.text =
-              'The display screen has malfunctioned, showing horizontal/vertical lines and flickering without any physical damage or drops.';
-          break;
-        case 'Physical Hardware Defect':
-          _issueController.text =
-              'A structural hardware component has failed under standard manufacturer operating conditions.';
-          break;
-        case 'Battery / Charging Issue':
-          _issueController.text =
-              'The product fails to retain battery charge and frequently shuts down prematurely or refuses to charge with original accessories.';
-          break;
-        case 'Excessive Overheating':
-          _issueController.text =
-              'The unit experiences abnormal thermal buildup during minimal usage, leading to automatic protective shutdowns.';
-          break;
-        case 'Audio / Sound Distortion':
-          _issueController.text =
-              'The integrated speakers/audio outputs suffer from severe cracking, static, and intermittent sound cutoff.';
-          break;
-        case 'Motor / Mechanical Failure':
-          _issueController.text =
-              'The internal motor / drive mechanism has seized or generates loud grinding friction noise during cycle operation.';
-          break;
-        case 'Water / Liquid Leakage':
-          _issueController.text =
-              'Uncontrolled water/liquid leakage is originating from internal pipe joints under normal operating pressure.';
-          break;
-        case 'Performance & Freezing':
-          _issueController.text =
-              'The firmware repeatedly freezes and hangs during routine operation, rendering the appliance unusable.';
-          break;
-      }
+      _currentCategory = newCategory;
+      final firstSymptom = newCategory.symptoms.first;
+      _selectedIssueChip = firstSymptom.title;
+      _issueController.text = firstSymptom.detailedDescription;
+    });
+  }
+
+  void _onIssueChipSelected(ClaimSymptomPreset symptom) {
+    setState(() {
+      _selectedIssueChip = symptom.title;
+      _issueController.text = symptom.detailedDescription;
     });
   }
 
@@ -140,6 +110,7 @@ class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
       customerEmail: ref.read(firebaseAuthServiceProvider).currentUser?.email,
       customModel: _modelController.text.trim(),
       customSerial: _serialController.text.trim(),
+      categoryConfig: _currentCategory,
     );
   }
 
@@ -335,16 +306,39 @@ class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
                     const SizedBox(height: 20),
 
                     // 3. DEFECT & ISSUE SELECTION
-                    Text(
-                      'SELECT DEFECT OR SYMPTOM',
-                      style: GoogleFonts.inter(
-                        color: AppColors.onSurfaceVariant,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 0.5,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'SELECT DEFECT OR SYMPTOM',
+                          style: GoogleFonts.inter(
+                            color: AppColors.onSurfaceVariant,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
+                          ),
+                          child: Text(
+                            _currentCategory.displayName,
+                            style: const TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 10.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 8),
+                    _buildCategorySelectorPills(),
+                    const SizedBox(height: 10),
                     _buildQuickIssueChips(),
                     const SizedBox(height: 12),
 
@@ -601,19 +595,66 @@ class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
     );
   }
 
+  Widget _buildCategorySelectorPills() {
+    return SizedBox(
+      height: 28,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: WarrantyClaimCategories.allConfigs.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        itemBuilder: (context, index) {
+          final cat = WarrantyClaimCategories.allConfigs[index];
+          final isSelected = _currentCategory.type == cat.type;
+          return GestureDetector(
+            onTap: () => _onCategorySelected(cat),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? AppColors.primary.withValues(alpha: 0.2)
+                    : Colors.white.withValues(alpha: 0.04),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: isSelected ? AppColors.primary : Colors.white10,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isSelected) ...[
+                    const Icon(Icons.check, size: 12, color: AppColors.primary),
+                    const SizedBox(width: 4),
+                  ],
+                  Text(
+                    cat.displayName,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.white60,
+                      fontSize: 11,
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildQuickIssueChips() {
     return SizedBox(
       height: 34,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
-        itemCount: _quickIssues.length,
+        itemCount: _currentCategory.symptoms.length,
         separatorBuilder: (_, __) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
-          final issue = _quickIssues[index];
-          final isSelected = _selectedIssueChip == issue;
+          final symptom = _currentCategory.symptoms[index];
+          final isSelected = _selectedIssueChip == symptom.title;
           return ChoiceChip(
             label: Text(
-              issue,
+              symptom.title,
               style: TextStyle(
                 color: isSelected ? Colors.black : Colors.white70,
                 fontSize: 11.5,
@@ -627,7 +668,7 @@ class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
               color: isSelected ? AppColors.primary : Colors.white.withValues(alpha: 0.08),
             ),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-            onSelected: (_) => _onIssueChipSelected(issue),
+            onSelected: (_) => _onIssueChipSelected(symptom),
           );
         },
       ),
@@ -655,8 +696,10 @@ class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
                 controller: _modelController,
                 style: const TextStyle(color: Colors.white, fontSize: 12),
                 decoration: InputDecoration(
-                  labelText: 'Model Number',
-                  labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
+                  labelText: _currentCategory.firstSpecLabel,
+                  hintText: _currentCategory.firstSpecHint,
+                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 10.5),
+                  labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
                   filled: true,
                   fillColor: AppColors.cardSurface,
                   isDense: true,
@@ -671,8 +714,10 @@ class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
                 controller: _serialController,
                 style: const TextStyle(color: Colors.white, fontSize: 12),
                 decoration: InputDecoration(
-                  labelText: 'Serial Number',
-                  labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.4), fontSize: 11),
+                  labelText: _currentCategory.secondSpecLabel,
+                  hintText: _currentCategory.secondSpecHint,
+                  hintStyle: TextStyle(color: Colors.white.withValues(alpha: 0.25), fontSize: 10.5),
+                  labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.5), fontSize: 11),
                   filled: true,
                   fillColor: AppColors.cardSurface,
                   isDense: true,
@@ -704,13 +749,13 @@ class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
-                  'Consumer Protection Act, 2019 Citation Included',
-                  style: TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
+                Text(
+                  _currentCategory.statutoryCitation,
+                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  'Claim invokes statutory protections under Section 2(47) & Chapter VI for manufacturing defect redressal.',
+                  _currentCategory.legalSubtitle,
                   style: TextStyle(color: Colors.white.withValues(alpha: 0.6), fontSize: 10.5, height: 1.3),
                 ),
               ],
