@@ -66,6 +66,7 @@ dependencies:
   timezone: ^0.10.1
   flutter_timezone: ^5.1.0
   shared_preferences: ^2.5.2
+  url_launcher: ^6.3.2
 
 
 

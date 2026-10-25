@@ -10,6 +10,7 @@ import 'package:receipto/features/receipts/presentation/widgets/document_viewer_
 import 'package:receipto/features/receipts/presentation/widgets/pdf_viewer_dialog.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 import 'package:receipto/features/warranty/presentation/providers/warranty_provider.dart';
+import 'package:receipto/features/warranty/presentation/widgets/warranty_claim_modal.dart';
 import 'package:receipto/core/utils/warranty_utils.dart';
 
 class WarrantyDetailsScreen extends ConsumerWidget {
@@ -117,13 +118,30 @@ class WarrantyDetailsScreen extends ConsumerWidget {
                         _buildNotesCard(context),
                         const SizedBox(height: 32),
 
+                        // Primary Action: AI 1-Click Warranty Claim Dispatcher
+                        GradientButton(
+                          text: '🛡️ Claim Warranty with AI',
+                          onPressed: () {
+                            WarrantyClaimModal.show(context, warranty);
+                          },
+                        ),
+                        const SizedBox(height: 12),
+
                         // Action button to open original receipt
                         if (warranty.receiptId != null)
-                          GradientButton(
-                            text: 'Open Original Receipt',
+                          OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
                             onPressed: () {
                               context.push('/receipts/details/${warranty.receiptId}');
                             },
+                            child: const Text(
+                              'Open Original Receipt',
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                            ),
                           ),
                         const SizedBox(height: 12),
                       ],

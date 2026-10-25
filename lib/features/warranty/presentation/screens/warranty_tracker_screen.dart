@@ -12,6 +12,7 @@ import 'package:receipto/features/scan/domain/models/receipt_model.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 import 'package:receipto/features/warranty/presentation/providers/warranty_provider.dart';
 import 'package:receipto/features/warranty/presentation/widgets/warranty_calendar_view.dart';
+import 'package:receipto/features/warranty/presentation/widgets/warranty_claim_modal.dart';
 
 class WarrantyTrackerScreen extends ConsumerStatefulWidget {
   const WarrantyTrackerScreen({super.key});
@@ -760,38 +761,56 @@ class _WarrantyTrackerScreenState extends ConsumerState<WarrantyTrackerScreen> {
             Row(
               children: [
                 Expanded(
-                  child: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ).applyTo(
-                    OutlinedButton(
-                      onPressed: () {
-                        // Push Hero transition to details page
-                        context.push('/receipts/warranty/${item.id}');
-                      },
-                      child: const Text(
-                        'View Details',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                      ),
+                  flex: 5,
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.shield_outlined, size: 15),
+                    label: const Text(
+                      'Claim Warranty',
+                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                    ),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.black,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      WarrantyClaimModal.show(context, item);
+                    },
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 4,
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: () {
+                      context.push('/receipts/warranty/${item.id}');
+                    },
+                    child: const Text(
+                      'Details',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12.5),
                     ),
                   ),
                 ),
                 if (item.receiptId != null) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                      ),
-                      onPressed: () {
-                        context.push('/receipts/details/${item.receiptId}');
-                      },
-                      child: const Text('Open Receipt', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 8),
+                  IconButton(
+                    tooltip: 'Open Original Receipt',
+                    style: IconButton.styleFrom(
+                      backgroundColor: Colors.white.withValues(alpha: 0.05),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      padding: const EdgeInsets.all(10),
                     ),
+                    icon: const Icon(Icons.receipt_long, color: AppColors.secondary, size: 18),
+                    onPressed: () {
+                      context.push('/receipts/details/${item.receiptId}');
+                    },
                   ),
                 ],
               ],
