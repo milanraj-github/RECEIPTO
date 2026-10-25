@@ -29,23 +29,30 @@ class GoogleSignInButton extends StatelessWidget {
           child: Row(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              // Google Colored Icon Drawing (simulated with CustomPaint or simple visual)
-              Container(
-                width: 20,
-                height: 20,
-                decoration: const BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white,
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'G',
-                  style: GoogleFonts.hankenGrotesk(
-                    color: Colors.black,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
+              // Official 4-Color Google Logo
+              Image.asset(
+                'assets/icons/google.png',
+                width: 22,
+                height: 22,
+                errorBuilder: (context, error, stackTrace) {
+                  return Container(
+                    width: 22,
+                    height: 22,
+                    decoration: const BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white,
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      'G',
+                      style: GoogleFonts.hankenGrotesk(
+                        color: Colors.black,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  );
+                },
               ),
               const SizedBox(width: 12),
               Text(
