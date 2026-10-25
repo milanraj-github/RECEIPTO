@@ -23,11 +23,19 @@ class ShellLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final currentIndex = navigationShell.currentIndex;
 
-    return Scaffold(
-      backgroundColor: AppColors.background,
-      body: navigationShell,
-      extendBody: true,
-      bottomNavigationBar: SafeArea(
+    return PopScope(
+      canPop: currentIndex == 0,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        if (currentIndex != 0) {
+          navigationShell.goBranch(0);
+        }
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.background,
+        body: navigationShell,
+        extendBody: true,
+        bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
         child: SizedBox(
           height: 88,
@@ -105,7 +113,8 @@ class ShellLayout extends StatelessWidget {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildNavItem({
