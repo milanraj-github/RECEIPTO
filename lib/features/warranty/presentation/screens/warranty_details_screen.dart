@@ -59,6 +59,7 @@ class WarrantyDetailsScreen extends ConsumerWidget {
   Widget _buildDetailsContent(BuildContext context, WarrantyModel warranty) {
     final statusColor = _getStatusColor(warranty.status);
     final daysRemaining = WarrantyUtils.calculateDaysRemaining(warranty.expiryDate);
+    final isExpired = warranty.status == 'EXPIRED' || daysRemaining < 0;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -118,14 +119,55 @@ class WarrantyDetailsScreen extends ConsumerWidget {
                         _buildNotesCard(context),
                         const SizedBox(height: 32),
 
-                        // Primary Action: AI 1-Click Warranty Claim Dispatcher
-                        GradientButton(
-                          text: '🛡️ Claim Warranty with AI',
-                          onPressed: () {
-                            WarrantyClaimModal.show(context, warranty);
-                          },
-                        ),
-                        const SizedBox(height: 12),
+                        // Primary Action: AI 1-Click Warranty Claim Dispatcher (Active Warranties Only)
+                        if (!isExpired) ...[
+                          GradientButton(
+                            text: '🛡️ Claim Warranty with AI',
+                            onPressed: () {
+                              WarrantyClaimModal.show(context, warranty);
+                            },
+                          ),
+                          const SizedBox(height: 12),
+                        ] else ...[
+                          Container(
+                            padding: const EdgeInsets.all(14),
+                            decoration: BoxDecoration(
+                              color: Colors.redAccent.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(14),
+                              border: Border.all(color: Colors.redAccent.withValues(alpha: 0.3)),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.shield_outlined, color: Colors.redAccent, size: 22),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Warranty Coverage Expired',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        'Coverage concluded on ${warranty.expiryDate}. Free manufacturer warranty claims cannot be submitted.',
+                                        style: TextStyle(
+                                          color: Colors.white.withValues(alpha: 0.6),
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                        ],
 
                         // Action button to open original receipt
                         if (warranty.receiptId != null)

@@ -8,6 +8,7 @@ import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 import 'package:receipto/features/warranty/data/services/brand_support_directory.dart';
 import 'package:receipto/features/warranty/data/services/warranty_claim_dispatcher_service.dart';
 import 'package:receipto/features/warranty/data/services/warranty_claim_categories.dart';
+import 'package:receipto/core/utils/warranty_utils.dart';
 
 class WarrantyClaimModal extends ConsumerStatefulWidget {
   final WarrantyModel warranty;
@@ -394,12 +395,19 @@ class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
   }
 
   Widget _buildProductSummaryBanner() {
+    final daysRemaining = WarrantyUtils.calculateDaysRemaining(widget.warranty.expiryDate);
+    final isExpired = widget.warranty.status == 'EXPIRED' || daysRemaining < 0;
+
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         color: AppColors.cardSurface,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
+        border: Border.all(
+          color: isExpired
+              ? Colors.redAccent.withValues(alpha: 0.25)
+              : Colors.white.withValues(alpha: 0.08),
+        ),
       ),
       child: Row(
         children: [
@@ -407,10 +415,14 @@ class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
             width: 44,
             height: 44,
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.15),
+              color: (isExpired ? Colors.redAccent : AppColors.primary).withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: const Icon(Icons.verified_outlined, color: AppColors.primary, size: 22),
+            child: Icon(
+              isExpired ? Icons.timer_off_outlined : Icons.verified_outlined,
+              color: isExpired ? Colors.redAccent : AppColors.primary,
+              size: 22,
+            ),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -432,7 +444,11 @@ class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
                   children: [
                     Text(
                       _supportInfo.brandName,
-                      style: const TextStyle(color: AppColors.primary, fontSize: 12, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                        color: isExpired ? Colors.white70 : AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                     const Text(' • ', style: TextStyle(color: Colors.white38)),
                     Text(
@@ -447,13 +463,19 @@ class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: Colors.greenAccent.withValues(alpha: 0.12),
+              color: (isExpired ? Colors.redAccent : Colors.greenAccent).withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.greenAccent.withValues(alpha: 0.3)),
+              border: Border.all(
+                color: (isExpired ? Colors.redAccent : Colors.greenAccent).withValues(alpha: 0.3),
+              ),
             ),
-            child: const Text(
-              'Under Warranty',
-              style: TextStyle(color: Colors.greenAccent, fontSize: 10.5, fontWeight: FontWeight.bold),
+            child: Text(
+              isExpired ? 'Expired' : 'Under Warranty',
+              style: TextStyle(
+                color: isExpired ? Colors.redAccent : Colors.greenAccent,
+                fontSize: 10.5,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
         ],

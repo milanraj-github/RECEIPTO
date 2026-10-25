@@ -610,6 +610,7 @@ class _WarrantyTrackerScreenState extends ConsumerState<WarrantyTrackerScreen> {
   Widget _buildWarrantyCard(BuildContext context, WarrantyModel item) {
     final statusColor = _getStatusColor(item.status);
     final daysRemaining = WarrantyUtils.calculateDaysRemaining(item.expiryDate);
+    final isExpired = item.status == 'EXPIRED' || daysRemaining < 0;
     
     // Calculate progress ratio
     double progress = 0.0;
@@ -760,41 +761,52 @@ class _WarrantyTrackerScreenState extends ConsumerState<WarrantyTrackerScreen> {
             // Buttons Actions Row
             Row(
               children: [
-                Expanded(
-                  flex: 5,
-                  child: ElevatedButton.icon(
-                    icon: const Icon(Icons.shield_outlined, size: 15),
-                    label: const Text(
-                      'Claim Warranty',
-                      style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                if (!isExpired) ...[
+                  Expanded(
+                    flex: 5,
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.shield_outlined, size: 15),
+                      label: const Text(
+                        'Claim Warranty',
+                        style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.bold),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.black,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      onPressed: () {
+                        WarrantyClaimModal.show(context, item);
+                      },
                     ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.black,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                    onPressed: () {
-                      WarrantyClaimModal.show(context, item);
-                    },
                   ),
-                ),
-                const SizedBox(width: 8),
+                  const SizedBox(width: 8),
+                ],
                 Expanded(
-                  flex: 4,
+                  flex: isExpired ? 1 : 4,
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.15)),
+                      side: BorderSide(
+                        color: isExpired
+                            ? AppColors.primary.withValues(alpha: 0.35)
+                            : Colors.white.withValues(alpha: 0.15),
+                      ),
+                      backgroundColor: isExpired ? AppColors.primary.withValues(alpha: 0.08) : Colors.transparent,
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                       padding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                     onPressed: () {
                       context.push('/receipts/warranty/${item.id}');
                     },
-                    child: const Text(
-                      'Details',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 12.5),
+                    child: Text(
+                      isExpired ? 'View Details' : 'Details',
+                      style: TextStyle(
+                        color: isExpired ? AppColors.primary : Colors.white,
+                        fontWeight: FontWeight.w600,
+                        fontSize: 12.5,
+                      ),
                     ),
                   ),
                 ),
