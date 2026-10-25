@@ -281,6 +281,20 @@ class BrandSupportDirectory {
       website: 'https://www.sennheiser.com/service-support',
       serviceCenterQuery: 'Sennheiser Service Center near me',
     ),
+    'nestle': BrandSupportInfo(
+      brandName: 'Nestle',
+      supportEmail: 'wecare@in.nestle.com',
+      tollFreePhone: '1800 103 1947',
+      website: 'https://www.nestle.in/aboutus/contact-us',
+      serviceCenterQuery: 'Nestle India Consumer Care Office near me',
+    ),
+    'amul': BrandSupportInfo(
+      brandName: 'Amul',
+      supportEmail: 'customercare@amul.coop',
+      tollFreePhone: '1800 258 3333',
+      website: 'https://amul.com/m/contact-us',
+      serviceCenterQuery: 'Amul Office near me',
+    ),
   };
 
   /// Discovers official brand support details from brand name, product name, or merchant

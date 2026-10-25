@@ -102,13 +102,15 @@ Digital Proof: Verified via Receipto Mobile Vault
 
     try {
       if (await canLaunchUrl(emailLaunchUri)) {
-        return await launchUrl(emailLaunchUri);
-      } else {
-        // Fallback for devices where canLaunchUrl returns false for mailto
         return await launchUrl(emailLaunchUri, mode: LaunchMode.externalApplication);
       }
+      return await launchUrl(emailLaunchUri, mode: LaunchMode.externalApplication);
     } catch (_) {
-      return false;
+      try {
+        return await launchUrl(emailLaunchUri, mode: LaunchMode.platformDefault);
+      } catch (_) {
+        return false;
+      }
     }
   }
 
@@ -118,12 +120,15 @@ Digital Proof: Verified via Receipto Mobile Vault
     final Uri phoneUri = Uri(scheme: 'tel', path: cleanNumber);
     try {
       if (await canLaunchUrl(phoneUri)) {
-        return await launchUrl(phoneUri);
-      } else {
         return await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
       }
+      return await launchUrl(phoneUri, mode: LaunchMode.externalApplication);
     } catch (_) {
-      return false;
+      try {
+        return await launchUrl(phoneUri, mode: LaunchMode.platformDefault);
+      } catch (_) {
+        return false;
+      }
     }
   }
 
@@ -136,10 +141,15 @@ Digital Proof: Verified via Receipto Mobile Vault
       if (await canLaunchUrl(mapsUri)) {
         return await launchUrl(mapsUri, mode: LaunchMode.externalApplication);
       }
+      // Fallback: attempt direct launch even if package visibility restricted query check
+      return await launchUrl(mapsUri, mode: LaunchMode.externalApplication);
     } catch (_) {
-      // ignore
+      try {
+        return await launchUrl(mapsUri, mode: LaunchMode.platformDefault);
+      } catch (_) {
+        return false;
+      }
     }
-    return false;
   }
 
   /// Copies claim letter directly to clipboard

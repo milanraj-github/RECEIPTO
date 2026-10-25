@@ -188,12 +188,28 @@ class _WarrantyClaimModalState extends ConsumerState<WarrantyClaimModal> {
       return;
     }
     final dispatcher = ref.read(warrantyClaimDispatcherServiceProvider);
-    await dispatcher.launchPhoneDialer(phone);
+    final launched = await dispatcher.launchPhoneDialer(phone);
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open phone dialer.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   Future<void> _handleLocateServiceCenter() async {
     final dispatcher = ref.read(warrantyClaimDispatcherServiceProvider);
-    await dispatcher.launchServiceCenterMaps(_supportInfo.serviceCenterQuery);
+    final launched = await dispatcher.launchServiceCenterMaps(_supportInfo.serviceCenterQuery);
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not open maps application.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+    }
   }
 
   Future<void> _handleSharePacket() async {
