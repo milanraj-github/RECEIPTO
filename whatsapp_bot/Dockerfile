@@ -1,33 +1,27 @@
-FROM node:20-bullseye-slim
+FROM node:20-bookworm-slim
 
-# Install latest Google Chrome stable and required Linux graphics libraries
+# Install Chromium and necessary system fonts directly from Debian repositories
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    wget \
-    gnupg \
-    ca-certificates \
-    fonts-ipafont-gothic \
-    fonts-wqy-zenhei \
-    fonts-thai-tlwg \
-    fonts-kacst \
+    chromium \
     fonts-freefont-ttf \
+    fonts-liberation \
+    libnss3 \
+    libatk-bridge2.0-0 \
     libxss1 \
-    && wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /usr/share/keyrings/googlechrome-linux-keyring.gpg \
-    && sh -c 'echo "deb [arch=amd64 signed-by=/usr/share/keyrings/googlechrome-linux-keyring.gpg] http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google.list' \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends google-chrome-stable \
+    libasound2 \
     && rm -rf /var/lib/apt/lists/*
 
-# Point Puppeteer to the installed Chrome binary
+# Point Puppeteer to the Debian Chromium binary
 ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true \
-    PUPPETEER_EXECUTABLE_PATH=/usr/bin/google-chrome-stable \
+    PUPPETEER_EXECUTABLE_PATH=/usr/bin/chromium \
     PORT=10000
 
 WORKDIR /app
 
-# Copy dependency specifications
+# Copy package dependencies
 COPY package*.json ./
 
-# Install dependencies
+# Install npm dependencies
 RUN npm install
 
 # Copy application files

@@ -36,7 +36,7 @@ const executablePath =
   process.env.PUPPETEER_EXECUTABLE_PATH ||
   (isWindows
     ? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe"
-    : "/usr/bin/google-chrome-stable");
+    : "/usr/bin/chromium");
 
 // 2. Initialize WhatsApp Web Client using Chrome & persistent session
 const client = new Client({
