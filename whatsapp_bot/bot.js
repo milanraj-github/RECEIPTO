@@ -173,13 +173,14 @@ async function startWhatsAppBot() {
   sock.ev.on("messages.upsert", async (m) => {
     try {
       const msg = m.messages?.[0];
-      if (!msg || msg.key.fromMe) return;
+      if (!msg) return;
 
       const remoteJid = msg.key.remoteJid;
       if (!remoteJid || remoteJid.endsWith("@g.us")) return; // Ignore group messages
 
       // Extract sender phone digits
       const senderPhoneDigits = remoteJid.split("@")[0].replace(/\D/g, "");
+      const cleanPhone = `+${senderPhoneDigits}`;
 
       // Extract message text (conversation, caption, extended text)
       const text = (
@@ -189,103 +190,110 @@ async function startWhatsAppBot() {
         ""
       ).trim();
 
-      // Check if message is a receipt photo
-      const imageMsg = msg.message?.imageMessage;
+      // Don't process our own automated bot replies to prevent infinite loops!
+      if (
+        msg.key.fromMe &&
+        (text.startsWith("🧾 *Receipt Saved") ||
+          text.startsWith("🎉 *Receipto Connected") ||
+          text.startsWith("🔍 Analyzing receipt") ||
+          text.startsWith("⚠️") ||
+          text.startsWith("❌"))
+      ) {
+        return;
+      }
+
+      console.log(`📩 Incoming message from ${cleanPhone} (${remoteJid}): "${text.substring(0, 30)}"`);
 
       // Handle 1-Tap Verification Code (e.g., "VERIFY 849201")
-      if (text.toUpperCase().startsWith("VERIFY")) {
-        const parts = text.split(" ");
-        const code = parts[1]?.trim();
+      const verifyMatch = text.match(/^VERIFY\s+(\d{4,6})/i);
+      if (verifyMatch) {
+        const inputCode = verifyMatch[1];
+        console.log(`🔐 Processing verification code '${inputCode}' from: ${cleanPhone}`);
 
-        if (code) {
-          console.log(`🔐 Processing verification code '${code}' from: ${remoteJid}`);
+        // Search for matching pending verification in Supabase (stored as 'pending:<CODE>:<USER_ID>')
+        const { data: records, error: searchErr } = await supabase
+          .from("whatsapp_users")
+          .select("phone_number, user_id")
+          .like("user_id", `pending:${inputCode}:%`);
 
-          // Find pending code in whatsapp_users table
-          const { data: pendingUsers, error: searchErr } = await supabase
+        if (searchErr) {
+          console.error("Database error looking up verification:", searchErr);
+          return;
+        }
+
+        if (records && records.length > 0) {
+          const match = records[0];
+          const parts = match.user_id.split(":");
+          // Format: pending:<CODE>:<USER_ID>
+          const realUserId = parts.slice(2).join(":");
+
+          // Update main record to verified user_id
+          await supabase
             .from("whatsapp_users")
-            .select("*")
-            .eq("verification_code", code)
-            .eq("is_verified", false);
+            .update({ user_id: realUserId })
+            .eq("phone_number", match.phone_number);
 
-          if (searchErr) {
-            console.error("Error searching verification code:", searchErr);
-            return;
+          // Also upsert incoming sender ID (LID / cleanPhone) so future receipts from this chat always resolve
+          if (cleanPhone !== match.phone_number) {
+            await supabase.from("whatsapp_users").upsert({
+              phone_number: cleanPhone,
+              user_id: realUserId,
+            });
           }
 
-          if (pendingUsers && pendingUsers.length > 0) {
-            const pendingRecord = pendingUsers[0];
-
-            // Mark user verified and associate both raw phone number and JID
-            const { error: updateErr } = await supabase
-              .from("whatsapp_users")
-              .update({
-                phone_number: senderPhoneDigits,
-                whatsapp_lid: remoteJid,
-                is_verified: true,
-                verification_code: null,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", pendingRecord.id);
-
-            if (updateErr) {
-              console.error("Error updating verification record:", updateErr);
-              await sock.sendMessage(
-                remoteJid,
-                { text: "⚠️ Error linking your account. Please try again from Receipto." },
-                { quoted: msg }
-              );
-            } else {
-              console.log(`✅ WhatsApp successfully linked for user: ${pendingRecord.user_id}`);
-              await sock.sendMessage(
-                remoteJid,
-                {
-                  text:
-                    "🎉 *Receipto Connected Successfully!*\n\n" +
-                    "Your WhatsApp is now verified and linked to your Receipto account.\n\n" +
-                    "📸 *How to use:* Simply forward or snap any receipt photo here, and Receipto AI will instantly extract and track it for you!",
-                },
-                { quoted: msg }
-              );
-            }
-            return;
-          } else {
-            console.log(`⚠️ Invalid or expired verification code: ${code}`);
-            await sock.sendMessage(
-              remoteJid,
-              {
-                text: "❌ Invalid or expired verification code. Please request a new code from Receipto Profile > Connect WhatsApp.",
-              },
-              { quoted: msg }
-            );
-            return;
-          }
+          console.log(`✅ WhatsApp successfully linked for user: ${realUserId}`);
+          await sock.sendMessage(
+            remoteJid,
+            {
+              text:
+                "🎉 *Receipto Connected Successfully!*\n\n" +
+                "Your WhatsApp is now verified and linked to your Receipto account.\n\n" +
+                "📸 *How to use:* Simply forward or snap any receipt photo here, and Receipto AI will instantly extract and track it for you!",
+            },
+            { quoted: msg }
+          );
+          return;
+        } else {
+          console.log(`⚠️ Invalid or expired verification code: ${inputCode}`);
+          await sock.sendMessage(
+            remoteJid,
+            {
+              text: "❌ Invalid or expired verification code. Please request a new code from Receipto Profile > Connect WhatsApp.",
+            },
+            { quoted: msg }
+          );
+          return;
         }
       }
 
       // STEALTH MODE: Check if sender is a verified Receipto user
-      const { data: userRows, error: userError } = await supabase
+      const { data: userRecords, error: userError } = await supabase
         .from("whatsapp_users")
-        .select("user_id, phone_number, whatsapp_lid, is_verified")
-        .or(`phone_number.eq.${senderPhoneDigits},whatsapp_lid.eq.${remoteJid}`)
-        .order("created_at", { ascending: false });
+        .select("user_id, phone_number")
+        .or(`phone_number.eq.${cleanPhone},phone_number.eq.${senderPhoneDigits},phone_number.eq.${remoteJid}`);
 
       if (userError) {
         console.error("Error querying whatsapp_users:", userError);
         return;
       }
 
-      const verifiedUser = userRows?.find((r) => r.is_verified);
+      const verifiedRecord = userRecords?.find(
+        (r) => r.user_id && !r.user_id.startsWith("pending:")
+      );
 
       // STEALTH MODE: Silently ignore all non-verified users
-      if (!verifiedUser) {
+      if (!verifiedRecord) {
         return;
       }
 
-      const userId = verifiedUser.user_id;
+      const userId = verifiedRecord.user_id;
+
+      // Check if message is a receipt photo
+      const imageMsg = msg.message?.imageMessage;
 
       // Handle Receipt Image from verified user
       if (imageMsg) {
-        console.log(`📸 Receipt image received from verified user (${senderPhoneDigits}). Downloading...`);
+        console.log(`📸 Receipt image received from verified user (${cleanPhone}). Downloading...`);
 
         // Send processing status
         await sock.sendMessage(
@@ -379,7 +387,7 @@ async function startWhatsAppBot() {
           `\n\n📱 *Open Receipto app to see your updated dashboard!*`;
 
         await sock.sendMessage(remoteJid, { text: replyMessage }, { quoted: msg });
-        console.log(`✅ Success reply delivered to ${remoteJid}`);
+        console.log(`✅ Success reply delivered to ${cleanPhone}`);
       }
     } catch (err) {
       console.error("❌ Error processing message:", err);
