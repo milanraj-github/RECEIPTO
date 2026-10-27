@@ -120,8 +120,27 @@ server.listen(PORT, () => {
   console.log(`🌐 Health check & QR web server listening on port ${PORT}`);
 });
 
-// 3. Start WhatsApp Bot Connection using Baileys
+// 3. Start WhatsApp Bot Connection using Baileys with Cloud Session Persistence
 async function startWhatsAppBot() {
+  // Restore persistent session from Supabase cloud database if container was redeployed
+  if (!fs.existsSync("./baileys_auth/creds.json")) {
+    try {
+      const { data: sessionRow } = await supabase
+        .from("whatsapp_users")
+        .select("user_id")
+        .eq("phone_number", "baileys_session_creds")
+        .maybeSingle();
+
+      if (sessionRow?.user_id && sessionRow.user_id.startsWith("{")) {
+        fs.mkdirSync("./baileys_auth", { recursive: true });
+        fs.writeFileSync("./baileys_auth/creds.json", sessionRow.user_id);
+        console.log("🔄 Restored WhatsApp session from Supabase cloud! No QR scan needed.");
+      }
+    } catch (e) {
+      console.warn("⚠️ Could not restore cloud session:", e.message);
+    }
+  }
+
   const { state, saveCreds } = await useMultiFileAuthState("./baileys_auth");
 
   sock = makeWASocket({
@@ -132,7 +151,21 @@ async function startWhatsAppBot() {
     browser: ["Receipto Bot", "Chrome", "1.0.0"],
   });
 
-  sock.ev.on("creds.update", saveCreds);
+  sock.ev.on("creds.update", async () => {
+    await saveCreds();
+    // Persist session to Supabase so redeployments never lose connection
+    try {
+      if (fs.existsSync("./baileys_auth/creds.json")) {
+        const credsContent = fs.readFileSync("./baileys_auth/creds.json", "utf8");
+        await supabase.from("whatsapp_users").upsert({
+          phone_number: "baileys_session_creds",
+          user_id: credsContent,
+        });
+      }
+    } catch (e) {
+      console.warn("⚠️ Could not sync session to Supabase:", e.message);
+    }
+  });
 
   sock.ev.on("connection.update", async (update) => {
     const { connection, lastDisconnect, qr } = update;
@@ -154,6 +187,17 @@ async function startWhatsAppBot() {
       console.log("✅ RECEIPTO WHATSAPP BOT IS LIVE & CONNECTED!");
       console.log("🚀 Forward any receipt photo to this number on WhatsApp!");
       console.log("=====================================================\n");
+
+      // Save creds to Supabase on first successful open
+      try {
+        if (fs.existsSync("./baileys_auth/creds.json")) {
+          const credsContent = fs.readFileSync("./baileys_auth/creds.json", "utf8");
+          await supabase.from("whatsapp_users").upsert({
+            phone_number: "baileys_session_creds",
+            user_id: credsContent,
+          });
+        }
+      } catch (_) {}
     } else if (connection === "close") {
       isBotReady = false;
       const statusCode = lastDisconnect?.error?.output?.statusCode;
@@ -164,7 +208,10 @@ async function startWhatsAppBot() {
       if (shouldReconnect) {
         setTimeout(startWhatsAppBot, 3000);
       } else {
-        console.log("❌ Logged out. Delete ./baileys_auth and restart to rescan QR.");
+        console.log("❌ Logged out. Clearing cloud session credentials.");
+        try {
+          await supabase.from("whatsapp_users").delete().eq("phone_number", "baileys_session_creds");
+        } catch (_) {}
       }
     }
   });
@@ -290,6 +337,20 @@ async function startWhatsAppBot() {
 
       // Check if message is a receipt photo
       const imageMsg = msg.message?.imageMessage;
+
+      // Friendly greeting for verified user
+      if (!imageMsg && /^(hi|hy|hello|hey|help)\b/i.test(text)) {
+        await sock.sendMessage(
+          remoteJid,
+          {
+            text:
+              "👋 *Hi! I am your Receipto AI Assistant.*\n\n" +
+              "📸 Simply forward or snap any receipt photo here, and I will automatically extract the store, total, items, and warranty for your Receipto app!",
+          },
+          { quoted: msg }
+        );
+        return;
+      }
 
       // Handle Receipt Image from verified user
       if (imageMsg) {
@@ -442,23 +503,53 @@ Strictly return ONLY a valid raw JSON object, without markdown code fences or ba
     const apiKey = geminiApiKeys[keyIndex];
 
     try {
-      console.log(`🤖 Invoking Gemini 3 Flash with Key #${keyIndex + 1}...`);
+      console.log(`🤖 Invoking Gemini AI with Key #${keyIndex + 1}...`);
       const genAI = new GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
-
-      const result = await model.generateContent([
-        prompt,
-        {
-          inlineData: {
-            data: base64Data,
-            mimeType: mimeType,
+      
+      let result;
+      try {
+        const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+        result = await model.generateContent([
+          prompt,
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: mimeType,
+            },
           },
-        },
-      ]);
+        ]);
+      } catch (primaryErr) {
+        console.warn(`⚠️ gemini-3-flash-preview failed, trying gemini-3.5-flash:`, primaryErr.message);
+        const fallbackModel = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
+        result = await fallbackModel.generateContent([
+          prompt,
+          {
+            inlineData: {
+              data: base64Data,
+              mimeType: mimeType,
+            },
+          },
+        ]);
+      }
 
       const rawText = result.response.text();
       const cleaned = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
       const parsed = JSON.parse(cleaned);
+
+      // Infer merchant name if missing or placeholder
+      if (
+        !parsed.merchant_name ||
+        parsed.merchant_name.toLowerCase().includes("store/merchant") ||
+        parsed.merchant_name.toLowerCase() === "scanned receipt" ||
+        parsed.merchant_name === "null"
+      ) {
+        if (parsed.items && parsed.items.length > 0 && parsed.items[0].name) {
+          const brandWord = parsed.items[0].name.split(/[\s(]/)[0];
+          parsed.merchant_name = `${brandWord} Store`;
+        } else {
+          parsed.merchant_name = "Retail Store";
+        }
+      }
 
       currentKeyIndex = (currentKeyIndex + 1) % geminiApiKeys.length;
       return parsed;
