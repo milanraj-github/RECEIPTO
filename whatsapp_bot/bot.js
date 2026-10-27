@@ -10,13 +10,21 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
-// 1. Initialize Supabase & Gemini
+// 1. Initialize Supabase & Gemini Key Pool
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const geminiModel = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+
+// Support comma-separated GEMINI_API_KEYS or single GEMINI_API_KEY
+const rawKeys = process.env.GEMINI_API_KEYS || process.env.GEMINI_API_KEY || "";
+const geminiApiKeys = rawKeys
+  .split(",")
+  .map((k) => k.trim())
+  .filter(Boolean);
+
+let currentKeyIndex = 0;
 
 console.log("=========================================");
 console.log("🤖 Starting Receipto WhatsApp AI Bot...");
+console.log(`🔑 Loaded ${geminiApiKeys.length} Gemini API key(s) for rotation & auto-fallback`);
 console.log("=========================================");
 
 let latestQrBase64 = null;
@@ -439,10 +447,22 @@ client.on("message", async (message) => {
 // Initialize client
 client.initialize();
 
-// Helper: Extract structured data using Google Gemini 3 Flash
+// Helper: Extract structured data using Google Gemini 3 Flash with multi-key rotation & fallback
 async function extractReceiptData(base64Data, mimeType) {
-  try {
-    const prompt = `Analyze this receipt or invoice image carefully. Extract all line items and details. Return ONLY a valid JSON object without markdown or code formatting:
+  if (geminiApiKeys.length === 0) {
+    console.error("❌ No Gemini API keys configured in GEMINI_API_KEYS or GEMINI_API_KEY");
+    return {
+      merchant_name: "Scanned Receipt",
+      total_amount: 0.0,
+      purchase_date: new Date().toISOString().split("T")[0],
+      category: "General",
+      currency: "₹",
+      items: [],
+      warranty: { has_warranty: false },
+    };
+  }
+
+  const prompt = `Analyze this receipt or invoice image carefully. Extract all line items and details. Return ONLY a valid JSON object without markdown or code formatting:
 {
   "merchant_name": "Store / merchant name",
   "total_amount": 0.00,
@@ -469,29 +489,52 @@ async function extractReceiptData(base64Data, mimeType) {
   }
 }`;
 
-    const result = await geminiModel.generateContent([
-      prompt,
-      {
-        inlineData: {
-          data: base64Data,
-          mimeType: mimeType,
-        },
-      },
-    ]);
+  let lastError = null;
 
-    const rawText = result.response.text();
-    const cleaned = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
-    return JSON.parse(cleaned);
-  } catch (e) {
-    console.error("Gemini OCR extraction failed:", e);
-    return {
-      merchant_name: "Scanned Receipt",
-      total_amount: 0.0,
-      purchase_date: new Date().toISOString().split("T")[0],
-      category: "General",
-      currency: "₹",
-      items: [],
-      warranty: { has_warranty: false },
-    };
+  // Try each configured key in round-robin sequence
+  for (let attempt = 0; attempt < geminiApiKeys.length; attempt++) {
+    const keyIndex = currentKeyIndex;
+    const activeKey = geminiApiKeys[keyIndex];
+    const keyHint = activeKey.substring(0, 8) + "..." + activeKey.slice(-4);
+
+    try {
+      console.log(`🧠 Calling Gemini 3 Flash with Key #${keyIndex + 1} (${keyHint})...`);
+      const genAI = new GoogleGenerativeAI(activeKey);
+      const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
+
+      const result = await model.generateContent([
+        prompt,
+        {
+          inlineData: {
+            data: base64Data,
+            mimeType: mimeType,
+          },
+        },
+      ]);
+
+      const rawText = result.response.text();
+      const cleaned = rawText.replace(/```json/g, "").replace(/```/g, "").trim();
+      const parsed = JSON.parse(cleaned);
+
+      // Rotate to next key for future requests (balanced load)
+      currentKeyIndex = (currentKeyIndex + 1) % geminiApiKeys.length;
+      return parsed;
+    } catch (e) {
+      console.warn(`⚠️ Gemini Key #${keyIndex + 1} failed: ${e.message}`);
+      lastError = e;
+      // Rotate immediately to next key on error
+      currentKeyIndex = (currentKeyIndex + 1) % geminiApiKeys.length;
+    }
   }
+
+  console.error("❌ All Gemini API keys failed:", lastError);
+  return {
+    merchant_name: "Scanned Receipt",
+    total_amount: 0.0,
+    purchase_date: new Date().toISOString().split("T")[0],
+    category: "General",
+    currency: "₹",
+    items: [],
+    warranty: { has_warranty: false },
+  };
 }
