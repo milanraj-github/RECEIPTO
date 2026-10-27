@@ -327,14 +327,15 @@ async function startWhatsAppBot() {
           .insert({
             user_id: userId,
             merchant_name: merchantName,
-            total_amount: totalAmount,
+            total: totalAmount,
+            grand_total: totalAmount,
             date: purchaseDate,
             category: category,
+            currency: extracted.currency || "₹",
             raw_text: JSON.stringify(extracted),
-            warranty_months: warrantyDurationMonths,
-            warranty_expiry: warrantyExpiryDate,
+            is_deleted: false,
           })
-          .select()
+          .select("id")
           .single();
 
         if (insertError) {
@@ -350,13 +351,19 @@ async function startWhatsAppBot() {
         console.log(`💾 Receipt #${insertedReceipt.id} saved for user ${userId}`);
 
         // Insert itemized list if items exist
-        if (items.length > 0 && insertedReceipt.id) {
-          const itemRows = items.map((it) => ({
-            receipt_id: insertedReceipt.id,
-            item_name: it.name || "Item",
-            price: parseFloat(it.price) || 0.0,
-            quantity: parseInt(it.quantity) || 1,
-          }));
+        if (items.length > 0 && insertedReceipt?.id) {
+          const itemRows = items.map((it) => {
+            const price = parseFloat(it.price) || 0.0;
+            const qty = parseInt(it.quantity) || 1;
+            return {
+              receipt_id: insertedReceipt.id,
+              name: it.name || "Item",
+              price: price,
+              unit_price: price,
+              total_price: price * qty,
+              quantity: qty,
+            };
+          });
 
           const { error: itemsError } = await supabase.from("receipt_items").insert(itemRows);
           if (itemsError) {
