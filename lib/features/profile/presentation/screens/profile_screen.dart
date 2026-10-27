@@ -16,6 +16,7 @@ import 'package:receipto/core/services/app_lock_service.dart';
 import 'package:receipto/core/services/receipt_database_service.dart';
 import 'package:receipto/core/services/whatsapp_service.dart';
 import 'package:receipto/features/warranty/presentation/providers/warranty_provider.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -1437,10 +1438,12 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       color: const Color(0xFF25D366).withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
-                      Icons.chat_bubble_rounded,
-                      color: Color(0xFF25D366),
-                      size: 22,
+                    child: const Center(
+                      child: FaIcon(
+                        FontAwesomeIcons.whatsapp,
+                        color: Color(0xFF25D366),
+                        size: 22,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
