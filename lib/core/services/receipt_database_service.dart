@@ -230,7 +230,8 @@ class ReceiptDatabaseService {
           .select('*, receipt_items(*)')
           .eq('user_id', userId)
           .or('is_deleted.is.null,is_deleted.eq.false')
-          .order('date', ascending: false);
+          .order('date', ascending: false)
+          .order('id', ascending: false);
 
       final list = List<Map<String, dynamic>>.from(response);
       final migratedList = list.map((r) => migrateReceiptDataIfNeeded(r)).toList();

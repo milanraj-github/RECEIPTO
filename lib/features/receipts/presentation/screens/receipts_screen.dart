@@ -466,39 +466,54 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
 
             // Receipts List Container
             Expanded(
-              child: filteredItems.isEmpty
-                  ? Center(
-                      child: Text(
-                        'No receipts found matching filters.',
-                        style: GoogleFonts.inter(
-                          color: AppColors.onSurfaceVariant,
-                          fontSize: 15,
+              child: RefreshIndicator(
+                color: AppColors.primary,
+                backgroundColor: AppColors.cardSurface,
+                onRefresh: () async {
+                  ref.invalidate(dbReceiptsListProvider);
+                  ref.invalidate(dbWarrantiesProvider);
+                  await ref.read(dbReceiptsListProvider.future);
+                },
+                child: filteredItems.isEmpty
+                    ? SingleChildScrollView(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        child: Container(
+                          height: 350,
+                          alignment: Alignment.center,
+                          child: Text(
+                            'No receipts found matching filters.',
+                            style: GoogleFonts.inter(
+                              color: AppColors.onSurfaceVariant,
+                              fontSize: 15,
+                            ),
+                          ),
                         ),
+                      )
+                    : ListView.separated(
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        padding: const EdgeInsets.only(
+                          left: AppSpacing.gutter,
+                          right: AppSpacing.gutter,
+                          bottom: 120,
+                        ),
+                        itemCount: filteredItems.length,
+                        separatorBuilder: (context, index) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final item = filteredItems[index];
+                          final key = _cardKeys.putIfAbsent(item.id, () => GlobalKey<ReceiptCardItemState>());
+                          return ReceiptCardItem(
+                            key: key,
+                            item: item,
+                            selectedCategory: _selectedCategory,
+                            onTap: () {
+                              // GoRouter detail push passing ID
+                              context.push('/receipts/details/${item.id}');
+                            },
+                            onDelete: () => _handleSecureDelete(context, item, key),
+                          );
+                        },
                       ),
-                    )
-                  : ListView.separated(
-                      padding: const EdgeInsets.only(
-                        left: AppSpacing.gutter,
-                        right: AppSpacing.gutter,
-                        bottom: 120,
-                      ),
-                      itemCount: filteredItems.length,
-                      separatorBuilder: (context, index) => const SizedBox(height: 12),
-                      itemBuilder: (context, index) {
-                        final item = filteredItems[index];
-                        final key = _cardKeys.putIfAbsent(item.id, () => GlobalKey<ReceiptCardItemState>());
-                        return ReceiptCardItem(
-                          key: key,
-                          item: item,
-                          selectedCategory: _selectedCategory,
-                          onTap: () {
-                            // GoRouter detail push passing ID
-                            context.push('/receipts/details/${item.id}');
-                          },
-                          onDelete: () => _handleSecureDelete(context, item, key),
-                        );
-                      },
-                    ),
+              ),
             ),
           ],
         ),

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -13,6 +14,7 @@ import 'package:receipto/core/services/reminder_engine.dart';
 import 'package:receipto/core/services/app_lock_provider.dart';
 import 'package:receipto/core/services/app_lock_service.dart';
 import 'package:receipto/core/services/receipt_database_service.dart';
+import 'package:receipto/core/services/whatsapp_service.dart';
 import 'package:receipto/features/warranty/presentation/providers/warranty_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -120,7 +122,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               ],
               const SizedBox(height: 24),
 
-              // 5. ☁ Backup & Sync Section
+              // 5. 💬 WhatsApp AI Assistant Section
+              _buildSectionHeader(context, '💬 WhatsApp AI Assistant'),
+              const SizedBox(height: 10),
+              _buildWhatsAppCard(context),
+              const SizedBox(height: 24),
+
+              // 6. ☁ Backup & Sync Section
               _buildSectionHeader(context, '☁ Backup & Sync'),
               const SizedBox(height: 10),
               _buildToggleSetting(
@@ -1379,6 +1387,515 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  // 💬 WhatsApp Assistant Card
+  Widget _buildWhatsAppCard(BuildContext context) {
+    final whatsAppNumberAsync = ref.watch(userWhatsAppNumberProvider);
+
+    return GlassCard(
+      borderRadius: AppRadius.lg,
+      padding: const EdgeInsets.all(16),
+      child: whatsAppNumberAsync.when(
+        loading: () => const Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: Center(
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.secondary),
+            ),
+          ),
+        ),
+        error: (err, _) => Row(
+          children: [
+            const Icon(Icons.error_outline, color: AppColors.error),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Could not load WhatsApp status: $err',
+                style: GoogleFonts.inter(color: AppColors.onSurfaceVariant, fontSize: 12),
+              ),
+            ),
+          ],
+        ),
+        data: (linkedNumber) {
+          final isLinked = linkedNumber != null && linkedNumber.isNotEmpty;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF25D366).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.chat_bubble_rounded,
+                      color: Color(0xFF25D366),
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text(
+                              'WhatsApp AI Bot',
+                              style: GoogleFonts.inter(
+                                color: AppColors.onSurface,
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: isLinked
+                                    ? const Color(0xFF25D366).withValues(alpha: 0.15)
+                                    : Colors.amber.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(6),
+                              ),
+                              child: Text(
+                                isLinked ? 'Connected' : 'Not Linked',
+                                style: GoogleFonts.inter(
+                                  color: isLinked ? const Color(0xFF25D366) : Colors.amber,
+                                  fontSize: 10.5,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          isLinked
+                              ? 'Linked to $linkedNumber'
+                              : 'Forward receipts via WhatsApp to auto-import',
+                          style: GoogleFonts.inter(
+                            color: AppColors.onSurfaceVariant,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (isLinked)
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, size: 18, color: AppColors.onSurfaceVariant),
+                      tooltip: 'Change Phone Number',
+                      onPressed: () => _showConnectWhatsAppDialog(context, initialNumber: linkedNumber),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 14),
+              if (!isLinked)
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                    ),
+                    icon: const Icon(Icons.add_link_rounded, size: 18),
+                    label: Text(
+                      'Connect WhatsApp',
+                      style: GoogleFonts.inter(fontSize: 13.5, fontWeight: FontWeight.w600),
+                    ),
+                    onPressed: () => _showConnectWhatsAppDialog(context),
+                  ),
+                )
+              else
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF25D366).withValues(alpha: 0.15),
+                          foregroundColor: const Color(0xFF25D366),
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 11),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                            side: BorderSide(color: const Color(0xFF25D366).withValues(alpha: 0.4)),
+                          ),
+                        ),
+                        icon: const Icon(Icons.launch_rounded, size: 16),
+                        label: Text(
+                          'Open WhatsApp Chat',
+                          style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                        ),
+                        onPressed: () async {
+                          final service = ref.read(whatsappServiceProvider);
+                          final opened = await service.openWhatsAppChat(
+                            defaultMessage: 'Hi! Here is my receipt.',
+                          );
+                          if (!opened && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Could not open WhatsApp.')),
+                            );
+                          }
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    OutlinedButton(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.error,
+                        side: BorderSide(color: AppColors.error.withValues(alpha: 0.3)),
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      child: Text(
+                        'Unlink',
+                        style: GoogleFonts.inter(fontSize: 13, fontWeight: FontWeight.w600),
+                      ),
+                      onPressed: () => _showUnlinkConfirmationDialog(context),
+                    ),
+                  ],
+                ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  void _showConnectWhatsAppDialog(BuildContext context, {String? initialNumber}) {
+    final controller = TextEditingController(text: initialNumber ?? '+91 ');
+    final formKey = GlobalKey<FormState>();
+    bool isLoading = false;
+    String? generatedCode;
+    Timer? pollTimer;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          // If in step 2 (verification generated) and timer not started yet, start polling
+          if (generatedCode != null && pollTimer == null) {
+            pollTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
+              final user = ref.read(firebaseAuthServiceProvider).currentUser;
+              if (user != null) {
+                final isVerified = await ref
+                    .read(whatsappServiceProvider)
+                    .checkVerificationStatus(
+                      userId: user.uid,
+                      rawPhoneNumber: controller.text,
+                    );
+                if (isVerified) {
+                  timer.cancel();
+                  ref.invalidate(userWhatsAppNumberProvider);
+                  if (context.mounted) {
+                    Navigator.pop(dialogCtx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('🎉 WhatsApp verified & linked successfully!'),
+                        backgroundColor: Color(0xFF25D366),
+                        duration: Duration(seconds: 3),
+                      ),
+                    );
+                  }
+                }
+              }
+            });
+          }
+
+          return AlertDialog(
+            backgroundColor: AppColors.cardSurface,
+            shape: RoundedRectangleBorder(
+              borderRadius: AppRadius.lg,
+              side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+            ),
+            title: Row(
+              children: [
+                const Icon(Icons.chat_bubble_rounded, color: Color(0xFF25D366), size: 22),
+                const SizedBox(width: 10),
+                Text(
+                  generatedCode == null
+                      ? (initialNumber != null ? 'Update WhatsApp' : 'Connect WhatsApp')
+                      : 'Verify Ownership',
+                  style: GoogleFonts.hankenGrotesk(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
+            ),
+            content: generatedCode == null
+                ? Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Enter the WhatsApp phone number from which you will send receipts or invoice photos.',
+                          style: GoogleFonts.inter(
+                            color: AppColors.onSurfaceVariant,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextFormField(
+                          controller: controller,
+                          keyboardType: TextInputType.phone,
+                          style: GoogleFonts.inter(color: Colors.white, fontSize: 15),
+                          decoration: InputDecoration(
+                            labelText: 'WhatsApp Phone Number',
+                            hintText: '+91 98765 43210',
+                            hintStyle: GoogleFonts.inter(
+                              color: AppColors.onSurfaceVariant.withValues(alpha: 0.5),
+                            ),
+                            labelStyle: const TextStyle(color: AppColors.primary),
+                            filled: true,
+                            fillColor: Colors.black.withValues(alpha: 0.2),
+                            prefixIcon: const Icon(Icons.phone_rounded, color: AppColors.primary, size: 20),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+                            ),
+                            focusedBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              borderSide: const BorderSide(color: AppColors.primary),
+                            ),
+                          ),
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter your phone number';
+                            }
+                            final digits = value.replaceAll(RegExp(r'[^\d]'), '');
+                            if (digits.length < 10) {
+                              return 'Enter a valid phone number (at least 10 digits)';
+                            }
+                            return null;
+                          },
+                        ),
+                      ],
+                    ),
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF25D366).withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFF25D366).withValues(alpha: 0.3)),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              'VERIFICATION CODE',
+                              style: GoogleFonts.inter(
+                                color: const Color(0xFF25D366),
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              generatedCode!,
+                              style: GoogleFonts.firaCode(
+                                color: Colors.white,
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 4,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Tap the button below to send this code to our WhatsApp Bot. Once sent, your number is instantly verified!',
+                        textAlign: TextAlign.center,
+                        style: GoogleFonts.inter(
+                          color: AppColors.onSurfaceVariant,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Color(0xFF25D366),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            'Listening for incoming verification...',
+                            style: GoogleFonts.inter(
+                              color: AppColors.onSurfaceVariant,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  pollTimer?.cancel();
+                  if (generatedCode != null) {
+                    ref.read(whatsappServiceProvider).cancelVerification(controller.text);
+                  }
+                  Navigator.pop(dialogCtx);
+                },
+                child: Text(
+                  generatedCode == null ? 'Cancel' : 'Back',
+                  style: GoogleFonts.inter(color: AppColors.onSurfaceVariant),
+                ),
+              ),
+              if (generatedCode == null)
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF25D366),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          if (!formKey.currentState!.validate()) return;
+                          final user = ref.read(firebaseAuthServiceProvider).currentUser;
+                          if (user == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Please sign in to link WhatsApp.')),
+                            );
+                            return;
+                          }
+
+                          setDialogState(() => isLoading = true);
+                          try {
+                            final code = await ref.read(whatsappServiceProvider).createVerificationCode(
+                                  userId: user.uid,
+                                  rawPhoneNumber: controller.text,
+                                );
+                            setDialogState(() {
+                              isLoading = false;
+                              generatedCode = code;
+                            });
+                          } catch (e) {
+                            setDialogState(() => isLoading = false);
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('Error: $e')),
+                              );
+                            }
+                          }
+                        },
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
+                        )
+                      : Text(
+                          'Verify on WhatsApp',
+                          style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                        ),
+                )
+              else
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF25D366),
+                    foregroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(Icons.send_rounded, size: 16),
+                  label: Text(
+                    'Send Code to Bot',
+                    style: GoogleFonts.inter(fontWeight: FontWeight.bold),
+                  ),
+                  onPressed: () async {
+                    await ref.read(whatsappServiceProvider).openWhatsAppChat(
+                          defaultMessage: 'VERIFY $generatedCode',
+                        );
+                  },
+                ),
+            ],
+          );
+        },
+      ),
+    ).then((_) {
+      pollTimer?.cancel();
+    });
+  }
+
+  void _showUnlinkConfirmationDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        backgroundColor: AppColors.cardSurface,
+        shape: RoundedRectangleBorder(
+          borderRadius: AppRadius.lg,
+          side: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
+        ),
+        title: Text(
+          'Unlink WhatsApp?',
+          style: GoogleFonts.hankenGrotesk(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        content: Text(
+          'Are you sure you want to unlink your WhatsApp number? Receipts sent from that number will no longer sync to your account.',
+          style: GoogleFonts.inter(color: AppColors.onSurfaceVariant, fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.onSurfaceVariant)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.error,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            ),
+            onPressed: () async {
+              final user = ref.read(firebaseAuthServiceProvider).currentUser;
+              if (user != null) {
+                await ref.read(whatsappServiceProvider).unlinkPhoneNumber(user.uid);
+                ref.invalidate(userWhatsAppNumberProvider);
+              }
+              if (context.mounted) {
+                Navigator.pop(dialogCtx);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('WhatsApp number unlinked.')),
+                );
+              }
+            },
+            child: Text('Unlink', style: GoogleFonts.inter(fontWeight: FontWeight.bold)),
+          ),
+        ],
       ),
     );
   }

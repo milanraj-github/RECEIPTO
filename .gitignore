@@ -67,3 +67,13 @@ deps.txt
 build/
 .dart_tool/
 
+# WhatsApp Bot
+whatsapp_bot/node_modules/
+whatsapp_bot/.env
+whatsapp_bot/.wwebjs_auth/
+whatsapp_bot/.wwebjs_cache/
+whatsapp_bot/qr.png
+whatsapp_bot/*.data.json
+whatsapp_bot/_session/
+
+
