@@ -120,6 +120,21 @@ server.listen(PORT, () => {
   console.log(`🌐 Health check & QR web server listening on port ${PORT}`);
 });
 
+function calculateExpiryDate(purchaseDateStr, durationMonths) {
+  try {
+    const base = purchaseDateStr && /^\d{4}-\d{2}-\d{2}$/.test(purchaseDateStr)
+      ? new Date(purchaseDateStr + "T00:00:00Z")
+      : new Date();
+    const d = new Date(base.getTime());
+    d.setUTCMonth(d.getUTCMonth() + (parseInt(durationMonths) || 12));
+    return d.toISOString().split("T")[0];
+  } catch (_) {
+    const d = new Date();
+    d.setUTCMonth(d.getUTCMonth() + (parseInt(durationMonths) || 12));
+    return d.toISOString().split("T")[0];
+  }
+}
+
 // 3. Start WhatsApp Bot Connection using Baileys with Cloud Session Persistence
 async function startWhatsAppBot() {
   // Restore persistent session from Supabase cloud database if container was redeployed
@@ -373,6 +388,31 @@ async function startWhatsAppBot() {
         const imageBuffer = await downloadMediaMessage(msg, "buffer", {});
         const base64Image = imageBuffer.toString("base64");
         const mimeType = imageMsg.mimetype || "image/jpeg";
+        const fileExt = mimeType.includes("png") ? "png" : "jpg";
+
+        // Upload receipt image to Supabase Storage bucket 'receipts' so it displays natively in the app
+        let imageUrl = null;
+        try {
+          const storagePath = `${userId}/receipt_wa_${Date.now()}.${fileExt}`;
+          const { data: uploadData, error: uploadErr } = await supabase.storage
+            .from("receipts")
+            .upload(storagePath, imageBuffer, {
+              contentType: mimeType,
+              upsert: true,
+            });
+
+          if (!uploadErr && uploadData) {
+            const { data: pubData } = supabase.storage
+              .from("receipts")
+              .getPublicUrl(storagePath);
+            imageUrl = pubData?.publicUrl || null;
+            console.log(`📸 Image successfully uploaded to Supabase Storage: ${imageUrl}`);
+          } else {
+            console.warn(`⚠️ Supabase Storage upload failed:`, uploadErr?.message);
+          }
+        } catch (uploadException) {
+          console.warn(`⚠️ Supabase Storage exception:`, uploadException.message);
+        }
 
         console.log("🤖 Extracting receipt details via Gemini AI (Multi-Key Rotation)...");
         const extracted = await extractReceiptData(base64Image, mimeType);
@@ -397,8 +437,17 @@ async function startWhatsAppBot() {
             total: totalAmount,
             grand_total: totalAmount,
             date: purchaseDate,
+            time: extracted.time || null,
             category: category,
             currency: extracted.currency || "₹",
+            image_url: imageUrl,
+            invoice_number: extracted.invoice_number || null,
+            receipt_number: extracted.invoice_number || null,
+            gst_number: extracted.gst_number || null,
+            payment_method: extracted.payment_method || null,
+            subtotal: parseFloat(extracted.subtotal) || null,
+            tax: parseFloat(extracted.tax) || null,
+            discount: parseFloat(extracted.discount) || null,
             raw_text: JSON.stringify(extracted),
             is_deleted: false,
           })
@@ -422,12 +471,13 @@ async function startWhatsAppBot() {
           const itemRows = items.map((it) => {
             const price = parseFloat(it.price) || 0.0;
             const qty = parseInt(it.quantity) || 1;
+            const tot = parseFloat(it.total_price) || (price * qty);
             return {
               receipt_id: insertedReceipt.id,
               name: it.name || "Item",
-              price: price,
+              price: tot,
               unit_price: price,
-              total_price: price * qty,
+              total_price: tot,
               quantity: qty,
             };
           });
@@ -435,6 +485,69 @@ async function startWhatsAppBot() {
           const { error: itemsError } = await supabase.from("receipt_items").insert(itemRows);
           if (itemsError) {
             console.warn("⚠️ Could not save itemized rows:", itemsError);
+          }
+        }
+
+        // Insert warranty records into Supabase warranties table
+        const warrantiesToInsert = [];
+
+        // Check if any item has warranty
+        for (const it of items) {
+          if (it.warranty_available || (it.warranty_period && it.warranty_period > 0)) {
+            const duration = parseInt(it.warranty_period) || 12;
+            const exp = it.warranty_expiry && /^\d{4}-\d{2}-\d{2}$/.test(it.warranty_expiry)
+              ? it.warranty_expiry
+              : calculateExpiryDate(purchaseDate, duration);
+
+            warrantiesToInsert.push({
+              user_id: userId,
+              receipt_id: insertedReceipt.id,
+              product_name: it.name || `${merchantName} Product`,
+              brand: it.brand || merchantName,
+              merchant_name: merchantName,
+              invoice_number: extracted.invoice_number || null,
+              purchase_date: purchaseDate,
+              warranty_period: duration,
+              warranty_unit: it.warranty_unit || "months",
+              expiry_date: exp,
+              image_url: imageUrl,
+              status: "ACTIVE",
+            });
+          }
+        }
+
+        // Fallback: If no item-level warranty was added, but receipt-level warranty was detected
+        if (warrantiesToInsert.length === 0 && (hasWarranty || warrantyDurationMonths > 0)) {
+          const duration = parseInt(warrantyDurationMonths) || 12;
+          const exp = warrantyExpiryDate && /^\d{4}-\d{2}-\d{2}$/.test(warrantyExpiryDate)
+            ? warrantyExpiryDate
+            : calculateExpiryDate(purchaseDate, duration);
+
+          const prodName = extracted.warranty?.product_name || items[0]?.name || `${merchantName} Product`;
+          const brandName = extracted.warranty?.brand || items[0]?.brand || merchantName;
+
+          warrantiesToInsert.push({
+            user_id: userId,
+            receipt_id: insertedReceipt.id,
+            product_name: prodName,
+            brand: brandName,
+            merchant_name: merchantName,
+            invoice_number: extracted.invoice_number || null,
+            purchase_date: purchaseDate,
+            warranty_period: duration,
+            warranty_unit: "months",
+            expiry_date: exp,
+            image_url: imageUrl,
+            status: "ACTIVE",
+          });
+        }
+
+        if (warrantiesToInsert.length > 0) {
+          const { error: wErr } = await supabase.from("warranties").insert(warrantiesToInsert);
+          if (wErr) {
+            console.error("⚠️ Failed to insert warranty into Supabase:", wErr);
+          } else {
+            console.log(`🛡️ Successfully saved ${warrantiesToInsert.length} warranty record(s) for receipt #${insertedReceipt.id}`);
           }
         }
 
@@ -446,8 +559,8 @@ async function startWhatsAppBot() {
               (items.length > 5 ? `\n... and ${items.length - 5} more` : "")
             : "";
 
-        const warrantyText = hasWarranty
-          ? `\n🛡️ *Warranty:* ${warrantyDurationMonths} Months (Expires: ${warrantyExpiryDate})`
+        const warrantyText = warrantiesToInsert.length > 0
+          ? `\n🛡️ *Warranty Protected:* ${warrantiesToInsert.length} item(s) (${warrantiesToInsert[0].warranty_period} Months, Expires: ${warrantiesToInsert[0].expiry_date})`
           : "";
 
         const replyMessage =
@@ -487,20 +600,45 @@ async function extractReceiptData(base64Data, mimeType) {
   const prompt = `Analyze this receipt image and extract structured JSON data.
 Strictly return ONLY a valid raw JSON object, without markdown code fences or backticks:
 {
-  "merchant_name": "Store/Merchant name",
-  "total_amount": 0.00,
+  "merchant_name": "Store or merchant name",
+  "invoice_number": "Invoice, cash memo, or bill number if available, else null",
   "purchase_date": "YYYY-MM-DD",
-  "category": "One of: Groceries, Electronics, Dining, Shopping, Fuel, Utilities, Health, Entertainment, Travel, General",
-  "currency": "Currency symbol or INR/USD",
+  "time": "HH:MM",
+  "category": "One of: Electronics, Groceries, Food & Dining, Fuel, Shopping, Fashion, Furniture, Home Appliances, Healthcare, Beauty & Personal Care, Travel, Entertainment, Education, Utilities, Office Supplies, Sports, Automotive, Accessories, Books, Mobile & Gadgets, Computers, Subscription, Others",
+  "currency": "₹",
+  "subtotal": 0.00,
+  "tax": 0.00,
+  "discount": 0.00,
+  "total_amount": 0.00,
+  "payment_method": "Cash, UPI, Credit Card, Debit Card, etc. or null",
+  "gst_number": "GSTIN or tax number if available, else null",
   "items": [
-    { "name": "Item name", "price": 0.00, "quantity": 1 }
+    {
+      "name": "Item or product name",
+      "price": 0.00,
+      "quantity": 1,
+      "brand": "Brand name if detectable or null",
+      "category": "Matching category from above",
+      "warranty_available": false,
+      "warranty_period": 0,
+      "warranty_unit": "months",
+      "warranty_expiry": null
+    }
   ],
   "warranty": {
     "has_warranty": false,
+    "product_name": "Name of product under warranty or null",
+    "brand": "Brand or null",
     "duration_months": 0,
     "expiry_date": null
   }
-}`;
+}
+
+CRITICAL RULES FOR WARRANTY & EXPIRY:
+- If this receipt contains any electronic device, appliance, gadget, hardware, or printed guarantee/warranty terms (e.g. 1 Year, 2 Years, 24 Months, Guarantee, Warranty):
+  1. Set "has_warranty": true on the receipt level, set "duration_months" (e.g. 12, 24), and compute "expiry_date" (YYYY-MM-DD) by adding duration to purchase_date.
+  2. Also set "warranty_available": true on each warranted product item in the "items" list, with its "warranty_period" and "warranty_expiry".
+- Assume currency is "₹" for Indian receipts.`;
 
   let lastError = null;
 
