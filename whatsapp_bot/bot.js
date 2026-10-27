@@ -131,10 +131,16 @@ async function startWhatsAppBot() {
         .eq("phone_number", "baileys_session_creds")
         .maybeSingle();
 
-      if (sessionRow?.user_id && sessionRow.user_id.startsWith("{")) {
-        fs.mkdirSync("./baileys_auth", { recursive: true });
-        fs.writeFileSync("./baileys_auth/creds.json", sessionRow.user_id);
-        console.log("🔄 Restored WhatsApp session from Supabase cloud! No QR scan needed.");
+      if (sessionRow?.user_id) {
+        try {
+          const parsed = JSON.parse(sessionRow.user_id);
+          // Only restore if it contains genuine Baileys cryptographic keys
+          if (parsed && parsed.noiseKey && parsed.registrationId) {
+            fs.mkdirSync("./baileys_auth", { recursive: true });
+            fs.writeFileSync("./baileys_auth/creds.json", sessionRow.user_id);
+            console.log("🔄 Restored valid WhatsApp session from Supabase cloud!");
+          }
+        } catch (_) {}
       }
     } catch (e) {
       console.warn("⚠️ Could not restore cloud session:", e.message);
