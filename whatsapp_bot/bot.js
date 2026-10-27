@@ -10,6 +10,14 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+// Global crash handlers to catch unhandled async errors in Docker/Puppeteer
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("⚠️ Unhandled Rejection at:", promise, "reason:", reason);
+});
+process.on("uncaughtException", (err) => {
+  console.error("⚠️ Uncaught Exception:", err);
+});
+
 // 1. Initialize Supabase & Gemini Key Pool
 const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_KEY);
 
@@ -54,6 +62,8 @@ const client = new Client({
       "--no-first-run",
       "--no-zygote",
       "--disable-gpu",
+      "--single-process",
+      "--disable-software-rasterizer",
     ],
   },
 });
@@ -444,8 +454,10 @@ client.on("message", async (message) => {
   }
 });
 
-// Initialize client
-client.initialize();
+// Initialize client with error handling
+client.initialize().catch((err) => {
+  console.error("❌ WhatsApp client failed to initialize:", err);
+});
 
 // Helper: Extract structured data using Google Gemini 3 Flash with multi-key rotation & fallback
 async function extractReceiptData(base64Data, mimeType) {
