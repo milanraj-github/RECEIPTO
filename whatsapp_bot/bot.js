@@ -53,10 +53,6 @@ const client = new Client({
   authStrategy: new LocalAuth({
     dataPath: "./.wwebjs_auth",
   }),
-  webVersionCache: {
-    type: "remote",
-    remotePath: "https://raw.githubusercontent.com/wwebjs-dev/whatsapp-web.js/main/cache/latest.json",
-  },
   puppeteer: {
     headless: true,
     executablePath: executablePath,
@@ -69,15 +65,6 @@ const client = new Client({
       "--no-zygote",
       "--disable-gpu",
       "--disable-software-rasterizer",
-      "--disable-extensions",
-      "--disable-default-apps",
-      "--disable-background-networking",
-      "--disable-background-timer-throttling",
-      "--disable-client-side-phishing-detection",
-      "--disable-popup-blocking",
-      "--mute-audio",
-      "--renderer-process-limit=1",
-      "--js-flags=--max-old-space-size=128",
     ],
   },
 });
@@ -184,7 +171,7 @@ const server = http.createServer((req, res) => {
             <p style="color:#c9d1d9;font-size:16px;margin:12px 0;">${syncStatus}</p>
             <p style="color:#8b949e;font-size:13px;">Syncing your WhatsApp account data in cloud. Almost ready...</p>
           </div>
-          <script>setTimeout(() => location.reload(), 3000);</script>
+          <script>setTimeout(() => location.reload(), 6000);</script>
         </body>
         </html>
       `);
@@ -214,7 +201,7 @@ const server = http.createServer((req, res) => {
             <h2 style="margin:0 0 12px 0;">Initializing Bot...</h2>
             <p style="color:#8b949e;">Generating QR code, please wait a moment.</p>
           </div>
-          <script>setTimeout(() => location.reload(), 3000);</script>
+          <script>setTimeout(() => location.reload(), 6000);</script>
         </body>
         </html>
       `);
@@ -512,6 +499,7 @@ client.on("message", async (message) => {
 });
 
 // Initialize client with error handling
+console.log("⏳ Initializing WhatsApp Web client and loading web.whatsapp.com...");
 client.initialize().catch((err) => {
   console.error("❌ WhatsApp client failed to initialize:", err);
 });
