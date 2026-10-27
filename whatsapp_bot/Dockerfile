@@ -59,5 +59,5 @@ COPY . .
 # Expose health & QR check port
 EXPOSE 10000
 
-# Start WhatsApp Bot
-CMD ["node", "bot.js"]
+# Start WhatsApp Bot with memory heap capped for 512MB RAM cloud tiers
+CMD ["node", "--max-old-space-size=192", "bot.js"]
