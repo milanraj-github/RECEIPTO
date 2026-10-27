@@ -37,6 +37,8 @@ console.log("=========================================");
 
 let latestQrBase64 = null;
 let isBotReady = false;
+let isAuthenticating = false;
+let syncStatus = "Syncing chats...";
 
 // Determine platform Chrome binary
 const isWindows = process.platform === "win32";
@@ -51,6 +53,10 @@ const client = new Client({
   authStrategy: new LocalAuth({
     dataPath: "./.wwebjs_auth",
   }),
+  webVersionCache: {
+    type: "remote",
+    remotePath: "https://raw.githubusercontent.com/wwebjs-dev/whatsapp-web.js/main/cache/latest.json",
+  },
   puppeteer: {
     headless: true,
     executablePath: executablePath,
@@ -62,7 +68,6 @@ const client = new Client({
       "--no-first-run",
       "--no-zygote",
       "--disable-gpu",
-      "--single-process",
       "--disable-software-rasterizer",
     ],
   },
@@ -90,9 +95,32 @@ client.on("qr", async (qr) => {
   }
 });
 
-// 4. Authenticated & Ready Event
+// 4. Authenticated & Ready Events
+client.on("authenticated", () => {
+  isAuthenticating = true;
+  latestQrBase64 = null;
+  console.log("🔐 WhatsApp account authenticated! Initializing and syncing chats...");
+});
+
+client.on("loading_screen", (percent, message) => {
+  syncStatus = `Syncing: ${percent}% (${message || "WhatsApp"})`;
+  console.log(`⏳ ${syncStatus}`);
+});
+
+client.on("auth_failure", (msg) => {
+  isAuthenticating = false;
+  console.error("❌ Authentication failure:", msg);
+});
+
+client.on("disconnected", (reason) => {
+  isBotReady = false;
+  isAuthenticating = false;
+  console.warn("⚠️ Client disconnected:", reason);
+});
+
 client.on("ready", () => {
   isBotReady = true;
+  isAuthenticating = false;
   latestQrBase64 = null;
   console.log("\n🎉 =====================================================");
   console.log("✅ RECEIPTO WHATSAPP BOT IS LIVE & CONNECTED!");
@@ -109,9 +137,13 @@ const server = http.createServer((req, res) => {
       JSON.stringify({
         status: "ok",
         ready: isBotReady,
+        authenticating: isAuthenticating,
+        syncStatus: isAuthenticating ? syncStatus : undefined,
         service: "Receipto WhatsApp AI Bot",
         message: isBotReady
           ? "Bot is live and receiving messages."
+          : isAuthenticating
+          ? `Authenticated. ${syncStatus}`
           : "Bot is waiting for WhatsApp QR scan. Open /qr to scan.",
       })
     );
@@ -128,6 +160,22 @@ const server = http.createServer((req, res) => {
             <h2 style="color:#25D366;margin:0 0 12px 0;">Bot is Live & Connected!</h2>
             <p style="color:#8b949e;line-height:1.5;">Your WhatsApp account is authenticated. Send or forward any receipt photo to your bot on WhatsApp.</p>
           </div>
+        </body>
+        </html>
+      `);
+    } else if (isAuthenticating) {
+      res.end(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Receipto Bot - Syncing</title><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+        <body style="font-family:system-ui,-apple-system,sans-serif;text-align:center;padding:50px 20px;background:#0d1117;color:white;">
+          <div style="max-width:400px;margin:auto;background:#161b22;padding:30px;border-radius:16px;border:1px solid #30363d;">
+            <h1 style="color:#58a6ff;font-size:42px;margin:0 0 10px 0;">⏳</h1>
+            <h2 style="color:#58a6ff;margin:0 0 12px 0;">Authenticated!</h2>
+            <p style="color:#c9d1d9;font-size:16px;margin:12px 0;">${syncStatus}</p>
+            <p style="color:#8b949e;font-size:13px;">Syncing your WhatsApp account data in cloud. Almost ready...</p>
+          </div>
+          <script>setTimeout(() => location.reload(), 3000);</script>
         </body>
         </html>
       `);
