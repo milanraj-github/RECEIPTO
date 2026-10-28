@@ -120,19 +120,114 @@ server.listen(PORT, () => {
   console.log(`🌐 Health check & QR web server listening on port ${PORT}`);
 });
 
-function calculateExpiryDate(purchaseDateStr, durationMonths) {
-  try {
-    const base = purchaseDateStr && /^\d{4}-\d{2}-\d{2}$/.test(purchaseDateStr)
-      ? new Date(purchaseDateStr + "T00:00:00Z")
-      : new Date();
-    const d = new Date(base.getTime());
-    d.setUTCMonth(d.getUTCMonth() + (parseInt(durationMonths) || 12));
-    return d.toISOString().split("T")[0];
-  } catch (_) {
-    const d = new Date();
-    d.setUTCMonth(d.getUTCMonth() + (parseInt(durationMonths) || 12));
-    return d.toISOString().split("T")[0];
+function parseAndNormalizeDate(rawDate) {
+  if (!rawDate || typeof rawDate !== "string") return null;
+  const clean = rawDate.trim();
+
+  // YYYY-MM-DD or YYYY/MM/DD
+  const ymdMatch = clean.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+  if (ymdMatch) {
+    return `${ymdMatch[1]}-${ymdMatch[2].padStart(2, "0")}-${ymdMatch[3].padStart(2, "0")}`;
   }
+
+  // DD-MM-YYYY or DD/MM/YYYY
+  const dmyMatch = clean.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})$/);
+  if (dmyMatch) {
+    return `${dmyMatch[3]}-${dmyMatch[2].padStart(2, "0")}-${dmyMatch[1].padStart(2, "0")}`;
+  }
+
+  // DD-MM-YY or DD/MM/YY
+  const dmyyMatch = clean.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2})$/);
+  if (dmyyMatch) {
+    return `20${dmyyMatch[3]}-${dmyyMatch[2].padStart(2, "0")}-${dmyyMatch[1].padStart(2, "0")}`;
+  }
+
+  // Month text dictionary (e.g. "15 May 2028", "May 15, 2028", "15-May-2028")
+  const months = { jan: 1, feb: 2, mar: 3, apr: 4, may: 5, jun: 6, jul: 7, aug: 8, sep: 9, oct: 10, nov: 11, dec: 12 };
+  const parts = clean.toLowerCase().replace(/[,-]/g, " ").split(/\s+/);
+  let year = null, month = null, day = null;
+  for (const p of parts) {
+    for (const m in months) {
+      if (p.startsWith(m)) { month = months[m]; break; }
+    }
+    if (/^\d{4}$/.test(p)) year = parseInt(p);
+    else if (/^\d{1,2}$/.test(p)) {
+      if (!day) day = parseInt(p);
+      else if (!year) year = 2000 + parseInt(p);
+    }
+  }
+  if (year && month && day) {
+    return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+  }
+  return null;
+}
+
+function calculateExpiryDate(purchaseDateStr, period, unit) {
+  let d;
+  try {
+    const norm = parseAndNormalizeDate(purchaseDateStr);
+    d = norm ? new Date(`${norm}T00:00:00Z`) : new Date();
+    if (isNaN(d.getTime())) d = new Date();
+  } catch (_) {
+    d = new Date();
+  }
+
+  const u = (unit || "months").toLowerCase();
+  const rawP = Number(period);
+  // Default to 12 months if duration is missing or an invalid fractional return window (< 1)
+  const p = (rawP && rawP >= 1) ? Math.round(rawP) : 12;
+
+  if (u.startsWith("y")) {
+    d.setUTCFullYear(d.getUTCFullYear() + p);
+  } else if (u.startsWith("d")) {
+    d.setUTCDate(d.getUTCDate() + p);
+  } else {
+    d.setUTCMonth(d.getUTCMonth() + p);
+  }
+  return d.toISOString().split("T")[0];
+}
+
+function calculateStatus(expiryDateStr) {
+  if (!expiryDateStr) return "ACTIVE";
+  const norm = parseAndNormalizeDate(expiryDateStr);
+  if (!norm) return "ACTIVE";
+  const exp = new Date(`${norm}T00:00:00Z`);
+  if (isNaN(exp.getTime())) return "ACTIVE";
+
+  const now = new Date();
+  const today = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  const diffDays = Math.ceil((exp.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 0) return "EXPIRED";
+  if (diffDays <= 30) return "EXPIRING SOON";
+  return "ACTIVE";
+}
+
+function isDurableProduct(name, category) {
+  const durableCats = [
+    "electronics",
+    "mobile & gadgets",
+    "computers",
+    "home appliances",
+    "automotive",
+  ];
+  const cat = (category || "").toLowerCase().trim();
+  if (durableCats.some((dc) => cat.includes(dc))) return true;
+
+  const n = (name || "").toLowerCase();
+  const durableKeywords = [
+    "phone", "iphone", "galaxy", "pixel", "oneplus", "smartphone", "mobile",
+    "laptop", "macbook", "ipad", "tablet", "pc", "computer",
+    "tv", "television", "monitor", "display", "screen",
+    "iron", "dryer", "hair dryer", "straightener", "trimmer", "shaver",
+    "kettle", "grinder", "mixer", "blender", "cooktop", "induction", "oven", "microwave",
+    "fridge", "refrigerator", "washing machine", "purifier",
+    "speaker", "soundbar", "headphone", "earphone", "airpod", "earbud", "buds",
+    "watch", "smartwatch",
+    "camera", "charger", "adapter", "power bank", "cable",
+    "fan", "ac", "air conditioner", "cooler", "heater", "geyser", "vacuum",
+  ];
+  return durableKeywords.some((k) => n.includes(k));
 }
 
 // 3. Start WhatsApp Bot Connection using Baileys with Cloud Session Persistence
@@ -491,13 +586,27 @@ async function startWhatsAppBot() {
         // Insert warranty records into Supabase warranties table
         const warrantiesToInsert = [];
 
-        // Check if any item has warranty
+        // 1. Process item-level warranties / product expiration dates
         for (const it of items) {
-          if (it.warranty_available || (it.warranty_period && it.warranty_period > 0)) {
-            const duration = parseInt(it.warranty_period) || 12;
-            const exp = it.warranty_expiry && /^\d{4}-\d{2}-\d{2}$/.test(it.warranty_expiry)
-              ? it.warranty_expiry
-              : calculateExpiryDate(purchaseDate, duration);
+          const hasExplicitExpiry = Boolean(it.warranty_expiry && it.warranty_expiry.toString().trim() !== "");
+          const rawDuration = Number(it.warranty_period);
+          const hasDuration = !isNaN(rawDuration) && rawDuration >= 1;
+          const isDurable = isDurableProduct(it.name, it.category || category);
+          const isWarrantable = it.warranty_available === true || hasExplicitExpiry || hasDuration || isDurable;
+
+          if (isWarrantable) {
+            const unit = (it.warranty_unit || "months").toLowerCase();
+            const duration = hasDuration ? Math.round(rawDuration) : (isDurable ? 12 : 12);
+
+            let exp = null;
+            if (hasExplicitExpiry) {
+              exp = parseAndNormalizeDate(it.warranty_expiry.toString());
+            }
+            if (!exp) {
+              exp = calculateExpiryDate(purchaseDate, duration, unit);
+            }
+
+            const status = calculateStatus(exp);
 
             warrantiesToInsert.push({
               user_id: userId,
@@ -508,21 +617,28 @@ async function startWhatsAppBot() {
               invoice_number: extracted.invoice_number || null,
               purchase_date: purchaseDate,
               warranty_period: duration,
-              warranty_unit: it.warranty_unit || "months",
+              warranty_unit: unit,
               expiry_date: exp,
               image_url: imageUrl,
-              status: "ACTIVE",
+              status: status,
             });
           }
         }
 
-        // Fallback: If no item-level warranty was added, but receipt-level warranty was detected
-        if (warrantiesToInsert.length === 0 && (hasWarranty || warrantyDurationMonths > 0)) {
-          const duration = parseInt(warrantyDurationMonths) || 12;
-          const exp = warrantyExpiryDate && /^\d{4}-\d{2}-\d{2}$/.test(warrantyExpiryDate)
-            ? warrantyExpiryDate
-            : calculateExpiryDate(purchaseDate, duration);
+        // 2. Fallback: If no item matched but receipt-level warranty was detected
+        if (warrantiesToInsert.length === 0 && (hasWarranty || (warrantyDurationMonths && Number(warrantyDurationMonths) >= 1))) {
+          const rawDur = Number(warrantyDurationMonths);
+          const duration = (!isNaN(rawDur) && rawDur >= 1) ? Math.round(rawDur) : 12;
 
+          let exp = null;
+          if (warrantyExpiryDate) {
+            exp = parseAndNormalizeDate(warrantyExpiryDate.toString());
+          }
+          if (!exp) {
+            exp = calculateExpiryDate(purchaseDate, duration, "months");
+          }
+
+          const status = calculateStatus(exp);
           const prodName = extracted.warranty?.product_name || items[0]?.name || `${merchantName} Product`;
           const brandName = extracted.warranty?.brand || items[0]?.brand || merchantName;
 
@@ -538,7 +654,7 @@ async function startWhatsAppBot() {
             warranty_unit: "months",
             expiry_date: exp,
             image_url: imageUrl,
-            status: "ACTIVE",
+            status: status,
           });
         }
 
@@ -627,18 +743,33 @@ Strictly return ONLY a valid raw JSON object, without markdown code fences or ba
   ],
   "warranty": {
     "has_warranty": false,
-    "product_name": "Name of product under warranty or null",
+    "product_name": "Name of primary product under warranty or null",
     "brand": "Brand or null",
     "duration_months": 0,
     "expiry_date": null
   }
 }
 
-CRITICAL RULES FOR WARRANTY & EXPIRY:
-- If this receipt contains any electronic device, appliance, gadget, hardware, or printed guarantee/warranty terms (e.g. 1 Year, 2 Years, 24 Months, Guarantee, Warranty):
-  1. Set "has_warranty": true on the receipt level, set "duration_months" (e.g. 12, 24), and compute "expiry_date" (YYYY-MM-DD) by adding duration to purchase_date.
-  2. Also set "warranty_available": true on each warranted product item in the "items" list, with its "warranty_period" and "warranty_expiry".
-- Assume currency is "₹" for Indian receipts.`;
+CRITICAL RULES FOR EXPIRY DATE & WARRANTY EXTRACTION:
+1. EXPIRY DATES ON GROCERY / FOOD / MEDICINE / COSMETICS / BEAUTY:
+   - Extract ANY printed expiry, expiration, best before, use by, valid till, or expiry date for each line item!
+   - For grocery, dairy, food, beverages, medicines, cosmetics, skincare, and packaged items: receipts frequently print "Expiry: DD-MM-YYYY", "Exp:", "Use By:", or "Best Before:".
+   - YOU MUST extract this printed date into "warranty_expiry" (normalized to standard ISO YYYY-MM-DD) and set "warranty_available": true!
+   - Do NOT ignore food/dairy/medicine/beauty expiration dates! Treat all product expiry, validity, and warranty end dates as "warranty_expiry".
+
+2. MANUFACTURER WARRANTY ON ELECTRONICS / APPLIANCES / GADGETS:
+   - For any electronic devices, mobile phones, smartphones, computers, laptops, audio gear, TVs, home appliances, kitchen appliances, gadgets, chargers, power banks, and electric tools:
+     a) If an explicit warranty duration is printed (e.g. 1 Year, 2 Years, 24 Months, 36 Months), set "warranty_period" (e.g. 12, 24), "warranty_unit": "months", and "warranty_available": true!
+     b) Even if NO warranty duration is explicitly printed on the cash memo, standard manufacturer warranty applies to durable electronics! Assign "warranty_period": 12, "warranty_unit": "months", "warranty_available": true, and compute "warranty_expiry" as purchase_date + 12 months.
+     c) Also set "has_warranty": true on the receipt level!
+
+3. RETURN / REPLACEMENT POLICIES VS WARRANTY:
+   - Distinguish Return/Replacement Windows (e.g., 7 days return, 10 days replacement policy) from Manufacturer Warranty or Expiry Periods.
+   - NEVER set a 7-day or 10-day return policy as the warranty duration! (e.g., do NOT set duration_months: 0.37). Always preserve the true product warranty.
+
+4. DATES:
+   - All extracted dates (purchase date and expiry dates) must be normalized to standard ISO format (YYYY-MM-DD).
+   - Assume currency is "₹" for Indian receipts.`;
 
   let lastError = null;
 
