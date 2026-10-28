@@ -604,7 +604,7 @@ build/app/outputs/flutter-apk/app-release.apk
 - [ ] **Automated Warranty Claim Wizard**: AI-crafted formal service request letters pre-filled with merchant, product, and purchase proof.
 - [ ] **Manufacturer Recall Alerts**: Automatic alerts for registered products subject to public manufacturer safety recalls.
 
----
+------------------
 
 ## 📄 License & Acknowledgments
 
