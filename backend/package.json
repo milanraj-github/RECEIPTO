@@ -1,0 +1,19 @@
+{
+  "name": "receipto-backend",
+  "version": "1.0.0",
+  "description": "Receipto Cloud API: Multimodal OCR, AI Assistant & Warranty Notifications",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "@supabase/supabase-js": "^2.49.1",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "nodemailer": "^6.10.0"
+  }
+}
