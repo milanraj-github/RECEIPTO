@@ -13,6 +13,7 @@ import http from "http";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { createClient } from "@supabase/supabase-js";
 import dotenv from "dotenv";
+import yauzl from "yauzl";
 
 dotenv.config();
 
@@ -261,6 +262,82 @@ function extractCandidatePhoneDigits(msg, remoteJid) {
     if (digits) candidates.add(digits);
   }
   return Array.from(candidates);
+}
+
+// Helper: Extract text from Word .docx (zipped XML)
+function extractTextFromDocx(buffer) {
+  return new Promise((resolve) => {
+    yauzl.fromBuffer(buffer, { lazyEntries: true }, (err, zipfile) => {
+      if (err) return resolve("");
+      let found = false;
+      zipfile.readEntry();
+      zipfile.on("entry", (entry) => {
+        if (entry.fileName === "word/document.xml") {
+          found = true;
+          zipfile.openReadStream(entry, (err, readStream) => {
+            if (err) return resolve("");
+            let content = "";
+            readStream.on("data", (chunk) => (content += chunk.toString("utf8")));
+            readStream.on("end", () => {
+              const text = content.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+              resolve(text);
+            });
+          });
+        } else {
+          zipfile.readEntry();
+        }
+      });
+      zipfile.on("end", () => {
+        if (!found) resolve("");
+      });
+    });
+  });
+}
+
+// Helper: Extract tabular text from Excel .xlsx (zipped shared strings & sheets)
+function extractTextFromXlsx(buffer) {
+  return new Promise((resolve) => {
+    yauzl.fromBuffer(buffer, { lazyEntries: true }, (err, zipfile) => {
+      if (err) return resolve("");
+      let text = "";
+      zipfile.readEntry();
+      zipfile.on("entry", (entry) => {
+        if (entry.fileName === "xl/sharedStrings.xml" || entry.fileName.startsWith("xl/worksheets/")) {
+          zipfile.openReadStream(entry, (err, readStream) => {
+            if (err) return zipfile.readEntry();
+            readStream.on("data", (chunk) => {
+              text += " " + chunk.toString("utf8").replace(/<[^>]+>/g, " ");
+            });
+            readStream.on("end", () => zipfile.readEntry());
+          });
+        } else {
+          zipfile.readEntry();
+        }
+      });
+      zipfile.on("end", () => {
+        resolve(text.replace(/\s+/g, " ").trim());
+      });
+    });
+  });
+}
+
+// Helper: Extract printable ASCII text from binary files (.doc, .xls)
+function extractPrintableAscii(buffer) {
+  let result = "";
+  let currentWord = "";
+  for (let i = 0; i < buffer.length; i++) {
+    const byte = buffer[i];
+    if (byte >= 32 && byte <= 126) {
+      currentWord += String.fromCharCode(byte);
+    } else {
+      if (currentWord.length >= 4) {
+        result += currentWord + " ";
+      }
+      currentWord = "";
+    }
+  }
+  if (currentWord.length >= 4) result += currentWord;
+  return result.replace(/\s+/g, " ").trim();
 }
 
 // 3. Start WhatsApp Bot Connection using Baileys with Cloud Session Persistence
@@ -536,19 +613,27 @@ async function startWhatsAppBot() {
         msg.message?.documentWithCaptionMessage?.message ||
         msg.message;
 
-      // Check if message is a receipt photo or document (PDF / Invoice)
+      // Check if message is a receipt photo or document (PDF / Word / Excel / Text)
       const imageMsg = actualMessage?.imageMessage;
       const docMsg = actualMessage?.documentMessage;
-      const isPdf = Boolean(
-        docMsg?.mimetype?.includes("pdf") ||
-        docMsg?.fileName?.toLowerCase().endsWith(".pdf")
-      );
+
+      const fileName = (docMsg?.fileName || "").toLowerCase();
+      const mime = (docMsg?.mimetype || "").toLowerCase();
+
+      const isPdf = Boolean(mime.includes("pdf") || fileName.endsWith(".pdf"));
+      const isDocx = Boolean(fileName.endsWith(".docx") || mime.includes("wordprocessingml"));
+      const isDoc = Boolean(fileName.endsWith(".doc") || mime.includes("msword"));
+      const isXlsx = Boolean(fileName.endsWith(".xlsx") || mime.includes("spreadsheetml"));
+      const isXls = Boolean(fileName.endsWith(".xls") || mime.includes("ms-excel"));
+      const isText = Boolean(fileName.endsWith(".txt") || fileName.endsWith(".csv") || mime.startsWith("text/"));
       const isImage = Boolean(
         imageMsg ||
-        docMsg?.mimetype?.startsWith("image/") ||
-        /\.(jpe?g|png|webp)$/i.test(docMsg?.fileName || "")
+        mime.startsWith("image/") ||
+        /\.(jpe?g|png|webp|heic)$/i.test(fileName)
       );
-      const isMedia = Boolean(imageMsg || docMsg);
+
+      const isTextDocument = isDocx || isDoc || isXlsx || isXls || isText;
+      const isMedia = Boolean(imageMsg || isPdf || isImage || isTextDocument);
 
       // Friendly greeting for verified user
       if (!isMedia && /^(hi|hy|hello|hey|help)\b/i.test(text)) {
@@ -557,8 +642,9 @@ async function startWhatsAppBot() {
           {
             text:
               "👋 *Hi! I am your Receipto AI Assistant.*\n\n" +
-              "📸 *Receipt Photos:* Forward or snap any physical receipt photo here.\n" +
-              "📄 *PDF Invoices:* Forward digital PDF invoices (Amazon, Flipkart, Apple, etc.).\n\n" +
+              "📸 *Receipt Photos:* Forward or snap physical receipts (JPG, PNG).\n" +
+              "📄 *PDF Invoices:* Forward digital PDF invoices (Amazon, Flipkart, Apple, etc.).\n" +
+              "📝 *Documents & Spreadsheets:* Word docs (.docx, .doc), Excel (.xlsx, .xls), or Text/CSV receipts.\n\n" +
               "Receipto AI will automatically extract the store, total, items, and warranty directly into your app!",
           },
           { quoted: msg }
@@ -566,61 +652,78 @@ async function startWhatsAppBot() {
         return;
       }
 
-      // Check if document is an unsupported non-PDF non-image file
-      if (docMsg && !isPdf && !isImage) {
+      // Check if document is an unsupported file format
+      if (docMsg && !isMedia) {
         console.log(`⚠️ Unsupported document format (${docMsg.mimetype || docMsg.fileName}) from ${cleanPhone}`);
         await sock.sendMessage(
           remoteJid,
           {
             text:
               "⚠️ *Unsupported File Format*\n\n" +
-              "Receipto AI supports **PDF Invoices** and **Receipt Images (JPG, PNG)**.\n\n" +
-              "👉 Please export or share your invoice as a **PDF** or take a photo of the receipt.",
+              "Receipto AI supports:\n" +
+              " • **Receipt Photos** (JPG, PNG, WEBP)\n" +
+              " • **PDF Invoices** (.pdf)\n" +
+              " • **Word Documents** (.docx, .doc)\n" +
+              " • **Spreadsheets** (.xlsx, .xls, .csv)\n\n" +
+              "👉 Please send your invoice in one of these supported formats.",
           },
           { quoted: msg }
         );
         return;
       }
 
-      // Handle Receipt Image or PDF Document from verified user
-      if (imageMsg || isPdf || isImage) {
-        const mediaLabel = isPdf ? "PDF invoice" : "receipt image";
-        console.log(`📥 ${mediaLabel} received from verified user (${cleanPhone}). Downloading...`);
+      // Handle Receipt Image or Supported Document from verified user
+      if (isMedia) {
+        let mediaLabel = "receipt image";
+        let statusMessage = "🔍 Analyzing receipt with Receipto AI... Please wait a moment.";
+        let fileExt = "jpg";
+        let mimeType = imageMsg?.mimetype || docMsg?.mimetype || "image/jpeg";
 
-        // Send processing status
-        await sock.sendMessage(
-          remoteJid,
-          {
-            text: isPdf
-              ? "📄 Analyzing PDF invoice with Receipto AI... Please wait a moment."
-              : "🔍 Analyzing receipt with Receipto AI... Please wait a moment.",
-          },
-          { quoted: msg }
-        );
+        if (isPdf) {
+          mediaLabel = "PDF invoice";
+          statusMessage = "📄 Analyzing PDF invoice with Receipto AI... Please wait a moment.";
+          fileExt = "pdf";
+          mimeType = "application/pdf";
+        } else if (isDocx) {
+          mediaLabel = "Word document (.docx)";
+          statusMessage = "📝 Analyzing Word document invoice with Receipto AI... Please wait a moment.";
+          fileExt = "docx";
+          mimeType = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+        } else if (isDoc) {
+          mediaLabel = "Word document (.doc)";
+          statusMessage = "📝 Analyzing Word document invoice with Receipto AI... Please wait a moment.";
+          fileExt = "doc";
+          mimeType = "application/msword";
+        } else if (isXlsx) {
+          mediaLabel = "Spreadsheet (.xlsx)";
+          statusMessage = "📊 Analyzing spreadsheet invoice with Receipto AI... Please wait a moment.";
+          fileExt = "xlsx";
+          mimeType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        } else if (isXls) {
+          mediaLabel = "Spreadsheet (.xls)";
+          statusMessage = "📊 Analyzing spreadsheet invoice with Receipto AI... Please wait a moment.";
+          fileExt = "xls";
+          mimeType = "application/vnd.ms-excel";
+        } else if (isText) {
+          mediaLabel = "Text/CSV invoice";
+          statusMessage = "📑 Analyzing text invoice with Receipto AI... Please wait a moment.";
+          fileExt = fileName.endsWith(".csv") ? "csv" : "txt";
+          mimeType = "text/plain";
+        } else if (mimeType.includes("png") || fileName.endsWith(".png")) {
+          fileExt = "png";
+          mimeType = "image/png";
+        } else if (mimeType.includes("webp") || fileName.endsWith(".webp")) {
+          fileExt = "webp";
+          mimeType = "image/webp";
+        }
+
+        console.log(`📥 ${mediaLabel} received from verified user (${cleanPhone}). Downloading...`);
+        await sock.sendMessage(remoteJid, { text: statusMessage }, { quoted: msg });
 
         // Download media buffer directly from WhatsApp
         const mediaBuffer = await downloadMediaMessage(msg, "buffer", {});
-        const base64Media = mediaBuffer.toString("base64");
 
-        const targetMedia = imageMsg || docMsg;
-        let mimeType = targetMedia.mimetype || "image/jpeg";
-        let fileExt = "jpg";
-
-        if (isPdf) {
-          mimeType = "application/pdf";
-          fileExt = "pdf";
-        } else if (mimeType.includes("png") || docMsg?.fileName?.toLowerCase().endsWith(".png")) {
-          mimeType = "image/png";
-          fileExt = "png";
-        } else if (mimeType.includes("webp") || docMsg?.fileName?.toLowerCase().endsWith(".webp")) {
-          mimeType = "image/webp";
-          fileExt = "webp";
-        } else {
-          mimeType = "image/jpeg";
-          fileExt = "jpg";
-        }
-
-        // Upload receipt to Supabase Storage bucket 'receipts' so it displays natively in the app
+        // Upload original media to Supabase Storage bucket 'receipts' so it displays natively in the app
         let imageUrl = null;
         try {
           const storagePath = `${userId}/receipt_wa_${Date.now()}.${fileExt}`;
@@ -644,8 +747,28 @@ async function startWhatsAppBot() {
           console.warn(`⚠️ Supabase Storage exception:`, uploadException.message);
         }
 
+        // Extract structured data using Gemini AI
         console.log(`🤖 Extracting ${mediaLabel} details via Gemini AI (Multi-Key Rotation)...`);
-        const extracted = await extractReceiptData(base64Media, mimeType);
+        let extracted;
+        if (isTextDocument) {
+          let docText = "";
+          if (isDocx) {
+            docText = await extractTextFromDocx(mediaBuffer);
+            if (!docText) docText = extractPrintableAscii(mediaBuffer);
+          } else if (isXlsx) {
+            docText = await extractTextFromXlsx(mediaBuffer);
+            if (!docText) docText = extractPrintableAscii(mediaBuffer);
+          } else if (isDoc || isXls) {
+            docText = extractPrintableAscii(mediaBuffer);
+          } else if (isText) {
+            docText = mediaBuffer.toString("utf8");
+          }
+          console.log(`📝 Extracted ${docText.length} characters from ${mediaLabel}`);
+          extracted = await extractReceiptData(docText, mimeType, true);
+        } else {
+          const base64Media = mediaBuffer.toString("base64");
+          extracted = await extractReceiptData(base64Media, mimeType, false);
+        }
         console.log("📋 Extracted Data:", JSON.stringify(extracted));
 
         // Format data for Supabase receipts table
@@ -814,7 +937,11 @@ async function startWhatsAppBot() {
           ? `\n🛡️ *Warranty Protected:* ${warrantiesToInsert.length} item(s) (${warrantiesToInsert[0].warranty_period} Months, Expires: ${warrantiesToInsert[0].expiry_date})`
           : "";
 
-        const replyHeader = isPdf ? "📄 *PDF Invoice Saved to Receipto!*" : "🧾 *Receipt Saved to Receipto!*";
+        let replyHeader = "🧾 *Receipt Saved to Receipto!*";
+        if (isPdf) replyHeader = "📄 *PDF Invoice Saved to Receipto!*";
+        else if (isDocx || isDoc) replyHeader = "📝 *Word Document Invoice Saved to Receipto!*";
+        else if (isXlsx || isXls) replyHeader = "📊 *Spreadsheet Invoice Saved to Receipto!*";
+        else if (isText) replyHeader = "📑 *Text Invoice Saved to Receipto!*";
         const replyMessage =
           `${replyHeader}\n\n` +
           `🏪 *Store:* ${merchantName}\n` +
@@ -834,8 +961,8 @@ async function startWhatsAppBot() {
   });
 }
 
-// 5. Helper: Extract structured data using Google Gemini 3 Flash with multi-key rotation & fallback
-async function extractReceiptData(base64Data, mimeType) {
+// 5. Helper: Extract structured data using Google Gemini with multi-key rotation & fallback
+async function extractReceiptData(data, mimeType, isText = false) {
   if (geminiApiKeys.length === 0) {
     console.error("❌ No Gemini API keys configured in GEMINI_API_KEYS or GEMINI_API_KEY");
     return {
@@ -917,30 +1044,26 @@ CRITICAL RULES FOR EXPIRY DATE & WARRANTY EXTRACTION:
       console.log(`🤖 Invoking Gemini AI with Key #${keyIndex + 1}...`);
       const genAI = new GoogleGenerativeAI(apiKey);
       
+      const contentParts = isText
+        ? [`${prompt}\n\nDOCUMENT TEXT CONTENT:\n${data}`]
+        : [
+            prompt,
+            {
+              inlineData: {
+                data: data,
+                mimeType: mimeType,
+              },
+            },
+          ];
+
       let result;
       try {
         const model = genAI.getGenerativeModel({ model: "gemini-3-flash-preview" });
-        result = await model.generateContent([
-          prompt,
-          {
-            inlineData: {
-              data: base64Data,
-              mimeType: mimeType,
-            },
-          },
-        ]);
+        result = await model.generateContent(contentParts);
       } catch (primaryErr) {
         console.warn(`⚠️ gemini-3-flash-preview failed, trying gemini-3.5-flash:`, primaryErr.message);
         const fallbackModel = genAI.getGenerativeModel({ model: "gemini-3.5-flash" });
-        result = await fallbackModel.generateContent([
-          prompt,
-          {
-            inlineData: {
-              data: base64Data,
-              mimeType: mimeType,
-            },
-          },
-        ]);
+        result = await fallbackModel.generateContent(contentParts);
       }
 
       const rawText = result.response.text();
