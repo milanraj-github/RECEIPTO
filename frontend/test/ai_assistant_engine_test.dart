@@ -476,5 +476,35 @@ void main() {
       expect(res.products.isEmpty, isTrue);
       expect(res.text, contains('No products found'));
     });
+
+    test('21. Natural greetings like "hy", "hi", "hello" return courteous greeting without querying products', () async {
+      final resHy = await assistantService.askStructured('hy', overrideUserId: 'user_A');
+      expect(resHy.type, equals(AIStructuredResponseType.textOnly));
+      expect(resHy.hasProducts, isFalse);
+      expect(resHy.hasReceipts, isFalse);
+      expect(resHy.text, contains('Hello!'));
+
+      final resHi = await assistantService.askStructured('hi', overrideUserId: 'user_A');
+      expect(resHi.type, equals(AIStructuredResponseType.textOnly));
+      expect(resHi.hasProducts, isFalse);
+      expect(resHi.text, contains('Hello!'));
+
+      final resHello = await assistantService.askStructured('hello', overrideUserId: 'user_A');
+      expect(resHello.type, equals(AIStructuredResponseType.textOnly));
+      expect(resHello.text, contains('Hello!'));
+    });
+
+    test('22. Identity inquiries like "who are you" return assistant identity and features', () async {
+      final res = await assistantService.askStructured('who are you', overrideUserId: 'user_A');
+      expect(res.type, equals(AIStructuredResponseType.textOnly));
+      expect(res.hasProducts, isFalse);
+      expect(res.text, contains('Receipto AI Agent'));
+    });
+
+    test('23. Greetings with financial intents correctly process receipt queries', () async {
+      final res = await assistantService.askStructured('hi show my receipts', overrideUserId: 'user_A');
+      expect(res.hasReceipts, isTrue);
+      expect(res.receipts.isNotEmpty, isTrue);
+    });
   });
 }

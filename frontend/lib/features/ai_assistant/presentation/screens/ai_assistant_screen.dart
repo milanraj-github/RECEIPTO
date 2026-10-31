@@ -41,20 +41,12 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> with Tick
   @override
   void initState() {
     super.initState();
-    // Default greeting with product awareness intro
+    // Clean default greeting without duplicate inline recommendations
     _messages.add(
       ChatMessage(
-        text: "Hello! I am your **Receipto AI Agent**.\n\nI can analyze your **individual products**, line items, complete receipts, warranties, spending categories, and purchase history.\n\nTry asking:\n* *\"Show products above ₹2,000\"*\n* *\"What is my most expensive product?\"*\n* *\"Find electronics products under warranty\"*",
+        text: "Hello! I am your **Receipto AI Agent**.\n\nI can analyze your **individual products**, line items, complete receipts, warranties, spending categories, and purchase history.",
         isUser: false,
         timestamp: DateTime.now(),
-        structuredResponse: const AIStructuredResponse(
-          text: "",
-          suggestedFollowUps: [
-            'Show products above ₹2,000',
-            'Which is my most expensive product?',
-            'Show products under warranty',
-          ],
-        ),
       ),
     );
   }
@@ -185,14 +177,6 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> with Tick
                     text: "Conversation context cleared. How can I help you today?",
                     isUser: false,
                     timestamp: DateTime.now(),
-                    structuredResponse: const AIStructuredResponse(
-                      text: "",
-                      suggestedFollowUps: [
-                        'Show products above ₹2,000',
-                        'Which is my most expensive product?',
-                        'Show products under warranty',
-                      ],
-                    ),
                   ),
                 );
               });

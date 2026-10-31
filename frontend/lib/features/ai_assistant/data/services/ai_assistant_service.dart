@@ -75,6 +75,12 @@ class AIAssistantService {
       );
     }
 
+    // Fast path: Handle conversational greetings and general pleasantries instantly
+    final conversational = _handleConversationalQuery(question);
+    if (conversational != null) {
+      return conversational;
+    }
+
     try {
       // 1. Fetch real, authentic user records (isolated by userId)
       final rawReceipts = await _receiptDb.fetchAllReceipts(userId: userId);
@@ -649,6 +655,146 @@ Output JSON structure:
     return null;
   }
 
+  /// Intercepts greetings and general conversational inputs with friendly, contextual responses.
+  AIStructuredResponse? _handleConversationalQuery(String question) {
+    final lower = question.toLowerCase();
+    final normalized = lower.replaceAll(RegExp(r'[^a-z0-9\s]'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (normalized.isEmpty) {
+      return const AIStructuredResponse(
+        text: "Hello! How can I help you today? You can ask me to search your receipts, track warranties, check spending, or look up specific products.",
+        type: AIStructuredResponseType.textOnly,
+      );
+    }
+
+    // If it contains explicit financial keywords, delegate to data engine
+    final hasFinancialKeywords = normalized.contains('receipt') ||
+        normalized.contains('bill') ||
+        normalized.contains('invoice') ||
+        normalized.contains('product') ||
+        normalized.contains('item') ||
+        normalized.contains('warranty') ||
+        normalized.contains('warranties') ||
+        normalized.contains('spend') ||
+        normalized.contains('spent') ||
+        normalized.contains('expense') ||
+        normalized.contains('cost') ||
+        normalized.contains('price') ||
+        normalized.contains('expensive') ||
+        normalized.contains('cheapest') ||
+        normalized.contains('bought') ||
+        normalized.contains('purchase') ||
+        normalized.contains('category') ||
+        normalized.contains('categories') ||
+        normalized.contains('month') ||
+        normalized.contains('year') ||
+        normalized.contains('croma') ||
+        normalized.contains('amazon') ||
+        normalized.contains('flipkart');
+
+    if (hasFinancialKeywords) return null;
+
+    // 1. Single word or short greetings
+    const greetings = {
+      'hy', 'hyy', 'hii', 'hi', 'hello', 'hey', 'heyy', 'heya', 'hola', 
+      'namaste', 'yo', 'sup', 'greetings', 'welcome', 'hlo', 'hlw'
+    };
+    if (greetings.contains(normalized) ||
+        RegExp(r'^(hy|hi|hii|hello|hey|heyy|heya|hola|namaste|yo|hlo|hlw)\b').hasMatch(normalized) ||
+        RegExp(r'^good\s*(morning|afternoon|evening|day|night)\b').hasMatch(normalized)) {
+      return const AIStructuredResponse(
+        text: "Hello! How can I help you today? You can ask me to search your receipts, track warranties, check spending, or look up specific products.",
+        type: AIStructuredResponseType.textOnly,
+      );
+    }
+
+    // 2. Status / casual check
+    if (RegExp(r'^(how\s*are\s*you|how\s*r\s*u|hows\s*it\s*going|whats\s*up|what\s*is\s*up|sup)\b').hasMatch(normalized)) {
+      return const AIStructuredResponse(
+        text: "I'm doing well, thank you! Ready to help you manage and analyze your receipts, warranties, and expenses. What would you like to know?",
+        type: AIStructuredResponseType.textOnly,
+      );
+    }
+
+    // 3. Identity & Capabilities
+    if (RegExp(r'^(who\s*are\s*you|who\s*r\s*u|what\s*are\s*you|what\s*can\s*you\s*do|what\s*do\s*you\s*do|help|how\s*can\s*you\s*help)\b').hasMatch(normalized)) {
+      return const AIStructuredResponse(
+        text: "I am your **Receipto AI Agent**!\n\nHere is how I can help you:\n• Search and filter your receipts and products\n• Track active, expiring, or expired warranties\n• Analyze spending by category or time period\n• Find your most expensive or cheapest purchases\n• View repeat purchases and purchase history\n\nFeel free to ask in plain English!",
+        type: AIStructuredResponseType.textOnly,
+      );
+    }
+
+    // 4. Gratitude
+    if (RegExp(r'^(thank\s*you|thanks|thx|thank\s*u)\b').hasMatch(normalized)) {
+      return const AIStructuredResponse(
+        text: "You're welcome! Let me know if you need anything else with your receipts or expenses.",
+        type: AIStructuredResponseType.textOnly,
+      );
+    }
+
+    // 5. Goodbye
+    if (RegExp(r'^(bye|goodbye|see\s*you|cya|take\s*care)\b').hasMatch(normalized)) {
+      return const AIStructuredResponse(
+        text: "Goodbye! Have a great day, and feel free to return anytime you need help with your receipts!",
+        type: AIStructuredResponseType.textOnly,
+      );
+    }
+
+    // 6. Acknowledgement
+    if (RegExp(r'^(ok|okay|cool|great|awesome|got\s*it|fine|alright|sure)\b').hasMatch(normalized)) {
+      return const AIStructuredResponse(
+        text: "Great! Let me know whenever you have a question about your receipts, warranties, or spending.",
+        type: AIStructuredResponseType.textOnly,
+      );
+    }
+
+    return null;
+  }
+
+  bool _isConversationalText(String lower) {
+    final normalized = lower.replaceAll(RegExp(r'[^a-z0-9\s]'), ' ').replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (normalized.isEmpty) return true;
+
+    final hasFinancialKeywords = normalized.contains('receipt') ||
+        normalized.contains('bill') ||
+        normalized.contains('invoice') ||
+        normalized.contains('product') ||
+        normalized.contains('item') ||
+        normalized.contains('warranty') ||
+        normalized.contains('warranties') ||
+        normalized.contains('spend') ||
+        normalized.contains('spent') ||
+        normalized.contains('expense') ||
+        normalized.contains('cost') ||
+        normalized.contains('price') ||
+        normalized.contains('expensive') ||
+        normalized.contains('cheapest') ||
+        normalized.contains('bought') ||
+        normalized.contains('purchase') ||
+        normalized.contains('category') ||
+        normalized.contains('categories') ||
+        normalized.contains('month') ||
+        normalized.contains('year');
+
+    if (hasFinancialKeywords) return false;
+
+    const singleWords = {
+      'hy', 'hyy', 'hii', 'hi', 'hello', 'hey', 'heyy', 'heya', 'hola', 
+      'namaste', 'yo', 'sup', 'greetings', 'welcome', 'hlo', 'hlw',
+      'thanks', 'thx', 'bye', 'goodbye', 'cya', 'ok', 'okay', 'cool', 'awesome'
+    };
+    if (singleWords.contains(normalized)) return true;
+
+    if (RegExp(r'^(hy|hi|hii|hello|hey|heyy|heya|hola|namaste|yo|hlo|hlw)\b').hasMatch(normalized)) return true;
+    if (RegExp(r'^good\s*(morning|afternoon|evening|day|night)\b').hasMatch(normalized)) return true;
+    if (RegExp(r'^(how\s*are\s*you|how\s*r\s*u|hows\s*it\s*going|whats\s*up|what\s*is\s*up|sup)\b').hasMatch(normalized)) return true;
+    if (RegExp(r'^(who\s*are\s*you|who\s*r\s*u|what\s*are\s*you|what\s*can\s*you\s*do|what\s*do\s*you\s*do|help|how\s*can\s*you\s*help)\b').hasMatch(normalized)) return true;
+    if (RegExp(r'^(thank\s*you|thanks|thx|thank\s*u)\b').hasMatch(normalized)) return true;
+    if (RegExp(r'^(bye|goodbye|see\s*you|cya)\b').hasMatch(normalized)) return true;
+    if (RegExp(r'^(ok|okay|cool|great|awesome|got\s*it|fine|alright|sure)\b').hasMatch(normalized)) return true;
+
+    return false;
+  }
+
   /// High-precision deterministic rule parser for offline / instant query handling
   AISearchQuery _parseQueryLocally(String question, AIConversationContext context) {
     final lower = question.toLowerCase();
@@ -660,10 +806,15 @@ Output JSON structure:
     final bool isCategoryQuery = lower.contains('category') || lower.contains('categories');
     final bool isRepeatQuery = lower.contains('multiple times') || lower.contains('bought before') || lower.contains('frequent');
 
-    String targetType = 'product';
-    AIQueryIntentType intent = AIQueryIntentType.searchProducts;
+    final bool isConversational = _isConversationalText(lower);
 
-    if (isReceiptQuery && !lower.contains('product') && !lower.contains('item')) {
+    String targetType = isConversational ? 'general' : 'product';
+    AIQueryIntentType intent = isConversational ? AIQueryIntentType.general : AIQueryIntentType.searchProducts;
+
+    if (isConversational) {
+      targetType = 'general';
+      intent = AIQueryIntentType.general;
+    } else if (isReceiptQuery && !lower.contains('product') && !lower.contains('item')) {
       targetType = 'receipt';
       intent = AIQueryIntentType.searchReceipts;
     } else if (isWarrantyQuery && !lower.contains('product') && !lower.contains('price')) {
@@ -834,6 +985,15 @@ Output JSON structure:
           targetReceiptId: query.targetReceiptId,
           label: 'View Receipt Details',
         ),
+        originalQuery: query,
+      );
+    }
+
+    // 1b. General Conversational Intent
+    if (query.intent == AIQueryIntentType.general || query.targetType == 'general') {
+      return AIStructuredResponse(
+        text: "Hello! How can I help you today? You can ask me to search your receipts, track warranties, check spending, or look up specific products.",
+        type: AIStructuredResponseType.textOnly,
         originalQuery: query,
       );
     }
