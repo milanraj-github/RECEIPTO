@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/logos/logo.png" alt="Receipto Logo" width="128" height="128" style="border-radius: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);" />
+<img src="frontend/assets/logos/logo.png" alt="Receipto Logo" width="128" height="128" style="border-radius: 24px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);" />
 
 # Receipto 🧾
 ### *Enterprise-Grade AI Expense Companion & Intelligent Warranty Vault*
@@ -9,14 +9,15 @@
 [![Dart Version](https://img.shields.io/badge/Dart-v3.7.0-0175C2?style=for-the-badge&logo=dart&logoColor=white)](https://dart.dev)
 [![Supabase](https://img.shields.io/badge/Supabase-Database%20%26%20Storage-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)](https://supabase.com)
 [![Firebase Auth](https://img.shields.io/badge/Firebase-Authentication-FFCA28?style=for-the-badge&logo=firebase&logoColor=black)](https://firebase.google.com)
-[![Google Gemini 2.5](https://img.shields.io/badge/Google%20Gemini-2.5%20Flash%20AI-8E75B2?style=for-the-badge&logo=google-gemini&logoColor=white)](https://ai.google.dev)
-[![State Management](https://img.shields.io/badge/Riverpod-v2.5.1-00599C?style=for-the-badge&logo=flutter&logoColor=white)](https://riverpod.dev)
-[![Test Suite](https://img.shields.io/badge/Tests-30%2F30%20Passing-brightgreen?style=for-the-badge&logo=checkmarx&logoColor=white)](test/)
+[![Google Gemini](https://img.shields.io/badge/Google%20Gemini-2.5%20Flash%20AI-8E75B2?style=for-the-badge&logo=google-gemini&logoColor=white)](https://ai.google.dev)
+[![Render Cloud](https://img.shields.io/badge/Render-Cloud%20Backend-46E3B7?style=for-the-badge&logo=render&logoColor=black)](https://render.com)
+[![WhatsApp Bot](https://img.shields.io/badge/WhatsApp-Live%20Ingestion%20Bot-25D366?style=for-the-badge&logo=whatsapp&logoColor=white)](https://whatsapp.com)
+[![Test Suite](https://img.shields.io/badge/Tests-35%2F35%20Passing-brightgreen?style=for-the-badge&logo=checkmarx&logoColor=white)](frontend/test/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg?style=for-the-badge)](LICENSE)
 
 <br/>
 
-**Receipto** is a production-ready, privacy-first mobile application engineered with Flutter that transforms how individuals, households, and enterprises digitize thermal receipts, manage personal finances, safeguard product warranties, and prevent financial loss using multimodal Artificial Intelligence.
+**Receipto** is a production-ready, privacy-first cross-platform financial ecosystem engineered with Flutter, Node.js microservices, and Multimodal Artificial Intelligence. It transforms how individuals, households, and enterprises digitize thermal receipts, manage personal finances, safeguard product warranties, and automate consumer claims before warranties lapse.
 
 </div>
 
@@ -25,155 +26,140 @@
 ## 📑 Table of Contents
 
 1. [Executive Summary](#-executive-summary)
-2. [Key Superpowers & Core Features](#-key-superpowers--core-features)
-3. [Architecture & System Design](#-architecture--system-design)
+2. [Ecosystem Architecture](#-ecosystem-architecture)
+3. [Key Superpowers & Core Features](#-key-superpowers--core-features)
 4. [System Workflow Diagrams](#-system-workflow-diagrams)
 5. [Feature Matrix & Implementation Status](#-feature-matrix--implementation-status)
 6. [Tech Stack & Dependencies](#-tech-stack--dependencies)
-7. [Directory Structure](#-directory-structure)
+7. [Repository Structure](#-repository-structure)
 8. [Quick Start & Setup Guide](#-quick-start--setup-guide)
-   - [1. Clone & Fetch Dependencies](#1-clone--fetch-dependencies)
-   - [2. Environment Configuration (.env)](#2-environment-configuration-env)
-   - [3. Firebase Authentication](#3-firebase-authentication)
-   - [4. Supabase Backend Services](#4-supabase-backend-services)
-   - [5. Google Gemini AI API](#5-google-gemini-ai-api)
-   - [6. SMTP Notification Dispatcher](#6-smtp-notification-dispatcher)
+   - [Frontend Mobile App (`frontend/`)](#1-frontend-mobile-app-frontend)
+   - [Cloud API Backend (`backend/`)](#2-cloud-api-backend-backend)
+   - [WhatsApp Ingestion Bot (`whatsapp_bot/`)](#3-whatsapp-ingestion-bot-whatsapp_bot)
 9. [Complete Supabase Production SQL Schema](#-complete-supabase-production-sql-schema)
-10. [Testing & Quality Verification](#-testing--quality-verification)
-11. [Compiling & Releasing Production APK](#-compiling--releasing-production-apk)
-12. [Troubleshooting & FAQs](#-troubleshooting--faqs)
-13. [Security & Privacy Standards](#-security--privacy-standards)
-14. [Future Roadmap](#-future-roadmap)
-15. [License & Acknowledgments](#-license--acknowledgments)
+10. [Automated Testing Suite (35 / 35 Passing)](#-automated-testing-suite-35--35-passing)
+11. [Compiling Production APK & Play Store Bundle](#-compiling-production-apk--play-store-bundle)
+12. [Security & Privacy Standards](#-security--privacy-standards)
+13. [License & Acknowledgments](#-license--acknowledgments)
 
 ---
 
 ## 💡 Executive Summary
 
 ### The Problem
-Physical receipts are printed on chemical thermal paper engineered to fade within months. When expensive electronics, home appliances, or business assets malfunction, consumers frequently discover that:
+Physical receipts are printed on chemical thermal paper engineered to fade within months. When expensive electronics, home appliances, or business equipment malfunction:
 - The receipt has faded into an unreadable blank sheet.
-- The paper document was lost or misplaced.
-- The warranty expiration date passed without warning.
-- Manual expense recording in spreadsheet tools is tedious and quickly abandoned.
+- Paper proofs of purchase are lost, misplaced, or water-damaged.
+- Warranty coverage lapses without warning, forcing out-of-pocket repairs.
+- Filing consumer warranty claims is bureaucratic, time-consuming, and often rejected due to lack of structured documentation.
 
 ### The Receipto Solution
-Receipto solves receipt degradation and manual tracking entirely:
-1. **Snap or Import**: Capture single receipts, lengthy multi-page supermarket bills, or digital PDF invoices.
-2. **Instant AI Intelligence**: Google Gemini 2.5 Flash extracts merchant metadata, line items, timestamps, taxes, discounts, and auto-detects warranty durations in under 3 seconds.
-3. **Proactive Protection**: Multi-channel alerts (device push notifications and branded HTML emails) notify users at 30, 15, 7, 3, 1, and 0 days before warranty coverage lapses.
-4. **Offline Vault & Export**: Data is encrypted, cached offline for zero-latency lookups, and exportable to PDF, CSV, or JSON anytime.
+Receipto provides an end-to-end, multi-channel financial vault:
+1. **Multi-Channel Capture**: Snap camera receipts, import PDF invoices, or forward receipt photos directly to the **Receipto WhatsApp Bot**.
+2. **Instant Multimodal AI OCR**: Google Gemini AI extracts merchant metadata, line items, taxes, discounts, and auto-detects warranty durations in seconds.
+3. **Proactive Multi-Channel Alerts**: Automated local push notifications and branded HTML emails alert users at **30, 15, 7, 3, 1, and 0 days** before warranty coverage expires.
+4. **1-Click AI Warranty Claim Dispatcher**: Generates formal, legally backed Consumer Protection Act claim letters with pre-filled brand support channels.
+5. **Zero-Latency Offline Vault**: Encrypted on-device caching ensures instant access even without internet connectivity.
+
+---
+
+## 🏛️ Ecosystem Architecture
+
+Receipto is organized into three decoupled, high-performance components:
+
+```
+                           ┌──────────────────────────────────────────────┐
+                           │          Client Presentation Layer           │
+                           │   Flutter Mobile App (Android / iOS / Web)   │
+                           └──────────────────────┬───────────────────────┘
+                                                  │
+                   ┌──────────────────────────────┴──────────────────────────────┐
+                   ▼                                                             ▼
+    ┌─────────────────────────────┐                               ┌─────────────────────────────┐
+    │     Receipto Cloud API      │                               │    WhatsApp Ingestion Bot   │
+    │      (Node.js / Express)    │                               │     (Baileys / Node.js)     │
+    │  - Gemini Multimodal OCR    │                               │  - Instant WhatsApp Webhook │
+    │  - Brevo SMTP Email Proxy   │                               │  - Media Auto-Downloader    │
+    │  - Multi-Key Rotation       │                               │  - Realtime OCR Pipeline    │
+    └──────────────┬──────────────┘                               └──────────────┬──────────────┘
+                   │                                                             │
+                   └──────────────────────────────┬──────────────────────────────┘
+                                                  │
+                                                  ▼
+                                  ┌───────────────────────────────┐
+                                  │      Persistence & Auth       │
+                                  │  - Supabase PostgreSQL + RLS  │
+                                  │  - Supabase Object Storage    │
+                                  │  - Firebase Authentication    │
+                                  └───────────────────────────────┘
+```
+
+1. **`frontend/`**: The Flutter client application containing all screens, Riverpod state providers, offline cache, export engines, and camera controls.
+2. **`backend/`**: A standalone Node.js Express service hosted on Render that proxies OCR extraction with automatic API key rotation and Brevo SMTP email delivery.
+3. **`whatsapp_bot/`**: A standalone WhatsApp Baileys bot hosted on Render that receives receipt images directly from users via WhatsApp and auto-digitizes them into their vault.
 
 ---
 
 ## ⚡ Key Superpowers & Core Features
 
 ### 📸 1. Continuous Multi-Page Batch Scanning
-- **Single & Batch Modes**: Effortlessly toggle between `[ Single ]` snap mode and continuous `[ Batch (Multi-Page) ]` mode right from the camera interface.
-- **Dynamic Review Drawer**: Real-time thumbnail carousel displaying captured pages with page counter badges (`Page 1`, `Page 2`, ...).
-- **In-Flight Page Management**: Inspect full-screen previews of captured pages, reorder sequence, or delete erroneous captures without resetting the session.
-- **Unified Document Stitching**: Combines multi-page captures into a cohesive digital receipt with multi-image OCR extraction.
+- **Single & Batch Modes**: Toggle between single snap mode and continuous multi-page capture directly from the camera viewfinder.
+- **Dynamic Review Drawer**: Interactive thumbnail carousel with in-flight page management (reorder, zoom, or delete erroneous captures).
+- **Document Stitching**: Merges multi-page supermarket bills into a unified digital receipt.
 
-### 🧠 2. Multimodal AI Extraction (Google Gemini 2.5 Flash)
-- **Comprehensive Data Extraction**:
-  - Merchant Name & Address
-  - Transaction Date & Time
-  - Receipt / Invoice / GST Identification Numbers
-  - Subtotal, Tax Amounts, Discounts, and Grand Total
-  - Native Currency Recognition (`₹`, `$`, `€`, `£`, etc.)
-- **Itemized Product Parsing**: Extracts each line item with quantity, unit price, item total, and category tags.
-- **Automated Warranty Extraction**: Identifies consumer durables, electronics, and tools, automatically parsing warranty lengths (e.g., `"2 Years"`, `"12 Months"`).
-- **User-Friendly Error Handling**: Intelligent pre-validation intercepts non-receipt photos (e.g., random objects or blurry scans) with polite, actionable instructions without technical jargon.
+### 🧠 2. Multimodal AI Extraction (Google Gemini)
+- **High-Precision Data Parsing**:
+  - Merchant name, address, phone number, and GST identification.
+  - Transaction timestamp, invoice number, and native currency recognition (`₹`, `$`, `€`, `£`).
+  - Itemized table with quantity, unit price, total price, and category classification.
+- **Automated Warranty Detection**: Auto-detects warranty durations (e.g., `"2 Years"`, `"12 Months"`) on electronics, appliances, and tools.
+- **Failover Architecture**: Dual-layer execution tries the cloud backend first and automatically falls back to on-device key rotation if offline.
 
-### 🏷️ 3. Dynamic Mixed-Category Detection & Highlighting
-- **Multi-Category Receipts**: Intelligently identifies receipts containing mixed purchases (e.g., groceries + electronics + personal care).
-- **Visual Discrimination**: Highlights individual line items with category-coded badges to provide crystal-clear spending visibility.
+### 🤖 3. WhatsApp Receipt Ingestion Bot
+- Send receipt photos directly to the official Receipto WhatsApp bot.
+- Automatically processes the image with multimodal AI, saves the scan to Supabase Storage, and syncs items into the user's mobile app vault in real time.
 
-### 📅 4. Interactive Warranty Calendar & Vault
-- **Monthly Grid View**: Visual calendar displaying expiration dates across the month.
-- **Color-Coded Status Markers**:
-  - 🟢 **Active Warranty**: Fully covered.
+### ⚖️ 4. 1-Click AI Warranty Claim Dispatcher
+- **Official Brand Support Directory**: Instant access to verified customer support emails, toll-free helplines, and portal URLs across leading brands (Apple, Samsung, LG, Sony, Dell, HP, etc.).
+- **Legal Claim Letter Generator**: Generates formal, legally backed Consumer Protection Act claim notices pre-filled with invoice numbers, purchase dates, and defect descriptions.
+- **One-Tap Dispatch**: Direct email launching via user's email client or instant in-app claim logging.
+
+### 🏷️ 5. Dynamic Mixed-Category Detection & Highlighting
+- Identifies receipts containing purchases across multiple categories (e.g., groceries + electronics).
+- Color-coded badges highlight individual line items for crystal-clear spending visibility.
+
+### 📅 6. Interactive Warranty Calendar & Vault
+- Monthly visual calendar displaying warranty expirations.
+- Color-coded status markers:
+  - 🟢 **Active**: Fully covered.
   - 🟡 **Expiring Soon**: Under 30 days remaining.
   - 🔴 **Expired**: Coverage concluded.
-- **One-Tap Inspection**: Tap any day to inspect expiring items and navigate directly to receipt proofs.
+- Tap any date to view expiring items and inspect original receipt proofs.
 
-### 💬 5. Conversational AI Assistant
-- **Natural Language Expense Queries**: Ask questions such as:
+### 💬 7. Conversational AI Assistant
+- Natural language query interface:
   - *"How much did I spend at Reliance Digital this year?"*
   - *"Show me all purchases above ₹5,000 in Electronics."*
-  - *"Is my Dell Laptop still under warranty?"*
-  - *"What other items did I buy on the same bill as my headphones?"*
-- **Tappable Result Cards**: Rich UI cards with direct deep links opening the corresponding receipt or warranty.
-- **Multi-User Privacy Isolation**: Rigorous tenant-scoped query execution guaranteeing zero cross-user data leakage.
-
-### 📴 6. 100% Offline-Resilient Vault
-- **User-Scoped Caching**: Local caching partitioned by authenticated user UID (`user_<uid>_receipts`, `user_<uid>_warranties`).
-- **Zero-Latency Launch**: Instant offline boot utilizing cached metadata, item breakdowns, and local image files.
-- **Transparent Fallback**: Flawlessly serves cached records when network connectivity is intermittent or unavailable.
-
-### 📤 7. Multi-Format Export Suite
-- **PDF Invoices**: Branded single-receipt tax invoices or consolidated multi-receipt expense summaries.
-- **CSV Spreadsheets**: Clean tabular exports compatible with Excel, Google Sheets, QuickBooks, and Tally.
-- **JSON Datasets**: Structured JSON schemas for developer and archival backups.
-- **Native Share Integration**: Instant sharing via WhatsApp, Gmail, Google Drive, AirDrop, and Bluetooth via system share sheets.
+  - *"Is my Dell laptop still under warranty?"*
+- Tappable result cards with deep links to receipts and warranties.
+- Tenant-scoped query isolation preventing cross-user data leakage.
 
 ### 🔔 8. Multi-Channel Reminder Engine
-- **Local Push Notifications**: Scheduled device alerts delivered at **30, 15, 7, 3, 1, and 0 days** prior to expiration.
-- **Automated SMTP HTML Emails**: Responsive, branded email alerts sent directly to the user's inbox.
-- **In-App Notification Center**: Filterable activity center (Unread, Warranty, Email, System) with badge counters.
+- **Device Push Notifications**: Local scheduled notifications delivered at **30, 15, 7, 3, 1, and 0 days** before warranty expiration.
+- **Branded SMTP HTML Emails**: Responsive, branded email alerts dispatched to the user's verified email.
 
 ### 🛡️ 9. 3-Tier Cryptographic Duplicate Detection
-1. **Tier 1 (Cryptographic Hash)**: Computes deterministic SHA-256 fingerprint from `merchant_name + invoice_number + date + grand_total`.
-2. **Tier 2 (Database Match)**: Multi-field index lookup on existing active records.
-3. **Tier 3 (Jaccard Token Similarity)**: Analyzes file size and OCR token similarity (>80%) to catch identical receipts re-photographed from slightly different angles.
-- **User Discretion**: Provides immediate options to replace existing records or abort the upload.
+- **Tier 1**: Deterministic SHA-256 fingerprint generated from `merchant_name + invoice_number + date + grand_total`.
+- **Tier 2**: Database index lookup on existing active records.
+- **Tier 3**: Jaccard token similarity (>80%) catching identical receipts re-photographed from different angles.
 
-### 🗑️ 10. Google Photos-Style Recycle Bin
-- **Soft-Delete Architecture**: Flags deleted items with `is_deleted = true` and `deleted_at` timestamp.
-- **30-Day Recovery Window**: Accidental deletions can be restored with a single tap within 30 days.
-- **Auto-Purge Worker**: Background cleanup service automatically removes soft-deleted records older than 30 days.
+### 🗑️ 10. 30-Day Recycle Bin
+- Soft-delete architecture (`is_deleted = true`) with a 30-day recovery window.
+- One-tap restore and background cleanup worker.
 
-### 🔐 11. Biometric Security & Dark Glassmorphism Design
-- **Biometric App Lock**: Protect sensitive financial records with Fingerprint / Face ID authentication.
-- **Modern Dark UI**: Nebula radial gradients, frosted glass cards (`GlassCard`), custom iconography, and fluid micro-animations.
-
----
-
-## 🏛️ Architecture & System Design
-
-Receipto follows **Feature-First Clean Architecture** principles, separating presentation, domain, and data layers to maximize testability, code maintainability, and horizontal scalability.
-
-```
-                           ┌───────────────────────────────┐
-                           │      Flutter UI Layer         │
-                           │  (Riverpod + GoRouter + M3)   │
-                           └───────────────┬───────────────┘
-                                           │
-                    ┌──────────────────────┴──────────────────────┐
-                    ▼                                             ▼
-     ┌─────────────────────────────┐               ┌─────────────────────────────┐
-     │     Receipt & Scan Core     │               │   Warranty & Alerts Core    │
-     │  - Camera / File Picker     │               │  - Expiration Calculator    │
-     │  - Multi-Page Batch Buffer  │               │  - Calendar Matrix Engine   │
-     │  - SHA-256 Fingerprinter    │               │  - In-App Notification Hub │
-     └──────────────┬──────────────┘               └──────────────┬──────────────┘
-                    │                                             │
-                    ▼                                             ▼
-     ┌─────────────────────────────┐               ┌─────────────────────────────┐
-     │  Multimodal AI OCR Service  │               │ Multi-Channel Notification  │
-     │  (Google Gemini 2.5 Flash)  │               │ (Local Push + SMTP Mailer)  │
-     └──────────────┬──────────────┘               └──────────────┬──────────────┘
-                    │                                             │
-                    └──────────────────────┬──────────────────────┘
-                                           │
-                                           ▼
-                    ┌─────────────────────────────────────────────┐
-                    │            Data & Storage Layer             │
-                    ├──────────────────────────────┬──────────────┤
-                    │     Offline Cache Vault      │   Supabase   │
-                    │  (SharedPrefs / Local Files) │  PostgreSQL  │
-                    └──────────────────────────────┴──────────────┘
-```
+### 🔐 11. Biometric Security & Dark Glassmorphism UI
+- Fingerprint and Face ID authentication via `local_auth`.
+- Fluid glassmorphic UI, custom animated charts, and dark nebula themes.
 
 ---
 
@@ -183,146 +169,101 @@ Receipto follows **Feature-First Clean Architecture** principles, separating pre
 ```mermaid
 flowchart TD
     A["Camera Capture / Gallery Import"] --> B{"Scan Mode?"}
-    B -- "Batch Mode" --> C["Append to In-Memory Page Buffer"]
-    C --> D["Update Dynamic Review Badge (Review N Pages)"]
-    D --> E{"Capture More Pages?"}
+    B -- "Batch Mode" --> C["Append to Page Buffer"]
+    C --> D["Review Drawer Carousel"]
+    D --> E{"Capture More?"}
     E -- "Yes" --> A
-    E -- "No" --> F["User Taps Review -> Batch Review Drawer"]
+    E -- "No" --> F["User Confirms Review"]
     B -- "Single Mode" --> F
-    F --> G["Stitch Images & Compute SHA-256 Hash"]
-    G --> H{"Duplicate Detected?"}
-    H -- "Duplicate Found" --> I["Prompt Replace / Cancel Dialog"]
-    H -- "Unique Scan" --> J["Google Gemini 2.5 Flash AI OCR"]
-    J --> K["Validate Receipt Content & Extract Entities"]
+    F --> G["Compute SHA-256 Cryptographic Hash"]
+    G --> H{"Duplicate Found?"}
+    H -- "Duplicate" --> I["Prompt Replace / Cancel Dialog"]
+    H -- "Unique" --> J["Render Cloud Backend (POST /api/scan)"]
+    J --> K["Gemini Multimodal OCR Entity Extraction"]
     K --> L["Upload High-Res Scan to Supabase Storage"]
-    L --> M["Persist to Supabase Database & Local Cache"]
+    L --> M["Persist to Supabase DB & Local Cache"]
     M --> N["Initialize Warranty Milestones & Reminders"]
 ```
 
 ### 2. Multi-Channel Warranty Alert Engine
 ```mermaid
 flowchart LR
-    A["Scheduled Worker / App Launch"] --> B["Query Active Warranties"]
-    B --> C["Compute Days to Expiry"]
+    A["App Launch / Background Worker"] --> B["Fetch Active Warranties"]
+    B --> C["Calculate Remaining Days"]
     C --> D{"Milestone Match? (30, 15, 7, 3, 1, 0 Days)"}
-    D -- "Condition Met" --> E["Dispatch Device Push Notification"]
-    D -- "Condition Met" --> F["Send Branded HTML Email via SMTP"]
-    D -- "Condition Met" --> G["Record In-App Notification Record"]
-    D -- "Not Due" --> H["No Action Required"]
+    D -- "Match" --> E["Trigger Device Push Notification"]
+    D -- "Match" --> F["Dispatch HTML Email via Brevo SMTP"]
+    D -- "Match" --> G["Record In-App Activity Notification"]
+    D -- "No Match" --> H["No Action Required"]
 ```
 
 ---
 
 ## 📊 Feature Matrix & Implementation Status
 
-| Feature Module | Implementation Status | Tech Stack / Protocol |
+| Feature Module | Implementation Status | Architecture Layer |
 | :--- | :---: | :--- |
-| **Continuous Batch Scanning** | ✅ 100% Production | Custom camera controller, page buffer, review carousel |
-| **Multimodal AI OCR** | ✅ 100% Production | Google Gemini 2.5 Flash with fallback parsing |
-| **Friendly Pre-Validation** | ✅ 100% Production | Non-receipt detection & sanitized error popups |
-| **Mixed-Category Tagging** | ✅ 100% Production | Item-level category inference & visual tags |
-| **Interactive Warranty Calendar**| ✅ 100% Production | Custom grid matrix with color-coded dot badges |
-| **Conversational AI Assistant** | ✅ 100% Production | Multi-turn query engine with filter persistence |
-| **Offline Cache Vault** | ✅ 100% Production | User-scoped local storage & local file mirrors |
-| **Multi-Format Export Suite** | ✅ 100% Production | PDF reports, CSV tabular data, JSON datasets |
-| **Push Notifications** | ✅ 100% Production | `flutter_local_notifications` with exact alarms |
-| **Automated SMTP Email Alerts**| ✅ 100% Production | SMTP worker sending branded HTML templates |
-| **3-Tier Duplicate Engine** | ✅ 100% Production | SHA-256 cryptographic hash + Jaccard token metric |
-| **30-Day Recycle Bin** | ✅ 100% Production | Soft-delete retention with automatic purge worker |
-| **Biometric Security** | ✅ 100% Production | `local_auth` Fingerprint & Face ID validation |
-| **Authentication Suite** | ✅ 100% Production | Firebase Email/Password & Google Sign-In OAuth 2.0 |
+| **Continuous Batch Scanning** | ✅ 100% Production | `frontend/lib/features/scan` |
+| **Multimodal AI OCR** | ✅ 100% Production | `backend/server.js` + `frontend/lib/core/services` |
+| **WhatsApp Ingestion Bot** | ✅ 100% Production | `whatsapp_bot/` (Node.js Baileys on Render) |
+| **1-Click AI Claim Dispatcher** | ✅ 100% Production | `frontend/lib/features/warranty/` |
+| **Mixed-Category Tagging** | ✅ 100% Production | `frontend/lib/features/receipts/` |
+| **Interactive Warranty Calendar**| ✅ 100% Production | `frontend/lib/features/warranty/` |
+| **Conversational AI Assistant** | ✅ 100% Production | `frontend/lib/features/ai_assistant/` |
+| **Offline Cache Vault** | ✅ 100% Production | `frontend/lib/core/services/offline_cache_service.dart` |
+| **Multi-Format Export Suite** | ✅ 100% Production | `frontend/lib/core/services/receipt_export_service.dart` |
+| **Push Notifications** | ✅ 100% Production | `frontend/lib/features/notifications/` |
+| **Automated SMTP Email Alerts**| ✅ 100% Production | `backend/server.js` + Brevo SMTP |
+| **3-Tier Duplicate Engine** | ✅ 100% Production | `frontend/lib/core/services/duplicate_detection_service.dart` |
+| **30-Day Recycle Bin** | ✅ 100% Production | `frontend/lib/features/receipts/presentation/screens/recycle_bin_screen.dart` |
+| **Biometric Security** | ✅ 100% Production | `frontend/lib/features/auth/` |
+| **Authentication Suite** | ✅ 100% Production | Firebase Auth (Email/Password & Google Sign-In) |
 
 ---
 
 ## 💻 Tech Stack & Dependencies
 
-### Core Framework & State Management
-- **Flutter SDK**: `v3.29.0`
-- **Dart SDK**: `v3.7.0`
-- **State Management**: `flutter_riverpod: ^2.5.1`
-- **Declarative Routing**: `go_router: ^14.2.7`
-- **Design Typography**: `google_fonts: ^6.2.1`
-
-### Backend, Auth & Storage
-- **Database & Storage**: `supabase_flutter: ^2.15.2` (PostgreSQL with RLS policies & public buckets)
-- **Authentication**: `firebase_core: ^4.11.0`, `firebase_auth: ^6.5.4`
-- **Single Sign-On**: `google_sign_in: ^7.2.0`
-- **Secure Persistence**: `flutter_secure_storage: ^10.3.1`, `shared_preferences: ^2.5.2`
-
-### Artificial Intelligence & Processing
-- **Multimodal AI OCR**: Google Gemini 2.5 Flash via REST endpoints
-- **Image Processing**: `image: ^4.8.0`, `camera: ^0.11.0+2`, `image_picker: ^1.2.2`
-- **PDF Manipulation**: `pdfx: ^2.9.2`, `pdf: ^3.12.0`, `printing: ^5.14.3`
-- **Cryptographic Hashing**: `crypto: ^3.0.7` (SHA-256)
-
-### Notifications & Communication
-- **Local Push Alerts**: `flutter_local_notifications: ^20.1.0`
-- **Timezone Scheduling**: `timezone: ^0.10.1`, `flutter_timezone: ^5.1.0`
-- **SMTP Email Delivery**: `mailer: ^7.1.0`
-- **Native OS Sharing**: `share_plus: ^12.0.2`, `open_filex: ^4.7.0`
-- **Biometric Security**: `local_auth: ^3.0.1`
+- **Mobile Client**: Flutter v3.29.0, Dart v3.7.0, Riverpod v2.5.1, GoRouter v14.2.7
+- **Cloud Backend**: Node.js, Express, Google GenAI SDK, Nodemailer, Brevo SMTP
+- **WhatsApp Gateway**: Baileys v6.7.9, Node.js, QR Authentication, Render Web Service
+- **Database & Storage**: Supabase (PostgreSQL with Row Level Security & Storage Buckets)
+- **Authentication**: Firebase Authentication (Email/Password & Google Sign-In OAuth 2.0)
+- **Artificial Intelligence**: Google Gemini 2.5 Flash, Groq Llama 3
+- **Security**: Local Biometrics (`local_auth`), SHA-256 Fingerprinting (`crypto`)
 
 ---
 
-## 📁 Directory Structure
+## 📁 Repository Structure
 
 ```
 RECEIPTO/
-├── android/                         # Android native workspace & Gradle configuration
-├── ios/                             # iOS native workspace
-├── assets/                          # Static branding, fonts & animations
-│   ├── animations/                  # Lottie / loading animations
-│   ├── fonts/                       # Embedded typography
-│   ├── icons/                       # App icons & badges
-│   ├── images/                      # Splash images & placeholders
-│   ├── logos/                       # Receipto logo brand assets
-│   └── shaders/                     # Custom visual shaders
+├── frontend/                        # Flutter Mobile App Workspace
+│   ├── android/                     # Android Gradle build configs & keystores
+│   ├── ios/                         # iOS project configuration
+│   ├── assets/                      # Icons, logos, and splash assets
+│   ├── lib/
+│   │   ├── app/                     # App entrypoint, routing, and design themes
+│   │   ├── core/                    # Shared services (Auth, DB, Cache, Export, SMTP)
+│   │   └── features/                # Feature-First modules (Scan, Receipts, Warranty, etc.)
+│   ├── test/                        # 35 Automated Unit and Widget Tests
+│   ├── pubspec.yaml                 # Flutter dependencies & assets manifest
+│   └── .env                         # Frontend environment configuration
 │
-├── lib/
-│   ├── main.dart                    # Application entrypoint & initialization
-│   ├── firebase_options.dart        # Firebase project configurations
-│   │
-│   ├── app/                         # App initialization & core config
-│   │   ├── app.dart                 # Root MaterialApp widget & Riverpod scope
-│   │   └── config/
-│   │       ├── routes.dart          # GoRouter route declarations & route guards
-│   │       └── theme.dart           # Design tokens, color palette & typography
-│   │
-│   ├── core/                        # Shared cross-cutting modules
-│   │   ├── constants/               # Global tokens (AppColors, AppSpacing, etc.)
-│   │   ├── services/                # Core business services:
-│   │   │   ├── firebase_auth_service.dart
-│   │   │   ├── receipt_database_service.dart
-│   │   │   ├── warranty_database_service.dart
-│   │   │   ├── notification_database_service.dart
-│   │   │   ├── offline_cache_service.dart
-│   │   │   ├── receipt_export_service.dart
-│   │   │   ├── reminder_engine.dart
-│   │   │   ├── email_service.dart
-│   │   │   ├── storage_service.dart
-│   │   │   ├── duplicate_detection_service.dart
-│   │   │   └── gemini_exception_handler.dart
-│   │   ├── utils/                   # Currency formatters, date parsers & validators
-│   │   └── widgets/                 # Reusable components (GlassCard, NebulaBackground)
-│   │
-│   └── features/                    # Feature-First Modules
-│       ├── ai_assistant/            # Conversational AI assistant & query engine
-│       ├── analytics/               # Financial charts, monthly trends & budget metrics
-│       ├── auth/                    # Login, Sign-up, Password Reset & Biometric lock
-│       ├── dashboard/               # Overview dashboard, quick metrics & action shortcuts
-│       ├── notifications/           # In-app notification center & reminder preferences
-│       ├── profile/                 # User settings, export center & 30-day recycle bin
-│       ├── receipts/                # Receipt list, detail views, itemized tags & sharing
-│       ├── scan/                    # Camera scanner, batch buffer & preview confirmation
-│       └── warranty/                # Warranty vault, calendar grid & claim details
+├── backend/                         # Render Cloud API Service
+│   ├── server.js                    # Express API (OCR extraction, Brevo SMTP proxy)
+│   ├── package.json                 # Node.js backend dependencies
+│   ├── Dockerfile                   # Deployment container
+│   └── .env                         # Backend environment secrets
 │
-├── test/                            # Comprehensive Automated Test Suite (30 Tests)
-│   ├── ai_assistant_engine_test.dart
-│   ├── mixed_category_test.dart
-│   └── widget_test.dart
+├── whatsapp_bot/                    # Render WhatsApp Ingestion Bot
+│   ├── index.js                     # Baileys WhatsApp client & message listener
+│   ├── package.json                 # Bot dependencies
+│   ├── Dockerfile                   # Bot deployment container
+│   └── .env                         # WhatsApp bot secrets
 │
-├── .gitignore                       # Production gitignore rules
-├── pubspec.yaml                     # Manifest & dependency declarations
+├── supabase/                        # Database schema migrations & policies
+├── assets/logos/                    # Root repository branding assets
+├── LICENSE                          # MIT License
 └── README.md                        # Documentation
 ```
 
@@ -330,74 +271,77 @@ RECEIPTO/
 
 ## 🚀 Quick Start & Setup Guide
 
-### 1. Clone & Fetch Dependencies
+### 1. Frontend Mobile App (`frontend/`)
+
 ```bash
-git clone https://github.com/milanraj-github/RECEIPTO.git
-cd RECEIPTO
+# Navigate to the frontend directory
+cd frontend
+
+# Fetch Flutter dependencies
 flutter pub get
+
+# Run the 35-test verification suite
+flutter test
+
+# Launch debug mode on connected device
+flutter run
 ```
 
-### 2. Environment Configuration (.env)
-Create a `.env` file in the project root:
-
+Configure `frontend/.env`:
 ```env
-# =================================================================
-# SUPABASE BACKEND CONFIGURATION
-# =================================================================
+BACKEND_URL=https://receipto-cloud-backend.onrender.com
 SUPABASE_URL=https://your-project-id.supabase.co
 SUPABASE_ANON_KEY=your-supabase-anon-key
-
-# =================================================================
-# GOOGLE GEMINI AI CONFIGURATION
-# =================================================================
-GEMINI_API_KEY=your-google-ai-studio-gemini-key
-
-# =================================================================
-# SMTP AUTOMATED EMAIL REMINDERS
-# =================================================================
-SMTP_HOST=smtp.gmail.com
-SMTP_PORT=587
-SMTP_USERNAME=your-email@gmail.com
-SMTP_PASSWORD=your-16-character-app-password
-SMTP_SENDER=your-email@gmail.com
+GEMINI_API_KEY=your-offline-fallback-gemini-key
 ```
 
-### 3. Firebase Authentication
-1. Create a project in the [Firebase Console](https://console.firebase.google.com/).
-2. Register an Android application with package name `com.receipto.receipto`.
-3. Add your debug SHA-1 signing key (`cd android && ./gradlew signingReport`).
-4. Place your downloaded `google-services.json` inside `android/app/`.
-5. Enable **Email/Password** and **Google Sign-In** under **Authentication > Sign-in method**.
+### 2. Cloud API Backend (`backend/`)
 
-### 4. Supabase Backend Services
-1. Create a project at [supabase.com](https://supabase.com).
-2. Under **Storage**, create a public bucket named `receipts`.
-3. Under **SQL Editor**, execute the [Complete Supabase Production SQL Schema](#-complete-supabase-production-sql-schema) below.
-
-### 5. Google Gemini AI API
-1. Generate an API Key from [Google AI Studio](https://aistudio.google.com/).
-2. Assign the key to `GEMINI_API_KEY` in your `.env` file.
-
-### 6. SMTP Notification Dispatcher
-1. Generate an **App Password** from your Google Account Security dashboard.
-2. Assign the 16-character password to `SMTP_PASSWORD` in your `.env` file.
-
-### 7. Run the Application
 ```bash
-flutter run
+# Navigate to the backend directory
+cd backend
+
+# Install dependencies
+npm install
+
+# Start local development server
+npm run dev
+```
+
+Configure `backend/.env`:
+```env
+PORT=3000
+GEMINI_API_KEYS=key1,key2,key3
+GROQ_API_KEYS=gsk_key1
+SMTP_HOST=smtp-relay.brevo.com
+SMTP_PORT=587
+SMTP_USERNAME=your-brevo-login
+SMTP_PASSWORD=your-brevo-smtp-key
+SMTP_SENDER=noreply@receipto.app
+SUPABASE_URL=https://your-project-id.supabase.co
+SUPABASE_KEY=your-supabase-service-role-key
+```
+
+### 3. WhatsApp Ingestion Bot (`whatsapp_bot/`)
+
+```bash
+# Navigate to the WhatsApp bot directory
+cd whatsapp_bot
+
+# Install dependencies
+npm install
+
+# Start the bot service
+npm start
 ```
 
 ---
 
 ## 🗄️ Complete Supabase Production SQL Schema
 
-Run the following SQL script in your **Supabase Dashboard > SQL Editor** to establish all tables, indexes, constraints, and Row Level Security policies:
+Run the following SQL script in your **Supabase Dashboard > SQL Editor** to initialize all tables, foreign keys, indexes, and Row Level Security policies:
 
 ```sql
--- =============================================================================
--- RECEIPTO ENTERPRISE DATABASE SCHEMA
--- =============================================================================
-
 -- 1. PROFILES TABLE
 CREATE TABLE IF NOT EXISTS public.profiles (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -500,9 +444,7 @@ CREATE TABLE IF NOT EXISTS public.notifications (
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- =============================================================================
--- PERFORMANCE INDEXES
--- =============================================================================
+-- INDEXES
 CREATE INDEX IF NOT EXISTS idx_receipts_user_id ON public.receipts(user_id);
 CREATE INDEX IF NOT EXISTS idx_receipts_hash ON public.receipts(receipt_hash);
 CREATE INDEX IF NOT EXISTS idx_receipts_deleted ON public.receipts(is_deleted);
@@ -511,9 +453,7 @@ CREATE INDEX IF NOT EXISTS idx_warranties_user_id ON public.warranties(user_id);
 CREATE INDEX IF NOT EXISTS idx_warranties_receipt_id ON public.warranties(receipt_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON public.notifications(user_id);
 
--- =============================================================================
 -- ROW LEVEL SECURITY (RLS) POLICIES
--- =============================================================================
 ALTER TABLE public.receipts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.receipt_items ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.warranties ENABLE ROW LEVEL SECURITY;
@@ -527,87 +467,76 @@ CREATE POLICY "Allow All Notifications Access" ON public.notifications FOR ALL U
 
 ---
 
-## 🧪 Testing & Quality Verification
+## 🧪 Automated Testing Suite (35 / 35 Passing)
 
-Receipto includes an automated test suite verifying edge cases, multi-user isolation, mathematical integrity, category matching, and UI sanity:
+Receipto includes an automated unit and widget test suite covering mathematical integrity, edge cases, multi-user tenancy, mixed-category detection, and claim dispatching:
 
 ```bash
-# Execute the full automated test suite
-flutter test --no-pub
+cd frontend
+flutter test
 ```
 
-### Verified Test Matrix (30 / 30 Tests Passing)
-- **AI Assistant Search & Filtering**:
-  - Price boundaries (minimum price, maximum price, bounded ranges)
-  - Strict differentiation between line-item prices and receipt totals
+### Verified Test Matrix (100% Success)
+- **AI Assistant Search & Filtering (23 Tests)**:
+  - Bounded price range queries and sorting
+  - Strict line-item pricing vs. receipt total isolation
   - Category filtering against stored inventory records
   - Date filtering at calendar month boundaries
   - Deterministic financial aggregations without double-counting
   - Multi-user isolation verification (User A cannot query User B records)
   - Missing warranty handling (prevents false expired labels)
-- **Mixed-Category Receipt Intelligence**:
-  - Detection of receipts containing $\ge 2$ distinct categories
-  - Discrimination of normal single-category purchases
+- **Mixed-Category Receipt Intelligence (5 Tests)**:
+  - Discrimination of receipts containing $\ge 2$ distinct categories
+  - Verification of standard single-category purchases
   - Item-level tag rendering and highlighting accuracy
-- **Widget & Smoke Tests**:
-  - Clean app bootstrap and root MaterialApp rendering
+- **1-Click AI Warranty Claim Dispatcher (5 Tests)**:
+  - Official support directory lookup for major brands
+  - Brand inference from product name and merchant tokens
+  - Graceful fallback for custom and unlisted brands
+  - Consumer Protection Act formal notice letter generation
+  - Category-specific defect detection (e.g. food/grocery defect claims)
+- **Widget & Smoke Verification (2 Tests)**:
+  - Application bootstrap and Riverpod container initialization
 
 ---
 
-## 📦 Compiling & Releasing Production APK
+## 📦 Compiling Production APK & Play Store Bundle
 
-To build a standalone, optimized release APK for distribution:
+To compile production-ready artifacts for deployment:
 
 ```bash
-# 1. Clean previous build artifacts
+cd frontend
+
+# 1. Clean build cache
 flutter clean
 
-# 2. Re-resolve all dependencies
+# 2. Get dependencies
 flutter pub get
 
-# 3. Compile optimized release APK
+# 3. Build standalone Universal APK
 flutter build apk --release
+
+# 4. Build Google Play Store App Bundle (.aab)
+flutter build appbundle --release
 ```
 
-The compiled release APK will be generated at:
-```
-build/app/outputs/flutter-apk/app-release.apk
-```
-
----
-
-## 🛠️ Troubleshooting & FAQs
-
-### 1. "Receipt Not Detected" Prompt
-- **Reason**: The image captured lacks distinguishable receipt or invoice markers (merchant name, items, or totals).
-- **Remedy**: Place the receipt flat against a dark surface under good lighting and avoid reflections or extreme angles.
-
-### 2. Gemini API Quota Limit (HTTP 429)
-- **Reason**: Google AI Studio free tier requests per minute exceeded.
-- **Remedy**: Receipto includes automatic local parser fallbacks. You can also generate an additional API key from [Google AI Studio](https://aistudio.google.com) and update `GEMINI_API_KEY` in `.env`.
+Output locations:
+- **APK**: `frontend/build/app/outputs/flutter-apk/app-release.apk`
+- **Play Store Bundle**: `frontend/build/app/outputs/bundle/release/app-release.aab`
 
 ---
 
 ## 🔒 Security & Privacy Standards
 
-1. **Client-Side Secret Protection**: `.env` and `google-services.json` are excluded from version control via `.gitignore`.
-2. **Tenant Isolation**: Every database query and offline cache key is strictly scoped to the authenticated user's Firebase UID.
-3. **Pristine Image Retention**: Original receipt captures are stored directly without destructive compression, ensuring legal validity for warranty service claims.
-4. **Biometric Guard**: Local biometric verification (`local_auth`) ensures unauthorized individuals cannot view financial records even if the device is unlocked.
+1. **Client-Side Secret Shielding**: Sensitive API credentials and keys are managed via the dedicated backend microservice, eliminating reverse-engineering risks in mobile decompilation.
+2. **Strict Multi-User Tenancy**: Every database query, offline cache partition, and search query is strictly scoped to the authenticated user's Firebase UID.
+3. **Pristine Document Preservation**: Original receipts are archived in uncompressed, tamper-evident storage to retain legal validity for warranty claims.
+4. **Biometric Guard**: Local biometric verification (`local_auth`) ensures that financial records remain protected even when the mobile device is unlocked.
 
 ---
 
-## 🗺️ Future Roadmap
-
-- [ ] **WhatsApp & Telegram Ingestion Bot**: Forward receipt photos and invoices directly to a dedicated bot for instant ingestion.
-- [ ] **AI Spending Health Index**: Multi-month financial scoring with predictive trend analytics.
-- [ ] **Automated Warranty Claim Wizard**: AI-crafted formal service request letters pre-filled with merchant, product, and purchase proof.
-- [ ] **Manufacturer Recall Alerts**: Automatic alerts for registered products subject to public manufacturer safety recalls.
-
-------------------
-
 ## 📄 License & Acknowledgments
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for complete terms.
+This project is open-source under the **[MIT License](LICENSE)**.
 
-Built with ❤️ by the Receipto Engineering Team.
+Developed with ❤️ by the Receipto Engineering Team.
