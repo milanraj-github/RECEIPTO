@@ -529,47 +529,104 @@ async function startWhatsAppBot() {
 
       const userId = verifiedRecord.user_id;
 
-      // Check if message is a receipt photo
-      const imageMsg = msg.message?.imageMessage;
+      // Unpack actual message payload if wrapped in ephemeral or view-once containers
+      const actualMessage =
+        msg.message?.ephemeralMessage?.message ||
+        msg.message?.viewOnceMessage?.message ||
+        msg.message?.documentWithCaptionMessage?.message ||
+        msg.message;
+
+      // Check if message is a receipt photo or document (PDF / Invoice)
+      const imageMsg = actualMessage?.imageMessage;
+      const docMsg = actualMessage?.documentMessage;
+      const isPdf = Boolean(
+        docMsg?.mimetype?.includes("pdf") ||
+        docMsg?.fileName?.toLowerCase().endsWith(".pdf")
+      );
+      const isImage = Boolean(
+        imageMsg ||
+        docMsg?.mimetype?.startsWith("image/") ||
+        /\.(jpe?g|png|webp)$/i.test(docMsg?.fileName || "")
+      );
+      const isMedia = Boolean(imageMsg || docMsg);
 
       // Friendly greeting for verified user
-      if (!imageMsg && /^(hi|hy|hello|hey|help)\b/i.test(text)) {
+      if (!isMedia && /^(hi|hy|hello|hey|help)\b/i.test(text)) {
         await sock.sendMessage(
           remoteJid,
           {
             text:
               "👋 *Hi! I am your Receipto AI Assistant.*\n\n" +
-              "📸 Simply forward or snap any receipt photo here, and I will automatically extract the store, total, items, and warranty for your Receipto app!",
+              "📸 *Receipt Photos:* Forward or snap any physical receipt photo here.\n" +
+              "📄 *PDF Invoices:* Forward digital PDF invoices (Amazon, Flipkart, Apple, etc.).\n\n" +
+              "Receipto AI will automatically extract the store, total, items, and warranty directly into your app!",
           },
           { quoted: msg }
         );
         return;
       }
 
-      // Handle Receipt Image from verified user
-      if (imageMsg) {
-        console.log(`📸 Receipt image received from verified user (${cleanPhone}). Downloading...`);
+      // Check if document is an unsupported non-PDF non-image file
+      if (docMsg && !isPdf && !isImage) {
+        console.log(`⚠️ Unsupported document format (${docMsg.mimetype || docMsg.fileName}) from ${cleanPhone}`);
+        await sock.sendMessage(
+          remoteJid,
+          {
+            text:
+              "⚠️ *Unsupported File Format*\n\n" +
+              "Receipto AI supports **PDF Invoices** and **Receipt Images (JPG, PNG)**.\n\n" +
+              "👉 Please export or share your invoice as a **PDF** or take a photo of the receipt.",
+          },
+          { quoted: msg }
+        );
+        return;
+      }
+
+      // Handle Receipt Image or PDF Document from verified user
+      if (imageMsg || isPdf || isImage) {
+        const mediaLabel = isPdf ? "PDF invoice" : "receipt image";
+        console.log(`📥 ${mediaLabel} received from verified user (${cleanPhone}). Downloading...`);
 
         // Send processing status
         await sock.sendMessage(
           remoteJid,
-          { text: "🔍 Analyzing receipt with Receipto AI... Please wait a moment." },
+          {
+            text: isPdf
+              ? "📄 Analyzing PDF invoice with Receipto AI... Please wait a moment."
+              : "🔍 Analyzing receipt with Receipto AI... Please wait a moment.",
+          },
           { quoted: msg }
         );
 
-        // Download image buffer directly from WhatsApp
-        const imageBuffer = await downloadMediaMessage(msg, "buffer", {});
-        const base64Image = imageBuffer.toString("base64");
-        const mimeType = imageMsg.mimetype || "image/jpeg";
-        const fileExt = mimeType.includes("png") ? "png" : "jpg";
+        // Download media buffer directly from WhatsApp
+        const mediaBuffer = await downloadMediaMessage(msg, "buffer", {});
+        const base64Media = mediaBuffer.toString("base64");
 
-        // Upload receipt image to Supabase Storage bucket 'receipts' so it displays natively in the app
+        const targetMedia = imageMsg || docMsg;
+        let mimeType = targetMedia.mimetype || "image/jpeg";
+        let fileExt = "jpg";
+
+        if (isPdf) {
+          mimeType = "application/pdf";
+          fileExt = "pdf";
+        } else if (mimeType.includes("png") || docMsg?.fileName?.toLowerCase().endsWith(".png")) {
+          mimeType = "image/png";
+          fileExt = "png";
+        } else if (mimeType.includes("webp") || docMsg?.fileName?.toLowerCase().endsWith(".webp")) {
+          mimeType = "image/webp";
+          fileExt = "webp";
+        } else {
+          mimeType = "image/jpeg";
+          fileExt = "jpg";
+        }
+
+        // Upload receipt to Supabase Storage bucket 'receipts' so it displays natively in the app
         let imageUrl = null;
         try {
           const storagePath = `${userId}/receipt_wa_${Date.now()}.${fileExt}`;
           const { data: uploadData, error: uploadErr } = await supabase.storage
             .from("receipts")
-            .upload(storagePath, imageBuffer, {
+            .upload(storagePath, mediaBuffer, {
               contentType: mimeType,
               upsert: true,
             });
@@ -579,7 +636,7 @@ async function startWhatsAppBot() {
               .from("receipts")
               .getPublicUrl(storagePath);
             imageUrl = pubData?.publicUrl || null;
-            console.log(`📸 Image successfully uploaded to Supabase Storage: ${imageUrl}`);
+            console.log(`📦 Media successfully uploaded to Supabase Storage: ${imageUrl}`);
           } else {
             console.warn(`⚠️ Supabase Storage upload failed:`, uploadErr?.message);
           }
@@ -587,8 +644,8 @@ async function startWhatsAppBot() {
           console.warn(`⚠️ Supabase Storage exception:`, uploadException.message);
         }
 
-        console.log("🤖 Extracting receipt details via Gemini AI (Multi-Key Rotation)...");
-        const extracted = await extractReceiptData(base64Image, mimeType);
+        console.log(`🤖 Extracting ${mediaLabel} details via Gemini AI (Multi-Key Rotation)...`);
+        const extracted = await extractReceiptData(base64Media, mimeType);
         console.log("📋 Extracted Data:", JSON.stringify(extracted));
 
         // Format data for Supabase receipts table
@@ -757,8 +814,9 @@ async function startWhatsAppBot() {
           ? `\n🛡️ *Warranty Protected:* ${warrantiesToInsert.length} item(s) (${warrantiesToInsert[0].warranty_period} Months, Expires: ${warrantiesToInsert[0].expiry_date})`
           : "";
 
+        const replyHeader = isPdf ? "📄 *PDF Invoice Saved to Receipto!*" : "🧾 *Receipt Saved to Receipto!*";
         const replyMessage =
-          `🧾 *Receipt Saved to Receipto!*\n\n` +
+          `${replyHeader}\n\n` +
           `🏪 *Store:* ${merchantName}\n` +
           `💰 *Total:* ₹${totalAmount.toFixed(2)}\n` +
           `📅 *Date:* ${purchaseDate}\n` +
@@ -791,7 +849,7 @@ async function extractReceiptData(base64Data, mimeType) {
     };
   }
 
-  const prompt = `Analyze this receipt image and extract structured JSON data.
+  const prompt = `Analyze this receipt image or PDF invoice document and extract structured JSON data.
 Strictly return ONLY a valid raw JSON object, without markdown code fences or backticks:
 {
   "merchant_name": "Store or merchant name",
