@@ -1,6 +1,8 @@
 node_modules
 .wwebjs_auth
 .wwebjs_cache
+baileys_auth
+baileys_store
 qr.png
 .env
 .git

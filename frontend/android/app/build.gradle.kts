@@ -31,9 +31,8 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
-        // Build only for 64-bit ARM (your Realme device)
         ndk {
-            abiFilters += listOf("arm64-v8a")
+            abiFilters += listOf("arm64-v8a", "armeabi-v7a")
         }
     }
 

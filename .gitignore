@@ -73,6 +73,8 @@ whatsapp_bot/node_modules/
 whatsapp_bot/.env
 whatsapp_bot/.wwebjs_auth/
 whatsapp_bot/.wwebjs_cache/
+whatsapp_bot/baileys_auth/
+whatsapp_bot/baileys_store/
 whatsapp_bot/qr.png
 whatsapp_bot/*.data.json
 whatsapp_bot/_session/
