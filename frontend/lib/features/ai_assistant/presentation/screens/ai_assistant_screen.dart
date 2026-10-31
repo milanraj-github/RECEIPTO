@@ -7,7 +7,6 @@ import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/core/widgets/glass_card.dart';
 import 'package:receipto/core/widgets/nebula_background.dart';
 import 'package:receipto/features/ai_assistant/domain/models/chat_message_model.dart';
-import 'package:receipto/features/ai_assistant/domain/models/ai_structured_response.dart';
 import 'package:receipto/features/ai_assistant/data/services/ai_assistant_service.dart';
 import 'package:receipto/features/ai_assistant/presentation/widgets/ai_product_card.dart';
 import 'package:receipto/features/ai_assistant/presentation/widgets/ai_receipt_card.dart';

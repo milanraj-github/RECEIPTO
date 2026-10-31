@@ -8,9 +8,6 @@ import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/core/widgets/glass_card.dart';
 import 'package:receipto/core/widgets/subtle_neural_mesh.dart';
 import 'package:receipto/core/services/firebase_auth_service.dart';
-import 'package:receipto/core/services/notification_service.dart';
-import 'package:receipto/core/services/email_service.dart';
-import 'package:receipto/core/services/reminder_engine.dart';
 import 'package:receipto/core/services/app_lock_provider.dart';
 import 'package:receipto/core/services/app_lock_service.dart';
 import 'package:receipto/core/services/receipt_database_service.dart';
@@ -27,7 +24,6 @@ class ProfileScreen extends ConsumerStatefulWidget {
 
 class _ProfileScreenState extends ConsumerState<ProfileScreen> {
   bool _cloudBackupEnabled = true;
-  bool _devToolsExpanded = false;
 
   String _formatMemberSince(DateTime? creationTime) {
     if (creationTime == null) return 'Member since 2024';
@@ -142,18 +138,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                   setState(() => _cloudBackupEnabled = val);
                 },
               ),
-              const SizedBox(height: 10),
-              _buildActionSetting(
-                title: 'Export Data',
-                subtitle: 'Export records in PDF, Excel, or CSV format',
-                icon: Icons.ios_share_rounded,
-                iconColor: AppColors.secondary,
-                onTap: () => _showInfoDialog(context, 'Export Data', 'Export options (PDF, Excel, CSV) are automatically formatted when downloading invoices or reports.'),
-              ),
-              const SizedBox(height: 24),
-
-              // 6. 🧰 Developer Tools Section (Collapsible Accordion)
-              _buildDeveloperToolsAccordion(context),
               const SizedBox(height: 24),
 
               // 7. 🗑 Data Section
@@ -697,164 +681,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  // Collapsible Developer Tools Accordion Tile
-  Widget _buildDeveloperToolsAccordion(BuildContext context) {
-    return GlassCard(
-      borderRadius: AppRadius.lg,
-      padding: const EdgeInsets.all(0),
-      child: Column(
-        children: [
-          Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () {
-                setState(() => _devToolsExpanded = !_devToolsExpanded);
-              },
-              borderRadius: AppRadius.lg,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 38,
-                          height: 38,
-                          decoration: BoxDecoration(
-                            color: Colors.purpleAccent.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.build_outlined, color: Colors.purpleAccent, size: 20),
-                        ),
-                        const SizedBox(width: 14),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Developer Tools',
-                              style: GoogleFonts.inter(
-                                color: AppColors.onSurface,
-                                fontSize: 14.5,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'Internal diagnostic & testing tools',
-                              style: GoogleFonts.inter(
-                                color: AppColors.onSurfaceVariant,
-                                fontSize: 11.5,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    Icon(
-                      _devToolsExpanded ? Icons.keyboard_arrow_up_rounded : Icons.keyboard_arrow_down_rounded,
-                      color: AppColors.onSurfaceVariant,
-                      size: 22,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          AnimatedCrossFade(
-            duration: const Duration(milliseconds: 250),
-            crossFadeState: _devToolsExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-            firstChild: const SizedBox.shrink(),
-            secondChild: Padding(
-              padding: const EdgeInsets.only(left: 12, right: 12, bottom: 12),
-              child: Column(
-                children: [
-                  const Divider(color: Colors.white10, height: 1),
-                  const SizedBox(height: 10),
-                  _buildActionSetting(
-                    title: 'Test Notification',
-                    subtitle: 'Trigger a test local notification',
-                    icon: Icons.notifications_active_outlined,
-                    iconColor: AppColors.primary,
-                    onTap: () async {
-                      await ref.read(notificationServiceProvider).showNotification(
-                            id: 999,
-                            title: 'Receipto Test',
-                            body: 'This is a test warranty reminder notification.',
-                          );
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  _buildActionSetting(
-                    title: 'Send Test Email',
-                    subtitle: 'Send a test email to your address',
-                    icon: Icons.email_outlined,
-                    iconColor: AppColors.secondary,
-                    onTap: () async {
-                      final user = ref.read(firebaseAuthServiceProvider).currentUser;
-                      if (user != null && user.email != null && user.email!.isNotEmpty) {
-                        try {
-                          await ref.read(emailServiceProvider).sendTestEmail(
-                                recipientEmail: user.email!,
-                              );
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Test email sent successfully!')),
-                          );
-                        } catch (e) {
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Email failed: $e')),
-                          );
-                        }
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('No logged-in user email found.')),
-                        );
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  _buildActionSetting(
-                    title: 'Run Warranty Engine',
-                    subtitle: 'Trigger background scanning immediately',
-                    icon: Icons.play_arrow_outlined,
-                    iconColor: AppColors.tertiary,
-                    onTap: () async {
-                      final user = ref.read(firebaseAuthServiceProvider).currentUser;
-                      if (user != null) {
-                        try {
-                          await ref.read(reminderEngineProvider).checkWarrantyReminders(
-                                user.uid,
-                                user.email,
-                                user.displayName,
-                              );
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Warranty engine run completed! Check console logs.')),
-                          );
-                        } catch (e) {
-                          if (!context.mounted) return;
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Engine failed: $e')),
-                          );
-                        }
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('No logged-in user found.')),
-                        );
-                      }
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
