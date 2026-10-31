@@ -114,7 +114,14 @@ Return ONLY a single, valid JSON object matching this structure:
 }
 ''';
 
+  String? _cloudBackendUrl;
+
   GeminiService() {
+    _cloudBackendUrl = dotenv.env['BACKEND_URL']?.trim();
+    if (_cloudBackendUrl != null && _cloudBackendUrl!.endsWith('/')) {
+      _cloudBackendUrl = _cloudBackendUrl!.substring(0, _cloudBackendUrl!.length - 1);
+    }
+
     final rawKeys = dotenv.env['GEMINI_API_KEYS'] ?? dotenv.env['GEMINI_API_KEY'] ?? '';
     _apiKeys = rawKeys
         .split(',')
@@ -122,8 +129,9 @@ Return ONLY a single, valid JSON object matching this structure:
         .where((k) => k.isNotEmpty)
         .toList();
 
-    if (_apiKeys.isEmpty) {
-      throw Exception('Missing GEMINI_API_KEYS / GEMINI_API_KEY in environment variables (.env file).');
+    // If no local keys are provided, we require BACKEND_URL for cloud offloading
+    if (_apiKeys.isEmpty && (_cloudBackendUrl == null || _cloudBackendUrl!.isEmpty)) {
+      throw Exception('Missing both BACKEND_URL and GEMINI_API_KEYS in environment.');
     }
   }
 
@@ -153,6 +161,40 @@ Return ONLY a single, valid JSON object matching this structure:
     String mimeType = 'image/jpeg',
     Duration? timeout,
   }) async {
+    // 1. If Cloud Backend is configured, delegate extraction to Render Cloud API (keeps device cold and fast)
+    if (_cloudBackendUrl != null && _cloudBackendUrl!.isNotEmpty) {
+      try {
+        if (kDebugMode) {
+          print('[GeminiService] Offloading receipt extraction to Cloud Backend: $_cloudBackendUrl/api/scan');
+        }
+        final base64Image = base64.encode(imageBytes);
+        final response = await _client.post(
+          Uri.parse('$_cloudBackendUrl/api/scan'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'image_bytes': base64Image,
+            'mime_type': mimeType,
+          }),
+        ).timeout(timeout ?? const Duration(seconds: 45));
+
+        if (response.statusCode == 200) {
+          final Map<String, dynamic> body = jsonDecode(response.body);
+          if (body['success'] == true && body['data'] != null) {
+            final data = body['data'] as Map<String, dynamic>;
+            return ReceiptModel.fromJson(data);
+          }
+        }
+        if (kDebugMode) {
+          print('[GeminiService] Cloud Backend returned status ${response.statusCode}. Falling back to device rotation...');
+        }
+      } catch (cloudErr) {
+        if (kDebugMode) {
+          print('[GeminiService] Cloud Backend request failed: $cloudErr. Falling back to device rotation...');
+        }
+      }
+    }
+
+    // 2. Direct device execution fallback (if backend is waking up or local keys are present)
     return _analyzeWithModelFailover(
       buildRequestPayload: (base64Image) => {
         "contents": [

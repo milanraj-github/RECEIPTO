@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
@@ -43,6 +45,45 @@ class EmailService {
       debugPrint('[EmailService] Caching environment variables to SharedPreferences completed.');
     } catch (e) {
       debugPrint('[EmailService] Error caching environment variables: $e');
+    }
+  }
+
+  /// Helper: Attempts sending email via Render Cloud Backend proxy (keeps SMTP credentials off user phones)
+  Future<bool> _trySendViaCloudBackend({
+    required String recipientEmail,
+    required String subject,
+    required String htmlContent,
+  }) async {
+    final backendUrl = dotenv.env['BACKEND_URL']?.trim();
+    if (backendUrl == null || backendUrl.isEmpty) return false;
+
+    final cleanUrl = backendUrl.endsWith('/') ? backendUrl.substring(0, backendUrl.length - 1) : backendUrl;
+    try {
+      if (kDebugMode) {
+        print('[EmailService] Offloading email sending to Cloud Backend: $cleanUrl/api/send-email');
+      }
+      final response = await http.post(
+        Uri.parse('$cleanUrl/api/send-email'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'recipient_email': recipientEmail,
+          'subject': subject,
+          'html_content': htmlContent,
+        }),
+      ).timeout(const Duration(seconds: 20));
+
+      if (response.statusCode == 200) {
+        final body = jsonDecode(response.body);
+        if (body['success'] == true) {
+          if (kDebugMode) print('[EmailService] Email successfully delivered via Cloud Backend proxy!');
+          return true;
+        }
+      }
+      if (kDebugMode) print('[EmailService] Cloud Backend email failed (${response.statusCode}). Falling back to local SMTP...');
+      return false;
+    } catch (e) {
+      if (kDebugMode) print('[EmailService] Cloud Backend email exception: $e. Falling back to local SMTP...');
+      return false;
     }
   }
 
@@ -266,6 +307,16 @@ class EmailService {
         ..text = emailText
         ..html = emailHtml
         ..headers['Reply-To'] = senderEmail;
+
+      // 1. First, attempt sending via secure Cloud Backend proxy
+      final bool sentViaCloud = await _trySendViaCloudBackend(
+        recipientEmail: recipientEmail,
+        subject: subject,
+        htmlContent: emailHtml,
+      );
+      if (sentViaCloud) {
+        return;
+      }
 
       int retries = 3;
       bool sentSuccessfully = false;
@@ -543,6 +594,16 @@ class EmailService {
         ..headers['Auto-Submitted'] = 'auto-generated'
         ..headers['X-Auto-Response-Suppress'] = 'All'
         ..headers['X-Mailer'] = 'Receipto App';
+
+      // 1. First, attempt sending via secure Cloud Backend proxy
+      final bool sentViaCloud = await _trySendViaCloudBackend(
+        recipientEmail: recipientEmail,
+        subject: subject,
+        htmlContent: emailHtml,
+      );
+      if (sentViaCloud) {
+        return;
+      }
 
       int retries = 3;
       bool sentSuccessfully = false;
