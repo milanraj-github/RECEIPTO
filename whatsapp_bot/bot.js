@@ -384,9 +384,21 @@ async function startWhatsAppBot() {
           return;
         }
 
-        if (records && records.length > 0) {
-          const match = records[0];
-          const parts = match.user_id.split(":");
+        const incomingDigits = senderPhoneDigits.replace(/\D/g, "");
+
+        // Find the pending record matching both code AND sender phone number
+        const matchingRecord = records?.find((r) => {
+          const regDigits = (r.phone_number || "").replace(/\D/g, "");
+          return (
+            regDigits === incomingDigits ||
+            (regDigits.length >= 10 &&
+              incomingDigits.length >= 10 &&
+              regDigits.slice(-10) === incomingDigits.slice(-10))
+          );
+        });
+
+        if (matchingRecord) {
+          const parts = matchingRecord.user_id.split(":");
           // Format: pending:<CODE>:<USER_ID>
           const realUserId = parts.slice(2).join(":");
 
@@ -394,17 +406,17 @@ async function startWhatsAppBot() {
           await supabase
             .from("whatsapp_users")
             .update({ user_id: realUserId })
-            .eq("phone_number", match.phone_number);
+            .eq("phone_number", matchingRecord.phone_number);
 
-          // Also upsert incoming sender ID (LID / cleanPhone) so future receipts from this chat always resolve
-          if (cleanPhone !== match.phone_number) {
+          // If incoming cleanPhone format differs from matchingRecord.phone_number, upsert cleanPhone too
+          if (cleanPhone !== matchingRecord.phone_number) {
             await supabase.from("whatsapp_users").upsert({
               phone_number: cleanPhone,
               user_id: realUserId,
             });
           }
 
-          console.log(`✅ WhatsApp successfully linked for user: ${realUserId}`);
+          console.log(`✅ WhatsApp successfully linked for verified user: ${realUserId} (Phone: ${cleanPhone})`);
           await sock.sendMessage(
             remoteJid,
             {
@@ -412,6 +424,25 @@ async function startWhatsAppBot() {
                 "🎉 *Receipto Connected Successfully!*\n\n" +
                 "Your WhatsApp is now verified and linked to your Receipto account.\n\n" +
                 "📸 *How to use:* Simply forward or snap any receipt photo here, and Receipto AI will instantly extract and track it for you!",
+            },
+            { quoted: msg }
+          );
+          return;
+        } else if (records && records.length > 0) {
+          // Security Alert: Code is valid, but sent from an unauthorized phone number!
+          const requestedPhone = records[0].phone_number || "";
+          const maskedPhone = requestedPhone.length > 4 ? `...${requestedPhone.slice(-4)}` : requestedPhone;
+          console.log(
+            `❌ Verification Rejected: Code ${inputCode} was requested for ${maskedPhone}, but sent from ${cleanPhone}`
+          );
+          await sock.sendMessage(
+            remoteJid,
+            {
+              text:
+                "❌ *Verification Failed: Phone Number Mismatch*\n\n" +
+                "This verification code was generated for a different phone number in the Receipto app.\n\n" +
+                "🔒 *For security*, you must send this code from the exact phone number entered during setup.\n\n" +
+                "👉 Please send this message from your registered phone number, or update the number in Receipto Profile > Connect WhatsApp.",
             },
             { quoted: msg }
           );
