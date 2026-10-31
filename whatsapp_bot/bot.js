@@ -2,6 +2,8 @@ import makeWASocket, {
   DisconnectReason,
   useMultiFileAuthState,
   downloadMediaMessage,
+  jidDecode,
+  jidNormalizedUser,
 } from "@whiskeysockets/baileys";
 import pino from "pino";
 import QRCode from "qrcode";
@@ -230,6 +232,37 @@ function isDurableProduct(name, category) {
   return durableKeywords.some((k) => n.includes(k));
 }
 
+// Helper: Extract clean phone number digits from any WhatsApp JID, properly stripping :device
+function getCleanPhoneFromJid(jid) {
+  if (!jid) return "";
+  try {
+    const decoded = jidDecode(jid);
+    if (decoded && decoded.user) {
+      return decoded.user.replace(/\D/g, "");
+    }
+  } catch (_) {}
+  return jid.split("@")[0].split(":")[0].replace(/\D/g, "");
+}
+
+// Helper: Collect all possible candidate phone numbers from an incoming message
+function extractCandidatePhoneDigits(msg, remoteJid) {
+  const candidates = new Set();
+  const jidsToCheck = [
+    remoteJid,
+    msg.key?.remoteJid,
+    msg.key?.remoteJidAlt,
+    msg.key?.participant,
+    msg.key?.participantAlt,
+    msg.participant,
+  ].filter(Boolean);
+
+  for (const jid of jidsToCheck) {
+    const digits = getCleanPhoneFromJid(jid);
+    if (digits) candidates.add(digits);
+  }
+  return Array.from(candidates);
+}
+
 // 3. Start WhatsApp Bot Connection using Baileys with Cloud Session Persistence
 async function startWhatsAppBot() {
   // Restore persistent session from Supabase cloud database if container was redeployed
@@ -341,8 +374,8 @@ async function startWhatsAppBot() {
       const remoteJid = msg.key.remoteJid;
       if (!remoteJid || remoteJid.endsWith("@g.us")) return; // Ignore group messages
 
-      // Extract sender phone digits
-      const senderPhoneDigits = remoteJid.split("@")[0].replace(/\D/g, "");
+      // Extract clean sender phone digits (strips device ID suffix)
+      const senderPhoneDigits = getCleanPhoneFromJid(remoteJid);
       const cleanPhone = `+${senderPhoneDigits}`;
 
       // Extract message text (conversation, caption, extended text)
@@ -384,17 +417,20 @@ async function startWhatsAppBot() {
           return;
         }
 
-        const incomingDigits = senderPhoneDigits.replace(/\D/g, "");
+        const candidateDigits = extractCandidatePhoneDigits(msg, remoteJid);
+        console.log(`🔍 Verification candidate phone digits:`, candidateDigits);
 
         // Find the pending record matching both code AND sender phone number
         const matchingRecord = records?.find((r) => {
           const regDigits = (r.phone_number || "").replace(/\D/g, "");
-          return (
-            regDigits === incomingDigits ||
-            (regDigits.length >= 10 &&
-              incomingDigits.length >= 10 &&
-              regDigits.slice(-10) === incomingDigits.slice(-10))
-          );
+          return candidateDigits.some((cand) => {
+            return (
+              cand === regDigits ||
+              (cand.length >= 10 &&
+                regDigits.length >= 10 &&
+                cand.slice(-10) === regDigits.slice(-10))
+            );
+          });
         });
 
         if (matchingRecord) {
@@ -461,10 +497,21 @@ async function startWhatsAppBot() {
       }
 
       // STEALTH MODE: Check if sender is a verified Receipto user
+      const candidateDigitsForLookup = extractCandidatePhoneDigits(msg, remoteJid);
+      const orConditions = Array.from(
+        new Set([
+          `phone_number.eq.${cleanPhone}`,
+          `phone_number.eq.${senderPhoneDigits}`,
+          `phone_number.eq.${remoteJid}`,
+          ...candidateDigitsForLookup.map((d) => `phone_number.eq.+${d}`),
+          ...candidateDigitsForLookup.map((d) => `phone_number.eq.${d}`),
+        ])
+      ).join(",");
+
       const { data: userRecords, error: userError } = await supabase
         .from("whatsapp_users")
         .select("user_id, phone_number")
-        .or(`phone_number.eq.${cleanPhone},phone_number.eq.${senderPhoneDigits},phone_number.eq.${remoteJid}`);
+        .or(orConditions);
 
       if (userError) {
         console.error("Error querying whatsapp_users:", userError);
