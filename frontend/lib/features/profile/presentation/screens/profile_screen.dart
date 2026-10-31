@@ -1588,37 +1588,50 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     bool isLoading = false;
     String? generatedCode;
     Timer? pollTimer;
+    bool isDialogActive = true;
+    bool isCheckInProgress = false;
 
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (dialogCtx) => StatefulBuilder(
-        builder: (context, setDialogState) {
+        builder: (dialogInnerContext, setDialogState) {
           // If in step 2 (verification generated) and timer not started yet, start polling
           if (generatedCode != null && pollTimer == null) {
             pollTimer = Timer.periodic(const Duration(seconds: 2), (timer) async {
-              final user = ref.read(firebaseAuthServiceProvider).currentUser;
-              if (user != null) {
-                final isVerified = await ref
-                    .read(whatsappServiceProvider)
-                    .checkVerificationStatus(
-                      userId: user.uid,
-                      rawPhoneNumber: controller.text,
-                    );
-                if (isVerified) {
-                  timer.cancel();
-                  ref.invalidate(userWhatsAppNumberProvider);
-                  if (context.mounted) {
-                    Navigator.pop(dialogCtx);
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('🎉 WhatsApp verified & linked successfully!'),
-                        backgroundColor: Color(0xFF25D366),
-                        duration: Duration(seconds: 3),
-                      ),
-                    );
+              if (!isDialogActive || isCheckInProgress) return;
+              isCheckInProgress = true;
+              try {
+                final user = ref.read(firebaseAuthServiceProvider).currentUser;
+                if (user != null && isDialogActive) {
+                  final isVerified = await ref
+                      .read(whatsappServiceProvider)
+                      .checkVerificationStatus(
+                        userId: user.uid,
+                        rawPhoneNumber: controller.text,
+                      );
+                  if (isVerified && isDialogActive) {
+                    isDialogActive = false;
+                    timer.cancel();
+                    pollTimer = null;
+                    ref.invalidate(userWhatsAppNumberProvider);
+                    if (Navigator.of(dialogCtx, rootNavigator: true).canPop()) {
+                      Navigator.of(dialogCtx, rootNavigator: true).pop();
+                    }
+                    if (mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('🎉 WhatsApp verified & linked successfully!'),
+                          backgroundColor: Color(0xFF25D366),
+                          duration: Duration(seconds: 3),
+                        ),
+                      );
+                    }
                   }
                 }
+              } catch (_) {
+              } finally {
+                isCheckInProgress = false;
               }
             });
           }
@@ -1768,11 +1781,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             actions: [
               TextButton(
                 onPressed: () {
+                  isDialogActive = false;
                   pollTimer?.cancel();
+                  pollTimer = null;
                   if (generatedCode != null) {
                     ref.read(whatsappServiceProvider).cancelVerification(controller.text);
                   }
-                  Navigator.pop(dialogCtx);
+                  if (Navigator.of(dialogCtx, rootNavigator: true).canPop()) {
+                    Navigator.of(dialogCtx, rootNavigator: true).pop();
+                  }
                 },
                 child: Text(
                   generatedCode == null ? 'Cancel' : 'Back',
@@ -1851,7 +1868,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         },
       ),
     ).then((_) {
+      isDialogActive = false;
       pollTimer?.cancel();
+      pollTimer = null;
     });
   }
 
@@ -1874,7 +1893,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(dialogCtx),
+            onPressed: () {
+              if (Navigator.of(dialogCtx, rootNavigator: true).canPop()) {
+                Navigator.of(dialogCtx, rootNavigator: true).pop();
+              }
+            },
             child: Text('Cancel', style: GoogleFonts.inter(color: AppColors.onSurfaceVariant)),
           ),
           ElevatedButton(
@@ -1886,11 +1909,14 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             onPressed: () async {
               final user = ref.read(firebaseAuthServiceProvider).currentUser;
               if (user != null) {
-                await ref.read(whatsappServiceProvider).unlinkPhoneNumber(user.uid);
+                final currentNumber = ref.read(userWhatsAppNumberProvider).value;
+                await ref.read(whatsappServiceProvider).unlinkPhoneNumber(user.uid, phoneNumber: currentNumber);
                 ref.invalidate(userWhatsAppNumberProvider);
               }
-              if (context.mounted) {
-                Navigator.pop(dialogCtx);
+              if (Navigator.of(dialogCtx, rootNavigator: true).canPop()) {
+                Navigator.of(dialogCtx, rootNavigator: true).pop();
+              }
+              if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('WhatsApp number unlinked.')),
                 );

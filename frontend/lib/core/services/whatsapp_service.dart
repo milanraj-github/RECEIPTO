@@ -91,9 +91,16 @@ class WhatsAppService {
   }
 
   /// Unlinks the WhatsApp phone number for the user.
-  Future<bool> unlinkPhoneNumber(String userId) async {
+  Future<bool> unlinkPhoneNumber(String userId, {String? phoneNumber}) async {
     try {
+      // 1. Delete all records matching this user_id (primary number and any linked device IDs)
       await _supabase.from('whatsapp_users').delete().eq('user_id', userId);
+
+      // 2. Also delete by phone number directly if provided to ensure complete purge
+      if (phoneNumber != null && phoneNumber.trim().isNotEmpty) {
+        final clean = normalizePhoneNumber(phoneNumber);
+        await _supabase.from('whatsapp_users').delete().eq('phone_number', clean);
+      }
       return true;
     } catch (e) {
       debugPrint('Error unlinking WhatsApp phone: $e');

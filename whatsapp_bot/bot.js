@@ -477,6 +477,46 @@ async function startWhatsAppBot() {
 
       console.log(`📩 Incoming message from ${cleanPhone} (${remoteJid}): "${text.substring(0, 30)}"`);
 
+      // Handle user texting "UNLINK", "DISCONNECT", or "STOP" directly in WhatsApp
+      if (/^(unlink|disconnect|stop)\b/i.test(text)) {
+        console.log(`🔌 Unlink requested via WhatsApp chat by ${cleanPhone}`);
+        const candidateDigitsForUnlink = extractCandidatePhoneDigits(msg, remoteJid);
+        const orConditions = Array.from(
+          new Set([
+            `phone_number.eq.${cleanPhone}`,
+            `phone_number.eq.${senderPhoneDigits}`,
+            `phone_number.eq.${remoteJid}`,
+            ...candidateDigitsForUnlink.map((d) => `phone_number.eq.+${d}`),
+            ...candidateDigitsForUnlink.map((d) => `phone_number.eq.${d}`),
+          ])
+        ).join(",");
+
+        const { data: recordsToUnlink } = await supabase
+          .from("whatsapp_users")
+          .select("user_id, phone_number")
+          .or(orConditions);
+
+        if (recordsToUnlink && recordsToUnlink.length > 0) {
+          const uId = recordsToUnlink[0].user_id;
+          if (uId && !uId.startsWith("pending:")) {
+            await supabase.from("whatsapp_users").delete().eq("user_id", uId);
+          }
+          for (const r of recordsToUnlink) {
+            await supabase.from("whatsapp_users").delete().eq("phone_number", r.phone_number);
+          }
+          await sock.sendMessage(
+            remoteJid,
+            {
+              text:
+                "🔌 *WhatsApp Disconnected Successfully*\n\n" +
+                "Your WhatsApp number has been unlinked from Receipto. The bot will no longer track receipts or reply to this chat.",
+            },
+            { quoted: msg }
+          );
+          return;
+        }
+      }
+
       // Handle 1-Tap Verification Code (e.g., "VERIFY 849201")
       const verifyMatch = text.match(/^VERIFY\s+(\d{4,6})/i);
       if (verifyMatch) {
