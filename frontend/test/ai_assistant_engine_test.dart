@@ -258,11 +258,14 @@ void main() {
         overrideUserId: 'user_A',
       );
 
-      // Last month relative to Oct 2026 is Sep 2026
+      final now = DateTime.now();
+      final expectedMonth = now.month == 1 ? 12 : now.month - 1;
+      final expectedYear = now.month == 1 ? now.year - 1 : now.year;
+
       if (res.hasProducts) {
         for (final p in res.products) {
-          expect(p.purchaseDate?.month, equals(9));
-          expect(p.purchaseDate?.year, equals(2026));
+          expect(p.purchaseDate?.month, equals(expectedMonth));
+          expect(p.purchaseDate?.year, equals(expectedYear));
         }
       }
     });

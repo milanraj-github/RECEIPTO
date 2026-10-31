@@ -110,23 +110,16 @@ class WhatsAppService {
         } catch (_) {}
       }
 
-      // 1. Mark as pending_unlink in Supabase so the bot delivers the WhatsApp message even if offline/reconnecting
-      if (targetPhone != null && targetPhone.trim().isNotEmpty) {
-        final clean = normalizePhoneNumber(targetPhone);
-        try {
-          await _supabase.from('whatsapp_users').upsert({
-            'phone_number': clean,
-            'user_id': 'pending_unlink:$userId',
-          });
-        } catch (_) {}
-      }
-
-      // 2. Clear any active user links so app UI immediately reflects unlinked status
+      // 1. Immediately delete from Supabase so app UI instantly reflects unlinked status
       try {
         await _supabase.from('whatsapp_users').delete().eq('user_id', userId);
+        if (targetPhone != null && targetPhone.trim().isNotEmpty) {
+          final clean = normalizePhoneNumber(targetPhone);
+          await _supabase.from('whatsapp_users').delete().eq('phone_number', clean);
+        }
       } catch (_) {}
 
-      // 3. Immediately notify the WhatsApp bot endpoint for instantaneous WhatsApp message delivery
+      // 2. Notify the WhatsApp bot endpoint to deliver the single confirmation message
       String botUrl = 'https://receipto-whatsapp-bot.onrender.com';
       try {
         if (dotenv.isInitialized && dotenv.env['WHATSAPP_BOT_URL'] != null && dotenv.env['WHATSAPP_BOT_URL']!.isNotEmpty) {
@@ -144,7 +137,7 @@ class WhatsAppService {
           }),
         ).timeout(const Duration(seconds: 5));
       } catch (e) {
-        debugPrint('Note: WhatsApp bot endpoint notified via background fallback: $e');
+        debugPrint('Note: WhatsApp bot endpoint notification status: $e');
       }
 
       return true;

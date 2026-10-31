@@ -56,30 +56,70 @@ const UNLINK_NOTIFICATION_TEXT =
   "Your WhatsApp number has been unlinked from your Receipto account. Receipts and documents sent here will no longer sync to your account.\n\n" +
   "👉 You can link again anytime from the Receipto app (Profile > Connect WhatsApp).";
 
+// Debounce map to strictly prevent sending duplicate unlink messages to the same JID within 30 seconds
+const recentlySentUnlinkJids = new Map();
+
+function toCanonicalJid(raw) {
+  if (!raw || typeof raw !== "string" || raw.startsWith("baileys_")) return null;
+  let str = raw.trim();
+  if (str.includes("@")) {
+    const parts = str.split("@");
+    const user = parts[0].split(":")[0].replace(/\D/g, "");
+    const server = parts[1];
+    if (user && server) return `${user}@${server}`;
+    return str.split(":")[0];
+  }
+  let digits = str.replace(/\D/g, "");
+  if (digits.length === 10) {
+    digits = `91${digits}`;
+  }
+  if (!digits) return null;
+  return `${digits}@s.whatsapp.net`;
+}
+
 async function sendUnlinkNotification(candidateList) {
   if (!isBotReady || !sock) {
     console.warn("⚠️ Bot not ready to send WhatsApp unlink message right now.");
     return false;
   }
-  let sentAny = false;
+
+  // 1. Resolve and strictly deduplicate into a Set of canonical JIDs
+  const uniqueJids = new Set();
   for (const raw of candidateList) {
-    if (!raw || typeof raw !== "string" || raw.startsWith("baileys_")) continue;
-    try {
-      let jid = raw.trim();
-      if (!jid.includes("@")) {
-        let digits = jid.replace(/\D/g, "");
-        if (digits.length === 10) {
-          digits = `91${digits}`;
-        }
-        jid = `${digits}@s.whatsapp.net`;
-      }
-      console.log(`📤 Sending unlink notification to WhatsApp JID: ${jid}`);
-      await sock.sendMessage(jid, { text: UNLINK_NOTIFICATION_TEXT });
-      sentAny = true;
-    } catch (sendErr) {
-      console.error(`Failed to send unlink message to ${raw}:`, sendErr.message);
+    const canonical = toCanonicalJid(raw);
+    if (canonical) {
+      uniqueJids.add(canonical);
     }
   }
+
+  let sentAny = false;
+  const now = Date.now();
+
+  for (const jid of uniqueJids) {
+    // 2. Debounce: Check if an unlink notification was already sent to this JID within the last 30 seconds
+    const lastSent = recentlySentUnlinkJids.get(jid);
+    if (lastSent && now - lastSent < 30000) {
+      console.log(`⏩ Skipping duplicate unlink message to ${jid} (already sent ${Math.round((now - lastSent) / 1000)}s ago)`);
+      continue;
+    }
+
+    try {
+      console.log(`📤 Sending single unlink notification to WhatsApp JID: ${jid}`);
+      await sock.sendMessage(jid, { text: UNLINK_NOTIFICATION_TEXT });
+      recentlySentUnlinkJids.set(jid, now);
+      sentAny = true;
+    } catch (sendErr) {
+      console.error(`Failed to send unlink message to ${jid}:`, sendErr.message);
+    }
+  }
+
+  // Clean cache older than 2 minutes
+  for (const [k, time] of recentlySentUnlinkJids.entries()) {
+    if (now - time > 120000) {
+      recentlySentUnlinkJids.delete(k);
+    }
+  }
+
   return sentAny;
 }
 
@@ -93,13 +133,16 @@ async function processPendingUnlinks() {
 
     if (pendingRows && pendingRows.length > 0) {
       console.log(`🔌 Found ${pendingRows.length} pending unlink notification(s)`);
+      // Delete rows immediately so no concurrent poller picks them up
       for (const row of pendingRows) {
-        await sendUnlinkNotification([row.phone_number]);
         await supabase
           .from("whatsapp_users")
           .delete()
           .eq("phone_number", row.phone_number);
       }
+      // Send single deduplicated notification
+      const numbers = pendingRows.map((r) => r.phone_number);
+      await sendUnlinkNotification(numbers);
     }
   } catch (err) {
     console.error("Error in processPendingUnlinks:", err.message);
@@ -159,11 +202,7 @@ const server = http.createServer((req, res) => {
           }
         }
 
-        if (candidates.size > 0) {
-          await sendUnlinkNotification(Array.from(candidates));
-        }
-
-        // Clean up database records
+        // Clean up database records immediately so background interval does not pick them up
         if (userId) {
           await supabase
             .from("whatsapp_users")
@@ -176,6 +215,11 @@ const server = http.createServer((req, res) => {
             .from("whatsapp_users")
             .delete()
             .or(`phone_number.eq.${phoneNumber},phone_number.eq.+${digits},phone_number.eq.${digits}`);
+        }
+
+        // Send single deduplicated notification
+        if (candidates.size > 0) {
+          await sendUnlinkNotification(Array.from(candidates));
         }
 
         res.writeHead(200, { "Content-Type": "application/json" });
