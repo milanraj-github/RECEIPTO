@@ -50,6 +50,30 @@ class CatRobotAvatar extends StatelessWidget {
   }
 }
 
+/// Standalone vector icon of the cat robot head without circular badge enclosure.
+class CatRobotHeadIcon extends StatelessWidget {
+  final double size;
+  final Color? color;
+
+  const CatRobotHeadIcon({
+    super.key,
+    this.size = 20.0,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryColor = color ?? AppColors.primary;
+    return SizedBox(
+      width: size,
+      height: size,
+      child: CustomPaint(
+        painter: CatRobotHeadPainter(color: primaryColor),
+      ),
+    );
+  }
+}
+
 /// Custom vector painter that renders an adorable, futuristic cat robot head.
 class CatRobotHeadPainter extends CustomPainter {
   final Color color;

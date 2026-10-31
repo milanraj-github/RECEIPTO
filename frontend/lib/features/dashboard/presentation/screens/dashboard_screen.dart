@@ -17,6 +17,7 @@ import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 import 'package:receipto/features/notifications/presentation/providers/notification_provider.dart';
 import 'package:receipto/core/utils/warranty_utils.dart';
 import 'package:receipto/core/services/notification_service.dart';
+import 'package:receipto/features/ai_assistant/presentation/widgets/cat_robot_avatar.dart';
 
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
@@ -828,11 +829,7 @@ class DashboardScreen extends ConsumerWidget {
                   // Heading row
                   Row(
                     children: [
-                      const Icon(
-                        Icons.auto_awesome,
-                        color: AppColors.primary,
-                        size: 20,
-                      ),
+                      const CatRobotAvatar(size: 22),
                       const SizedBox(width: 8),
                       Text(
                         'AI SUGGESTIONS',
