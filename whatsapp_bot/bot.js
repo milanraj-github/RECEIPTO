@@ -51,9 +51,74 @@ let latestQrBase64 = null;
 let isBotReady = false;
 let sock = null;
 
+const UNLINK_NOTIFICATION_TEXT =
+  "🔌 *Receipto Disconnected*\n\n" +
+  "Your WhatsApp number has been unlinked from your Receipto account. Receipts and documents sent here will no longer sync to your account.\n\n" +
+  "👉 You can link again anytime from the Receipto app (Profile > Connect WhatsApp).";
+
+async function sendUnlinkNotification(candidateList) {
+  if (!isBotReady || !sock) {
+    console.warn("⚠️ Bot not ready to send WhatsApp unlink message right now.");
+    return false;
+  }
+  let sentAny = false;
+  for (const raw of candidateList) {
+    if (!raw || typeof raw !== "string" || raw.startsWith("baileys_")) continue;
+    try {
+      let jid = raw.trim();
+      if (!jid.includes("@")) {
+        let digits = jid.replace(/\D/g, "");
+        if (digits.length === 10) {
+          digits = `91${digits}`;
+        }
+        jid = `${digits}@s.whatsapp.net`;
+      }
+      console.log(`📤 Sending unlink notification to WhatsApp JID: ${jid}`);
+      await sock.sendMessage(jid, { text: UNLINK_NOTIFICATION_TEXT });
+      sentAny = true;
+    } catch (sendErr) {
+      console.error(`Failed to send unlink message to ${raw}:`, sendErr.message);
+    }
+  }
+  return sentAny;
+}
+
+async function processPendingUnlinks() {
+  if (!isBotReady || !sock) return;
+  try {
+    const { data: pendingRows } = await supabase
+      .from("whatsapp_users")
+      .select("phone_number, user_id")
+      .like("user_id", "pending_unlink:%");
+
+    if (pendingRows && pendingRows.length > 0) {
+      console.log(`🔌 Found ${pendingRows.length} pending unlink notification(s)`);
+      for (const row of pendingRows) {
+        await sendUnlinkNotification([row.phone_number]);
+        await supabase
+          .from("whatsapp_users")
+          .delete()
+          .eq("phone_number", row.phone_number);
+      }
+    }
+  } catch (err) {
+    console.error("Error in processPendingUnlinks:", err.message);
+  }
+}
+
 // 2. Built-in HTTP Health & QR Web Server for Render
 const PORT = process.env.PORT || 10000;
 const server = http.createServer((req, res) => {
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+
+  if (req.method === "OPTIONS") {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
+
   if (req.url === "/health" || req.url === "/") {
     res.writeHead(200, { "Content-Type": "application/json" });
     res.end(
@@ -66,6 +131,61 @@ const server = http.createServer((req, res) => {
           : "Bot is waiting for WhatsApp QR scan. Open /qr to scan.",
       })
     );
+  } else if (req.method === "POST" && req.url === "/api/notify-unlink") {
+    let body = "";
+    req.on("data", (chunk) => {
+      body += chunk;
+    });
+    req.on("end", async () => {
+      try {
+        const payload = JSON.parse(body || "{}");
+        const { phoneNumber, userId } = payload;
+        console.log(`🔌 Unlink notification requested via API for user: "${userId}", phone: "${phoneNumber}"`);
+
+        const candidates = new Set();
+        if (phoneNumber) candidates.add(phoneNumber);
+
+        if (userId) {
+          const { data: rows } = await supabase
+            .from("whatsapp_users")
+            .select("phone_number")
+            .or(`user_id.eq.${userId},user_id.like.pending_unlink:${userId}`);
+          if (rows) {
+            for (const r of rows) {
+              if (r.phone_number && !r.phone_number.startsWith("baileys_")) {
+                candidates.add(r.phone_number);
+              }
+            }
+          }
+        }
+
+        if (candidates.size > 0) {
+          await sendUnlinkNotification(Array.from(candidates));
+        }
+
+        // Clean up database records
+        if (userId) {
+          await supabase
+            .from("whatsapp_users")
+            .delete()
+            .or(`user_id.eq.${userId},user_id.like.pending_unlink:${userId}`);
+        }
+        if (phoneNumber) {
+          const digits = phoneNumber.replace(/\D/g, "");
+          await supabase
+            .from("whatsapp_users")
+            .delete()
+            .or(`phone_number.eq.${phoneNumber},phone_number.eq.+${digits},phone_number.eq.${digits}`);
+        }
+
+        res.writeHead(200, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ success: true, message: "Unlink notification processed." }));
+      } catch (err) {
+        console.error("Error processing /api/notify-unlink:", err);
+        res.writeHead(500, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: err.message }));
+      }
+    });
   } else if (req.url === "/qr") {
     res.writeHead(200, { "Content-Type": "text/html" });
     if (isBotReady) {
@@ -424,6 +544,9 @@ async function startWhatsAppBot() {
           });
         }
       } catch (_) {}
+
+      // Process any pending unlink notifications upon connection
+      setTimeout(processPendingUnlinks, 1000);
     } else if (connection === "close") {
       isBotReady = false;
       const statusCode = lastDisconnect?.error?.output?.statusCode;
@@ -1148,3 +1271,6 @@ CRITICAL RULES FOR EXPIRY DATE & WARRANTY EXTRACTION:
 
 // Start the bot
 startWhatsAppBot();
+
+// Periodic background check for pending unlink requests
+setInterval(processPendingUnlinks, 10000);

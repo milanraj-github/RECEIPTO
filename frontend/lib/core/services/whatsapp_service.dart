@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:receipto/core/services/firebase_auth_service.dart';
@@ -90,17 +92,61 @@ class WhatsAppService {
     }
   }
 
-  /// Unlinks the WhatsApp phone number for the user.
+  /// Unlinks the WhatsApp phone number for the user and triggers an unlinked confirmation on WhatsApp.
   Future<bool> unlinkPhoneNumber(String userId, {String? phoneNumber}) async {
     try {
-      // 1. Delete all records matching this user_id (primary number and any linked device IDs)
-      await _supabase.from('whatsapp_users').delete().eq('user_id', userId);
-
-      // 2. Also delete by phone number directly if provided to ensure complete purge
-      if (phoneNumber != null && phoneNumber.trim().isNotEmpty) {
-        final clean = normalizePhoneNumber(phoneNumber);
-        await _supabase.from('whatsapp_users').delete().eq('phone_number', clean);
+      String? targetPhone = phoneNumber;
+      if (targetPhone == null || targetPhone.trim().isEmpty) {
+        // Query linked number before unlinking if not supplied
+        try {
+          final res = await _supabase
+              .from('whatsapp_users')
+              .select('phone_number')
+              .eq('user_id', userId)
+              .limit(1);
+          if (res.isNotEmpty && res[0]['phone_number'] != null) {
+            targetPhone = res[0]['phone_number'] as String?;
+          }
+        } catch (_) {}
       }
+
+      // 1. Mark as pending_unlink in Supabase so the bot delivers the WhatsApp message even if offline/reconnecting
+      if (targetPhone != null && targetPhone.trim().isNotEmpty) {
+        final clean = normalizePhoneNumber(targetPhone);
+        try {
+          await _supabase.from('whatsapp_users').upsert({
+            'phone_number': clean,
+            'user_id': 'pending_unlink:$userId',
+          });
+        } catch (_) {}
+      }
+
+      // 2. Clear any active user links so app UI immediately reflects unlinked status
+      try {
+        await _supabase.from('whatsapp_users').delete().eq('user_id', userId);
+      } catch (_) {}
+
+      // 3. Immediately notify the WhatsApp bot endpoint for instantaneous WhatsApp message delivery
+      String botUrl = 'https://receipto-whatsapp-bot.onrender.com';
+      try {
+        if (dotenv.isInitialized && dotenv.env['WHATSAPP_BOT_URL'] != null && dotenv.env['WHATSAPP_BOT_URL']!.isNotEmpty) {
+          botUrl = dotenv.env['WHATSAPP_BOT_URL']!;
+        }
+      } catch (_) {}
+
+      try {
+        await http.post(
+          Uri.parse('$botUrl/api/notify-unlink'),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({
+            'userId': userId,
+            'phoneNumber': targetPhone,
+          }),
+        ).timeout(const Duration(seconds: 5));
+      } catch (e) {
+        debugPrint('Note: WhatsApp bot endpoint notified via background fallback: $e');
+      }
+
       return true;
     } catch (e) {
       debugPrint('Error unlinking WhatsApp phone: $e');
