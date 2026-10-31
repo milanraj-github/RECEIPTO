@@ -14,6 +14,7 @@ import 'package:receipto/features/ai_assistant/presentation/widgets/ai_warranty_
 import 'package:receipto/features/ai_assistant/presentation/widgets/ai_summary_card.dart';
 import 'package:receipto/features/ai_assistant/presentation/widgets/ai_category_breakdown_card.dart';
 import 'package:receipto/features/ai_assistant/presentation/widgets/ai_follow_up_chips.dart';
+import 'package:receipto/features/ai_assistant/presentation/widgets/cat_robot_avatar.dart';
 
 class AIAssistantScreen extends ConsumerStatefulWidget {
   const AIAssistantScreen({super.key});
@@ -232,11 +233,7 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> with Tick
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             if (!isUser) ...[
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-                child: const Icon(Icons.auto_awesome, color: AppColors.primary, size: 16),
-              ),
+              const CatRobotAvatar(),
               const SizedBox(width: 8),
             ],
             Flexible(
@@ -362,11 +359,7 @@ class _AIAssistantScreenState extends ConsumerState<AIAssistantScreen> with Tick
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.primary.withValues(alpha: 0.2),
-              child: const Icon(Icons.auto_awesome, color: AppColors.primary, size: 16),
-            ),
+            const CatRobotAvatar(),
             const SizedBox(width: 8),
             const TypingIndicatorDots(),
           ],
