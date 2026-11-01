@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:receipto/core/utils/currency_formatter.dart';
+import 'package:receipto/core/services/currency_converter_service.dart';
 import 'package:receipto/core/services/pdf_font_helper.dart';
 import 'package:receipto/features/receipts/presentation/models/receipt_detail_view_model.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
@@ -178,7 +179,21 @@ class PdfInvoiceService {
                           ),
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(6),
-                            child: pw.Text(CurrencyFormatter.format(prod.price, currency: detail.currency), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 10)),
+                            child: pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.end,
+                              children: [
+                                pw.Text(
+                                  CurrencyFormatter.format(prod.price, currency: detail.currency),
+                                  textAlign: pw.TextAlign.right,
+                                  style: const pw.TextStyle(fontSize: 10),
+                                ),
+                                if (CurrencyConverterService.isForeign(detail.currency))
+                                  pw.Text(
+                                    CurrencyConverterService.formatConvertedInr(prod.price, currency: detail.currency),
+                                    style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.teal800),
+                                  ),
+                              ],
+                            ),
                           ),
                         ],
                       );
@@ -192,7 +207,7 @@ class PdfInvoiceService {
                 mainAxisAlignment: pw.MainAxisAlignment.end,
                 children: [
                   pw.Container(
-                    width: 200,
+                    width: 210,
                     child: pw.Column(
                       children: [
                         if (detail.subtotal != null)
@@ -207,6 +222,15 @@ class PdfInvoiceService {
                           CurrencyFormatter.format(detail.amount, currency: detail.currency),
                           isBold: true,
                         ),
+                        if (CurrencyConverterService.isForeign(detail.currency)) ...[
+                          pw.SizedBox(height: 2),
+                          _buildSummaryPdfRow(
+                            'Equivalent (INR)',
+                            CurrencyConverterService.formatConvertedInr(detail.amount, currency: detail.currency).replaceAll('≈ ', '₹ '),
+                            isBold: true,
+                            textColor: PdfColors.teal900,
+                          ),
+                        ],
                       ],
                     ),
                   ),
@@ -308,7 +332,7 @@ class PdfInvoiceService {
     return file;
   }
 
-  static pw.Widget _buildSummaryPdfRow(String label, String value, {bool isBold = false}) {
+  static pw.Widget _buildSummaryPdfRow(String label, String value, {bool isBold = false, PdfColor? textColor}) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: 2),
       child: pw.Row(
@@ -319,6 +343,7 @@ class PdfInvoiceService {
             style: pw.TextStyle(
               fontSize: 10,
               fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+              color: textColor,
             ),
           ),
           pw.Text(
@@ -326,6 +351,7 @@ class PdfInvoiceService {
             style: pw.TextStyle(
               fontSize: 10,
               fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+              color: textColor,
             ),
           ),
         ],

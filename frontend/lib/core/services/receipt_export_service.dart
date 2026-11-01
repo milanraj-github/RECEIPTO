@@ -7,6 +7,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 import 'package:receipto/core/services/pdf_invoice_service.dart';
 import 'package:receipto/core/services/pdf_font_helper.dart';
+import 'package:receipto/core/services/currency_converter_service.dart';
 import 'package:receipto/core/utils/currency_formatter.dart';
 import 'package:receipto/features/receipts/presentation/models/receipt_detail_view_model.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
@@ -122,6 +123,9 @@ class ReceiptExportService {
     buffer.writeln('Payment Method,${_escapeCsv(detail.paymentMethod)}');
     buffer.writeln('Currency,${_escapeCsv(detail.currency)}');
     buffer.writeln('Total Amount,${detail.amount.toStringAsFixed(2)}');
+    if (CurrencyConverterService.isForeign(detail.currency)) {
+      buffer.writeln('Converted Total (INR),${CurrencyConverterService.convertToInr(detail.amount, currency: detail.currency).toStringAsFixed(2)}');
+    }
     buffer.writeln('GST Number,${_escapeCsv(detail.gstNumber ?? '')}');
     buffer.writeln('');
 
@@ -180,13 +184,15 @@ class ReceiptExportService {
 
   String _generateMultiReceiptsCsv(List<Map<String, dynamic>> receipts, List<WarrantyModel>? warranties) {
     final buffer = StringBuffer();
-    buffer.writeln('ID,Merchant,Date,Category,Total,Currency,Payment Method,Invoice Number,Warranties');
+    buffer.writeln('ID,Merchant,Date,Category,Total,Currency,Total (INR),Payment Method,Invoice Number,Warranties');
     for (final r in receipts) {
       final idStr = r['id']?.toString() ?? '';
       final matchingWarranties = warranties?.where((w) => w.receiptId == idStr).map((w) => '${w.productName} (${w.status})').join('; ') ?? '';
-      final total = r['grand_total'] ?? r['total'] ?? 0.0;
+      final cur = r['currency']?.toString() ?? '₹';
+      final total = (r['grand_total'] as num?)?.toDouble() ?? (r['total'] as num?)?.toDouble() ?? 0.0;
+      final inrTotal = CurrencyConverterService.convertToInr(total, currency: cur);
       buffer.writeln(
-        '${_escapeCsv(idStr)},${_escapeCsv(r['merchant_name']?.toString() ?? '')},${_escapeCsv(r['date']?.toString() ?? '')},${_escapeCsv(r['category']?.toString() ?? '')},${total.toString()},${_escapeCsv(r['currency']?.toString() ?? '₹')},${_escapeCsv(r['payment_method']?.toString() ?? '')},${_escapeCsv(r['invoice_number']?.toString() ?? '')},${_escapeCsv(matchingWarranties)}',
+        '${_escapeCsv(idStr)},${_escapeCsv(r['merchant_name']?.toString() ?? '')},${_escapeCsv(r['date']?.toString() ?? '')},${_escapeCsv(r['category']?.toString() ?? '')},${total.toStringAsFixed(2)},${_escapeCsv(cur)},${inrTotal.toStringAsFixed(2)},${_escapeCsv(r['payment_method']?.toString() ?? '')},${_escapeCsv(r['invoice_number']?.toString() ?? '')},${_escapeCsv(matchingWarranties)}',
       );
     }
     return buffer.toString();
@@ -212,9 +218,11 @@ class ReceiptExportService {
         pageFormat: PdfPageFormat.a4,
         margin: const pw.EdgeInsets.all(28),
         build: (pw.Context context) {
-          double grandSum = 0;
+          double grandSumInr = 0;
           for (final r in receipts) {
-            grandSum += (r['grand_total'] as num?)?.toDouble() ?? (r['total'] as num?)?.toDouble() ?? 0.0;
+            final cur = r['currency']?.toString() ?? '₹';
+            final rawAmt = (r['grand_total'] as num?)?.toDouble() ?? (r['total'] as num?)?.toDouble() ?? 0.0;
+            grandSumInr += CurrencyConverterService.convertToInr(rawAmt, currency: cur);
           }
 
           return [
@@ -243,9 +251,9 @@ class ReceiptExportService {
                 pw.Column(
                   crossAxisAlignment: pw.CrossAxisAlignment.end,
                   children: [
-                    pw.Text('TOTAL EXPENSE', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
+                    pw.Text('TOTAL EXPENSE (INR)', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
                     pw.Text(
-                      CurrencyFormatter.format(grandSum),
+                      CurrencyFormatter.format(grandSumInr),
                       style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.teal900),
                     ),
                   ],
@@ -258,16 +266,18 @@ class ReceiptExportService {
 
             // Receipts Table
             pw.TableHelper.fromTextArray(
-              headers: ['Date', 'Merchant', 'Category', 'Invoice #', 'Total'],
+              headers: ['Date', 'Merchant', 'Category', 'Invoice #', 'Total', 'Total (INR)'],
               data: receipts.map((r) {
                 final amt = (r['grand_total'] as num?)?.toDouble() ?? (r['total'] as num?)?.toDouble() ?? 0.0;
                 final cur = r['currency']?.toString() ?? '₹';
+                final inrAmt = CurrencyConverterService.convertToInr(amt, currency: cur);
                 return [
                   r['date']?.toString() ?? '-',
                   r['merchant_name']?.toString() ?? 'Unknown',
                   r['category']?.toString() ?? 'Other',
                   r['invoice_number']?.toString() ?? '-',
                   '$cur ${amt.toStringAsFixed(2)}',
+                  '₹ ${inrAmt.toStringAsFixed(2)}',
                 ];
               }).toList(),
               headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
