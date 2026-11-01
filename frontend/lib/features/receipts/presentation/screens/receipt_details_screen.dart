@@ -13,6 +13,7 @@ import 'package:receipto/core/services/pdf_invoice_service.dart';
 import 'package:receipto/core/services/receipt_database_service.dart';
 import 'package:receipto/core/services/firebase_auth_service.dart';
 import 'package:receipto/core/utils/currency_formatter.dart';
+import 'package:receipto/core/services/currency_converter_service.dart';
 import 'package:receipto/core/widgets/glass_card.dart';
 import 'package:receipto/core/widgets/gradient_button.dart';
 import 'package:receipto/core/widgets/nebula_background.dart';
@@ -974,6 +975,25 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
+                if (CurrencyConverterService.isForeign(detail.currency)) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                      borderRadius: AppRadius.sm,
+                      border: Border.all(color: AppColors.primary.withValues(alpha: 0.3), width: 0.8),
+                    ),
+                    child: Text(
+                      CurrencyConverterService.formatConvertedInr(detail.amount, currency: detail.currency),
+                      style: GoogleFonts.inter(
+                        color: AppColors.primary,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -1260,13 +1280,28 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              Text(
-                CurrencyFormatter.format(detail.amount, currency: detail.currency),
-                style: GoogleFonts.inter(
-                  color: AppColors.onSurface,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    CurrencyFormatter.format(detail.amount, currency: detail.currency),
+                    style: GoogleFonts.inter(
+                      color: AppColors.onSurface,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  if (CurrencyConverterService.isForeign(detail.currency))
+                    Text(
+                      CurrencyConverterService.formatConvertedInr(detail.amount, currency: detail.currency),
+                      style: GoogleFonts.inter(
+                        color: AppColors.primary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                ],
               ),
             ],
           ),

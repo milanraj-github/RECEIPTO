@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:receipto/core/services/ai_categorizer_service.dart';
+import 'package:receipto/core/services/currency_converter_service.dart';
 import 'package:receipto/features/analytics/domain/models/financial_filter.dart';
 import 'package:receipto/features/analytics/domain/models/financial_overview_data.dart';
 import 'package:receipto/features/analytics/domain/models/budget_model.dart';
@@ -120,8 +121,11 @@ class FinancialAnalyticsService {
     double discretionarySpending = 0.0;
 
     for (final r in filteredReceipts) {
-      final double amt = ReceiptModel.parseDouble(r['grand_total']) ?? ReceiptModel.parseDouble(r['total']) ?? 0.0;
-      final double disc = ReceiptModel.parseDouble(r['discount']) ?? 0.0;
+      final String cur = (r['currency'] as String?) ?? '₹';
+      final double rawAmt = ReceiptModel.parseDouble(r['grand_total']) ?? ReceiptModel.parseDouble(r['total']) ?? 0.0;
+      final double amt = CurrencyConverterService.convertToInr(rawAmt, currency: cur);
+      final double rawDisc = ReceiptModel.parseDouble(r['discount']) ?? 0.0;
+      final double disc = CurrencyConverterService.convertToInr(rawDisc, currency: cur);
 
       // Primary accounting: Each receipt contributes to gross spending exactly once
       grossSpending += amt;
@@ -146,9 +150,10 @@ class FinancialAnalyticsService {
         // Line items available: accumulate product intelligence
         for (final item in lineItems) {
           final String pName = (item['name'] as String?)?.trim() ?? 'Item';
-          final double pPrice = ReceiptModel.parseDouble(item['total_price']) ??
+          final double rawPrice = ReceiptModel.parseDouble(item['total_price']) ??
               ReceiptModel.parseDouble(item['price']) ??
               0.0;
+          final double pPrice = CurrencyConverterService.convertToInr(rawPrice, currency: cur);
           final int pQty = (item['quantity'] as num?)?.toInt() ?? 1;
 
           if (pName.isNotEmpty && pPrice > 0) {
@@ -190,7 +195,9 @@ class FinancialAnalyticsService {
     // 5. Comparison period calculation
     double previousPeriodSpend = 0.0;
     for (final r in previousPeriodReceipts) {
-      previousPeriodSpend += ReceiptModel.parseDouble(r['grand_total']) ?? ReceiptModel.parseDouble(r['total']) ?? 0.0;
+      final String cur = (r['currency'] as String?) ?? '₹';
+      final double rawAmt = ReceiptModel.parseDouble(r['grand_total']) ?? ReceiptModel.parseDouble(r['total']) ?? 0.0;
+      previousPeriodSpend += CurrencyConverterService.convertToInr(rawAmt, currency: cur);
     }
 
     double? comparisonPercentageChange;

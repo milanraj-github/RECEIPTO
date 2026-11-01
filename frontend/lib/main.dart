@@ -21,6 +21,7 @@ import 'package:receipto/features/notifications/presentation/providers/notificat
 import 'package:receipto/features/scan/presentation/providers/scan_provider.dart';
 import 'package:receipto/features/ai_assistant/data/services/ai_assistant_service.dart';
 import 'package:receipto/features/warranty/presentation/providers/warranty_provider.dart';
+import 'package:receipto/core/services/currency_converter_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Future<void> main() async {
@@ -49,6 +50,9 @@ Future<void> main() async {
   } catch (e) {
     debugPrint('[main] Error caching credentials: $e');
   }
+
+  // Initialize Live Currency Conversion
+  CurrencyConverterService.initialize();
 
   // Initialize Notification Service
   final notificationService = container.read(notificationServiceProvider);

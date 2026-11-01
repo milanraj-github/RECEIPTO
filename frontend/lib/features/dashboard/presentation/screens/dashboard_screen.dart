@@ -12,6 +12,7 @@ import 'package:receipto/core/services/firebase_auth_service.dart';
 import 'package:receipto/core/services/receipt_database_service.dart';
 import 'package:receipto/features/scan/domain/models/receipt_model.dart';
 import 'package:receipto/core/utils/currency_formatter.dart';
+import 'package:receipto/core/services/currency_converter_service.dart';
 import 'package:receipto/features/warranty/presentation/providers/warranty_provider.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 import 'package:receipto/features/notifications/presentation/providers/notification_provider.dart';
@@ -148,8 +149,11 @@ class DashboardScreen extends ConsumerWidget {
     }
 
     for (final r in allRows) {
-      final double amt = ReceiptModel.parseDouble(r['grand_total']) ?? ReceiptModel.parseDouble(r['total']) ?? 0.0;
-      final double disc = ReceiptModel.parseDouble(r['discount']) ?? 0.0;
+      final String cur = (r['currency'] as String?) ?? '₹';
+      final double rawAmt = ReceiptModel.parseDouble(r['grand_total']) ?? ReceiptModel.parseDouble(r['total']) ?? 0.0;
+      final double amt = CurrencyConverterService.convertToInr(rawAmt, currency: cur);
+      final double rawDisc = ReceiptModel.parseDouble(r['discount']) ?? 0.0;
+      final double disc = CurrencyConverterService.convertToInr(rawDisc, currency: cur);
       totalSaved += disc;
 
       final rDate = parseReceiptDate(r) ?? now;

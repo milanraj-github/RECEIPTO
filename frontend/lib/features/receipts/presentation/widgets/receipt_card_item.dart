@@ -4,6 +4,7 @@ import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/app/config/theme.dart';
 import 'package:receipto/core/widgets/glass_card.dart';
 import 'package:receipto/core/utils/currency_formatter.dart';
+import 'package:receipto/core/services/currency_converter_service.dart';
 
 class ReceiptInventorySubItem {
   final String name;
@@ -373,6 +374,17 @@ class ReceiptCardItemState extends State<ReceiptCardItem> with SingleTickerProvi
                     ),
                   ),
                 ),
+                if (CurrencyConverterService.isForeign(widget.item.currency)) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    CurrencyConverterService.formatConvertedInr(widget.item.amount, currency: widget.item.currency),
+                    style: GoogleFonts.hankenGrotesk(
+                      color: AppColors.primary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
                 if (isMixedActive) ...[
                   const SizedBox(height: 4),
                   Container(
