@@ -358,8 +358,10 @@ class DashboardScreen extends ConsumerWidget {
       children: [
         Text(
           'Receipto',
-          style: textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.bold,
+          style: textTheme.headlineLarge?.copyWith(
+            fontSize: 28,
+            fontWeight: FontWeight.w800,
+            letterSpacing: -0.5,
             color: AppColors.primary,
           ),
         ),
