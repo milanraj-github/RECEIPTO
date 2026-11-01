@@ -1,5 +1,23 @@
 {
   "java.import.gradle.enabled": false,
+  "java.import.maven.enabled": false,
   "java.autobuild.enabled": false,
-  "gradle.nestedProjects": false
+  "java.project.importOnFirstTimeStartup": "disabled",
+  "java.project.resourceFilters": [
+    "node_modules",
+    ".git",
+    "android",
+    "frontend/android"
+  ],
+  "java.import.exclusions": [
+    "**/node_modules/**",
+    "**/.metadata/**",
+    "**/archetype/**",
+    "**/META-INF/maven/**",
+    "**/android/**"
+  ],
+  "java.configuration.updateBuildConfiguration": "disabled",
+  "java.errors.incompleteClasspath.severity": "ignore",
+  "gradle.nestedProjects": false,
+  "gradle.autoDetect": "off"
 }
