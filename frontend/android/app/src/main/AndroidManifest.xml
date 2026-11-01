@@ -30,7 +30,7 @@
     <!-- ─────────────────────────────────────────────────────────────────── -->
 
     <application
-        android:label="receipto"
+        android:label="Receipto"
         android:name="${applicationName}"
         android:icon="@mipmap/launcher_icon">
         <activity
