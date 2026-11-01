@@ -234,6 +234,7 @@ class DashboardScreen extends ConsumerWidget {
                     prevMonthSpending: prevMonthSpending,
                     receiptCount: currentMonthReceiptCount,
                     sparklineHeights: sparklineHeights,
+                    monthlyAmounts: monthlyTotals,
                   ),
                   const SizedBox(height: 24),
 
@@ -423,6 +424,7 @@ class DashboardScreen extends ConsumerWidget {
     required double prevMonthSpending,
     required int receiptCount,
     required List<double> sparklineHeights,
+    List<double>? monthlyAmounts,
   }) {
     final textTheme = Theme.of(context).textTheme;
 
@@ -542,11 +544,12 @@ class DashboardScreen extends ConsumerWidget {
               // Sparkline graph bounded flexibly on the right
               Flexible(
                 child: Container(
-                  constraints: const BoxConstraints(maxWidth: 100, minWidth: 60),
-                  height: 48,
+                  constraints: const BoxConstraints(maxWidth: 105, minWidth: 65),
+                  height: 62,
                   child: SparklineWidget(
                     heights: sparklineHeights,
-                    maxHeight: 48,
+                    amounts: monthlyAmounts,
+                    maxHeight: 40,
                   ),
                 ),
               ),
