@@ -14,7 +14,7 @@ class SparklineWidget extends StatefulWidget {
     required this.heights,
     this.amounts,
     this.labels,
-    this.maxHeight = 42,
+    this.maxHeight = 36,
   });
 
   @override
@@ -56,15 +56,17 @@ class _SparklineWidgetState extends State<SparklineWidget> {
         // Tooltip text calculation
         String? tooltipText;
         if (_selectedIndex != null) {
-          if (widget.amounts != null && _selectedIndex! < widget.amounts!.length) {
-            final amt = widget.amounts![_selectedIndex!];
-            tooltipText = CurrencyFormatter.format(amt);
-          } else {
-            tooltipText = '₹0.00';
-          }
+          final amt = (widget.amounts != null && _selectedIndex! < widget.amounts!.length)
+              ? widget.amounts![_selectedIndex!]
+              : 0.0;
+          final label = (widget.labels != null && _selectedIndex! < widget.labels!.length)
+              ? widget.labels![_selectedIndex!]
+              : '';
+          final formattedAmt = CurrencyFormatter.format(amt);
+          tooltipText = label.isNotEmpty ? '$label • $formattedAmt' : formattedAmt;
         }
 
-        const double tooltipWidth = 58;
+        const double tooltipWidth = 78;
         final double barCenterX = _selectedIndex != null ? (_selectedIndex! + 0.5) * barWidth : 0.0;
         final double tooltipLeft = (barCenterX - tooltipWidth / 2)
             .clamp(0.0, (totalWidth - tooltipWidth).clamp(0.0, double.infinity));
@@ -84,43 +86,58 @@ class _SparklineWidgetState extends State<SparklineWidget> {
           child: Stack(
             clipBehavior: Clip.none,
             children: [
-              // Amount Tooltip directly above the pressed bar
+              // Floating Amount Tooltip positioned HIGH ABOVE the bars (clear of the user's thumb)
               if (_selectedIndex != null && tooltipText != null)
                 Positioned(
                   top: 0,
                   left: tooltipLeft,
-                  child: Container(
-                    width: tooltipWidth,
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1E293B),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: AppColors.primary.withValues(alpha: 0.6),
-                        width: 0.8,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.4),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: tooltipWidth,
+                        padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF0F172A),
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(
+                            color: AppColors.primary,
+                            width: 1.0,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.6),
+                              blurRadius: 6,
+                              offset: const Offset(0, 3),
+                            ),
+                            BoxShadow(
+                              color: AppColors.primary.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              spreadRadius: 1,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: Center(
-                      child: FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          tooltipText,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: -0.2,
+                        child: Center(
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              tooltipText,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: -0.2,
+                              ),
+                            ),
                           ),
                         ),
                       ),
-                    ),
+                      // Downward pointer arrow pointing down towards the touched bar
+                      CustomPaint(
+                        size: const Size(8, 4),
+                        painter: _TooltipArrowPainter(color: AppColors.primary),
+                      ),
+                    ],
                   ),
                 ),
 
@@ -159,7 +176,7 @@ class _SparklineWidgetState extends State<SparklineWidget> {
 
                     return Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.only(left: 3, right: 1),
+                        padding: const EdgeInsets.symmetric(horizontal: 1.5),
                         child: Container(
                           height: heightPercentage * widget.maxHeight,
                           decoration: BoxDecoration(
@@ -171,9 +188,9 @@ class _SparklineWidgetState extends State<SparklineWidget> {
                             boxShadow: isSelected
                                 ? [
                                     BoxShadow(
-                                      color: AppColors.primary.withValues(alpha: 0.6),
-                                      blurRadius: 6,
-                                      spreadRadius: 1,
+                                      color: AppColors.primary.withValues(alpha: 0.7),
+                                      blurRadius: 8,
+                                      spreadRadius: 1.5,
                                     ),
                                   ]
                                 : null,
@@ -190,4 +207,25 @@ class _SparklineWidgetState extends State<SparklineWidget> {
       },
     );
   }
+}
+
+class _TooltipArrowPainter extends CustomPainter {
+  final Color color;
+  _TooltipArrowPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+    final path = Path()
+      ..moveTo(0, 0)
+      ..lineTo(size.width / 2, size.height)
+      ..lineTo(size.width, 0)
+      ..close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

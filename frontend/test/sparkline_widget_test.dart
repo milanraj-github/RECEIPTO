@@ -6,6 +6,7 @@ void main() {
   testWidgets('SparklineWidget displays bars and shows amount on press and vanishes on release', (WidgetTester tester) async {
     final heights = [0.1, 0.2, 0.3, 0.5, 0.8, 0.4, 1.0];
     final amounts = [100.0, 200.0, 300.0, 500.0, 800.0, 400.0, 1000.0];
+    final labels = ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'];
 
     await tester.pumpWidget(
       MaterialApp(
@@ -13,11 +14,12 @@ void main() {
           body: Center(
             child: SizedBox(
               width: 140,
-              height: 60,
+              height: 72,
               child: SparklineWidget(
                 heights: heights,
                 amounts: amounts,
-                maxHeight: 40,
+                labels: labels,
+                maxHeight: 36,
               ),
             ),
           ),
@@ -26,14 +28,13 @@ void main() {
     );
 
     // Initially, no amount tooltip is shown
-    expect(find.text('₹1,000.00'), findsNothing);
-    expect(find.text('₹800.00'), findsNothing);
+    expect(find.text('Nov • ₹1,000.00'), findsNothing);
 
-    // Press down on the rightmost bar (bar index 6, around x=130)
+    // Press down on the sparkline
     final gesture = await tester.startGesture(tester.getCenter(find.byType(SparklineWidget)));
     await tester.pump();
 
-    // Now an amount tooltip is displayed
+    // Now an amount tooltip is displayed with FittedBox
     expect(find.byType(FittedBox), findsWidgets);
 
     // Release the finger
@@ -41,6 +42,6 @@ void main() {
     await tester.pump();
 
     // The amount vanishes
-    expect(find.text('₹1,000.00'), findsNothing);
+    expect(find.byType(FittedBox), findsNothing);
   });
 }

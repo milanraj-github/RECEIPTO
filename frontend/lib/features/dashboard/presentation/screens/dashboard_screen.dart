@@ -178,6 +178,12 @@ class DashboardScreen extends ConsumerWidget {
       return (val / maxMonthlySpend).clamp(0.18, 1.0);
     }).toList();
 
+    final List<String> monthLabels = List.generate(7, (i) {
+      final target = DateTime(now.year, now.month - (6 - i), 1);
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return months[target.month - 1];
+    });
+
     final List<WarrantyModel> warranties = warrantiesAsync.value ?? [];
     final protectedProductsCount = warranties.length;
     final activeCount = warranties.where((w) => w.isActive).length;
@@ -235,6 +241,7 @@ class DashboardScreen extends ConsumerWidget {
                     receiptCount: currentMonthReceiptCount,
                     sparklineHeights: sparklineHeights,
                     monthlyAmounts: monthlyTotals,
+                    monthLabels: monthLabels,
                   ),
                   const SizedBox(height: 24),
 
@@ -425,6 +432,7 @@ class DashboardScreen extends ConsumerWidget {
     required int receiptCount,
     required List<double> sparklineHeights,
     List<double>? monthlyAmounts,
+    List<String>? monthLabels,
   }) {
     final textTheme = Theme.of(context).textTheme;
 
@@ -544,12 +552,13 @@ class DashboardScreen extends ConsumerWidget {
               // Sparkline graph bounded flexibly on the right
               Flexible(
                 child: Container(
-                  constraints: const BoxConstraints(maxWidth: 105, minWidth: 65),
-                  height: 62,
+                  constraints: const BoxConstraints(maxWidth: 120, minWidth: 80),
+                  height: 72,
                   child: SparklineWidget(
                     heights: sparklineHeights,
                     amounts: monthlyAmounts,
-                    maxHeight: 40,
+                    labels: monthLabels,
+                    maxHeight: 36,
                   ),
                 ),
               ),
