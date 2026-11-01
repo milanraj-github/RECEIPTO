@@ -169,4 +169,14 @@ class CurrencyConverterService {
     final converted = convertToInr(amount, currency: currency);
     return '≈ ${CurrencyFormatter.formatCompact(converted, currency: '₹')}';
   }
+
+  /// Formats the converted INR equivalent cleanly for PDF export without math symbols
+  static String formatConvertedForPdf(double amount, {String? currency}) {
+    if (!isForeign(currency)) return '';
+    final converted = convertToInr(amount, currency: currency);
+    final parts = converted.abs().toStringAsFixed(2).split('.');
+    final RegExp reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
+    final formattedInteger = parts[0].replaceAllMapped(reg, (Match m) => '${m[1]},');
+    return 'INR $formattedInteger.${parts[1]}';
+  }
 }

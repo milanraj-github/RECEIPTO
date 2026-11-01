@@ -253,7 +253,7 @@ class ReceiptExportService {
                   children: [
                     pw.Text('TOTAL EXPENSE (INR)', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
                     pw.Text(
-                      CurrencyFormatter.format(grandSumInr),
+                      CurrencyFormatter.formatPdf(grandSumInr, currency: 'INR'),
                       style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.teal900),
                     ),
                   ],
@@ -271,13 +271,15 @@ class ReceiptExportService {
                 final amt = (r['grand_total'] as num?)?.toDouble() ?? (r['total'] as num?)?.toDouble() ?? 0.0;
                 final cur = r['currency']?.toString() ?? '₹';
                 final inrAmt = CurrencyConverterService.convertToInr(amt, currency: cur);
+                final cleanDate = (r['date']?.toString() ?? '-').replaceAll('•', '|').replaceAll('≈', '~');
+                final cleanMerchant = (r['merchant_name']?.toString() ?? 'Unknown').replaceAll('•', '|');
                 return [
-                  r['date']?.toString() ?? '-',
-                  r['merchant_name']?.toString() ?? 'Unknown',
+                  cleanDate,
+                  cleanMerchant,
                   r['category']?.toString() ?? 'Other',
                   r['invoice_number']?.toString() ?? '-',
-                  '$cur ${amt.toStringAsFixed(2)}',
-                  '₹ ${inrAmt.toStringAsFixed(2)}',
+                  CurrencyFormatter.formatPdf(amt, currency: cur),
+                  CurrencyFormatter.formatPdf(inrAmt, currency: 'INR'),
                 ];
               }).toList(),
               headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),

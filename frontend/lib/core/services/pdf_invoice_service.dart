@@ -86,7 +86,10 @@ class PdfInvoiceService {
                     crossAxisAlignment: pw.CrossAxisAlignment.start,
                     children: [
                       if (detail.purchaseDate.isNotEmpty)
-                        pw.Text('Date: ${detail.purchaseDate}', style: const pw.TextStyle(fontSize: 10)),
+                        pw.Text(
+                          'Date: ${detail.purchaseDate.replaceAll('•', '|').replaceAll('≈', '~')}',
+                          style: const pw.TextStyle(fontSize: 10),
+                        ),
                       if (detail.paymentMethod.isNotEmpty)
                         pw.Text('Payment: ${detail.paymentMethod}', style: const pw.TextStyle(fontSize: 10)),
                     ],
@@ -146,11 +149,11 @@ class PdfInvoiceService {
                         ),
                         pw.Padding(
                           padding: const pw.EdgeInsets.all(6),
-                          child: pw.Text(CurrencyFormatter.format(detail.amount, currency: detail.currency), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 10)),
+                          child: pw.Text(CurrencyFormatter.formatPdf(detail.amount, currency: detail.currency), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 10)),
                         ),
                         pw.Padding(
                           padding: const pw.EdgeInsets.all(6),
-                          child: pw.Text(CurrencyFormatter.format(detail.amount, currency: detail.currency), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 10)),
+                          child: pw.Text(CurrencyFormatter.formatPdf(detail.amount, currency: detail.currency), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 10)),
                         ),
                       ],
                     )
@@ -175,7 +178,7 @@ class PdfInvoiceService {
                           ),
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(6),
-                            child: pw.Text(CurrencyFormatter.format(prod.unitPrice, currency: detail.currency), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 10)),
+                            child: pw.Text(CurrencyFormatter.formatPdf(prod.unitPrice, currency: detail.currency), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 10)),
                           ),
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(6),
@@ -183,13 +186,13 @@ class PdfInvoiceService {
                               crossAxisAlignment: pw.CrossAxisAlignment.end,
                               children: [
                                 pw.Text(
-                                  CurrencyFormatter.format(prod.price, currency: detail.currency),
+                                  CurrencyFormatter.formatPdf(prod.price, currency: detail.currency),
                                   textAlign: pw.TextAlign.right,
                                   style: const pw.TextStyle(fontSize: 10),
                                 ),
                                 if (CurrencyConverterService.isForeign(detail.currency))
                                   pw.Text(
-                                    CurrencyConverterService.formatConvertedInr(prod.price, currency: detail.currency),
+                                    CurrencyConverterService.formatConvertedForPdf(prod.price, currency: detail.currency),
                                     style: const pw.TextStyle(fontSize: 7.5, color: PdfColors.teal800),
                                   ),
                               ],
@@ -211,22 +214,22 @@ class PdfInvoiceService {
                     child: pw.Column(
                       children: [
                         if (detail.subtotal != null)
-                          _buildSummaryPdfRow('Subtotal', CurrencyFormatter.format(detail.subtotal!, currency: detail.currency)),
+                          _buildSummaryPdfRow('Subtotal', CurrencyFormatter.formatPdf(detail.subtotal!, currency: detail.currency)),
                         if (detail.tax != null)
-                          _buildSummaryPdfRow('Tax / GST', CurrencyFormatter.format(detail.tax!, currency: detail.currency)),
+                          _buildSummaryPdfRow('Tax / GST', CurrencyFormatter.formatPdf(detail.tax!, currency: detail.currency)),
                         if (detail.discount != null)
-                          _buildSummaryPdfRow('Discount', '-${CurrencyFormatter.format(detail.discount!, currency: detail.currency)}'),
+                          _buildSummaryPdfRow('Discount', '-${CurrencyFormatter.formatPdf(detail.discount!, currency: detail.currency)}'),
                         pw.Divider(color: PdfColors.grey400),
                         _buildSummaryPdfRow(
                           'Grand Total',
-                          CurrencyFormatter.format(detail.amount, currency: detail.currency),
+                          CurrencyFormatter.formatPdf(detail.amount, currency: detail.currency),
                           isBold: true,
                         ),
                         if (CurrencyConverterService.isForeign(detail.currency)) ...[
                           pw.SizedBox(height: 2),
                           _buildSummaryPdfRow(
                             'Equivalent (INR)',
-                            CurrencyConverterService.formatConvertedInr(detail.amount, currency: detail.currency).replaceAll('≈ ', '₹ '),
+                            CurrencyConverterService.formatConvertedForPdf(detail.amount, currency: detail.currency),
                             isBold: true,
                             textColor: PdfColors.teal900,
                           ),

@@ -19,5 +19,18 @@ class CurrencyFormatter {
     }
     return format(amount, currency: currency);
   }
+
+  /// Formats currency safely for PDF exports using ASCII characters (e.g. 'INR 8,246.54' or '$86.76')
+  /// to prevent missing glyph / broken box '[X]' characters in PDF renderers.
+  static String formatPdf(double amount, {String? currency}) {
+    final cur = (currency == null || currency.trim().isEmpty) ? 'INR' : currency.trim();
+    final isRupee = cur == '₹' || cur.toUpperCase() == 'INR';
+    final prefix = isRupee ? 'INR ' : (cur == r'$' ? r'$' : '$cur ');
+
+    final parts = amount.abs().toStringAsFixed(2).split('.');
+    final RegExp reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
+    final formattedInteger = parts[0].replaceAllMapped(reg, (Match m) => '${m[1]},');
+    return '$prefix$formattedInteger.${parts[1]}';
+  }
 }
 
