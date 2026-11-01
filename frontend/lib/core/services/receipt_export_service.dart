@@ -6,6 +6,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:share_plus/share_plus.dart';
 import 'package:receipto/core/services/pdf_invoice_service.dart';
+import 'package:receipto/core/services/pdf_font_helper.dart';
 import 'package:receipto/core/utils/currency_formatter.dart';
 import 'package:receipto/features/receipts/presentation/models/receipt_detail_view_model.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
@@ -203,7 +204,8 @@ class ReceiptExportService {
   }
 
   Future<File> _generateMultiReceiptsPdf(List<Map<String, dynamic>> receipts, List<WarrantyModel>? warranties) async {
-    final pdf = pw.Document();
+    final pdfTheme = await PdfFontHelper.getReceiptoPdfTheme();
+    final pdf = pw.Document(theme: pdfTheme);
 
     pdf.addPage(
       pw.MultiPage(

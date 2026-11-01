@@ -5,6 +5,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:receipto/core/utils/currency_formatter.dart';
+import 'package:receipto/core/services/pdf_font_helper.dart';
 import 'package:receipto/features/receipts/presentation/models/receipt_detail_view_model.dart';
 import 'package:receipto/features/warranty/domain/models/warranty_model.dart';
 
@@ -14,7 +15,8 @@ class PdfInvoiceService {
     required ReceiptDetailViewModel detail,
     List<WarrantyModel>? warranties,
   }) async {
-    final pdf = pw.Document();
+    final pdfTheme = await PdfFontHelper.getReceiptoPdfTheme();
+    final pdf = pw.Document(theme: pdfTheme);
 
     // Page 1: Invoice Content
     pdf.addPage(

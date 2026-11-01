@@ -1,0 +1,5 @@
+{
+  "java.import.gradle.enabled": false,
+  "java.autobuild.enabled": false,
+  "gradle.nestedProjects": false
+}
