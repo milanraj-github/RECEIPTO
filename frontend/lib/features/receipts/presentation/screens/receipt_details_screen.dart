@@ -1244,13 +1244,28 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    Text(
-                      CurrencyFormatter.format(prod.price, currency: detail.currency),
-                      style: GoogleFonts.inter(
-                        color: AppColors.onSurface,
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          CurrencyFormatter.format(prod.price, currency: detail.currency),
+                          style: GoogleFonts.inter(
+                            color: AppColors.onSurface,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        if (CurrencyConverterService.isForeign(detail.currency))
+                          Text(
+                            CurrencyConverterService.formatConvertedInr(prod.price, currency: detail.currency),
+                            style: GoogleFonts.inter(
+                              color: AppColors.primary,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
                     ),
                   ],
                 );
@@ -1262,11 +1277,11 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
           const SizedBox(height: 16),
 
           if (detail.subtotal != null)
-            _buildBreakdownRow('Subtotal', CurrencyFormatter.format(detail.subtotal!, currency: detail.currency)),
+            _buildBreakdownRow('Subtotal', CurrencyFormatter.format(detail.subtotal!, currency: detail.currency), rawAmount: detail.subtotal, currency: detail.currency),
           if (detail.tax != null)
-            _buildBreakdownRow('Tax / GST', CurrencyFormatter.format(detail.tax!, currency: detail.currency)),
+            _buildBreakdownRow('Tax / GST', CurrencyFormatter.format(detail.tax!, currency: detail.currency), rawAmount: detail.tax, currency: detail.currency),
           if (detail.discount != null)
-            _buildBreakdownRow('Discount', '-${CurrencyFormatter.format(detail.discount!, currency: detail.currency)}', isDiscount: true),
+            _buildBreakdownRow('Discount', '-${CurrencyFormatter.format(detail.discount!, currency: detail.currency)}', isDiscount: true, rawAmount: detail.discount, currency: detail.currency),
           
           const SizedBox(height: 8),
           Row(
@@ -1310,7 +1325,14 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
     );
   }
 
-  Widget _buildBreakdownRow(String label, String value, {bool isDiscount = false}) {
+  Widget _buildBreakdownRow(
+    String label,
+    String value, {
+    bool isDiscount = false,
+    double? rawAmount,
+    String? currency,
+  }) {
+    final hasConversion = rawAmount != null && CurrencyConverterService.isForeign(currency);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6.0),
       child: Row(
@@ -1323,13 +1345,28 @@ class _ReceiptDetailsScreenState extends ConsumerState<ReceiptDetailsScreen> {
               fontSize: 13.5,
             ),
           ),
-          Text(
-            value,
-            style: GoogleFonts.inter(
-              color: isDiscount ? AppColors.tertiary : AppColors.onSurface,
-              fontSize: 13.5,
-              fontWeight: FontWeight.w600,
-            ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (hasConversion) ...[
+                Text(
+                  '${CurrencyConverterService.formatConvertedInr(rawAmount, currency: currency)} ',
+                  style: GoogleFonts.inter(
+                    color: AppColors.primary,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+              Text(
+                value,
+                style: GoogleFonts.inter(
+                  color: isDiscount ? AppColors.tertiary : AppColors.onSurface,
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ],
       ),

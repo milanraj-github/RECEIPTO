@@ -4,6 +4,7 @@ import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/app/config/theme.dart';
 import 'package:receipto/core/widgets/glass_card.dart';
 import 'package:receipto/core/utils/currency_formatter.dart';
+import 'package:receipto/core/services/currency_converter_service.dart';
 
 class ReceiptData {
   final String id;
@@ -123,6 +124,17 @@ class ReceiptListItem extends StatelessWidget {
                       ),
                     ),
                   ),
+                  if (CurrencyConverterService.isForeign(data.currency)) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      CurrencyConverterService.formatConvertedInr(absoluteAmount, currency: data.currency),
+                      style: GoogleFonts.inter(
+                        color: AppColors.primary,
+                        fontSize: 10.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
                   const SizedBox(height: 4),
                   // Category badge
                   Container(

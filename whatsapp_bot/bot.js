@@ -1133,10 +1133,19 @@ async function startWhatsAppBot() {
         }
 
         // Format success summary reply
+        const cur = extracted.currency || "₹";
+        const isForeign = cur !== "₹" && cur.toUpperCase() !== "INR" && !cur.toLowerCase().startsWith("rs");
+        const foreignRates = { "$": 85.5, "USD": 85.5, "€": 92.8, "EUR": 92.8, "£": 111.2, "GBP": 111.2, "AED": 23.28, "CAD": 62.1 };
+        const rateToInr = foreignRates[cur] || foreignRates[cur.toUpperCase()] || 85.5;
+        const inrEquivalent = isForeign ? ` (≈ ₹${Math.round(totalAmount * rateToInr).toLocaleString()})` : "";
+
         const itemsListText =
           items.length > 0
             ? `\n\n🛒 *Items (${items.length}):*\n` +
-              items.slice(0, 5).map((it) => ` • ${it.name} - ₹${it.price}`).join("\n") +
+              items.slice(0, 5).map((it) => {
+                const itPrice = parseFloat(it.price) || 0;
+                return ` • ${it.name} - ${cur}${itPrice.toFixed(2)}`;
+              }).join("\n") +
               (items.length > 5 ? `\n... and ${items.length - 5} more` : "")
             : "";
 
@@ -1152,7 +1161,7 @@ async function startWhatsAppBot() {
         const replyMessage =
           `${replyHeader}\n\n` +
           `🏪 *Store:* ${merchantName}\n` +
-          `💰 *Total:* ₹${totalAmount.toFixed(2)}\n` +
+          `💰 *Total:* ${cur}${totalAmount.toFixed(2)}${inrEquivalent}\n` +
           `📅 *Date:* ${purchaseDate}\n` +
           `🏷️ *Category:* ${category}` +
           itemsListText +
@@ -1237,9 +1246,9 @@ CRITICAL RULES FOR EXPIRY DATE & WARRANTY EXTRACTION:
    - Distinguish Return/Replacement Windows (e.g., 7 days return, 10 days replacement policy) from Manufacturer Warranty or Expiry Periods.
    - NEVER set a 7-day or 10-day return policy as the warranty duration! (e.g., do NOT set duration_months: 0.37). Always preserve the true product warranty.
 
-4. DATES:
+4. DATES & CURRENCY:
    - All extracted dates (purchase date and expiry dates) must be normalized to standard ISO format (YYYY-MM-DD).
-   - Assume currency is "₹" for Indian receipts.`;
+   - Assume currency is "₹" for Indian receipts, but extract the authentic symbol ("$", "€", "£", "AED", etc.) if an international receipt or non-Indian currency is printed.`;
 
   let lastError = null;
 

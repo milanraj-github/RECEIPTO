@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:receipto/core/constants/constants.dart';
 import 'package:receipto/core/utils/currency_formatter.dart';
+import 'package:receipto/core/services/currency_converter_service.dart';
 import 'package:receipto/core/widgets/glass_card.dart';
 import 'package:receipto/features/scan/domain/models/receipt_model.dart';
 
@@ -47,7 +48,9 @@ class _SpendingCalendarSheetState extends State<SpendingCalendarSheet> {
     for (final r in widget.allReceipts) {
       final d = _parseDate(r);
       if (d != null && d.year == month.year && d.month == month.month) {
-        final amt = ReceiptModel.parseDouble(r['grand_total']) ?? ReceiptModel.parseDouble(r['total']) ?? 0.0;
+        final String cur = (r['currency'] as String?) ?? '₹';
+        final double rawAmt = ReceiptModel.parseDouble(r['grand_total']) ?? ReceiptModel.parseDouble(r['total']) ?? 0.0;
+        final double amt = CurrencyConverterService.convertToInr(rawAmt, currency: cur);
         map[d.day] = (map[d.day] ?? 0.0) + amt;
       }
     }

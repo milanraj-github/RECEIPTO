@@ -259,7 +259,9 @@ class FinancialAnalyticsService {
     for (final r in allReceipts) {
       final rDate = parseReceiptDate(r);
       if (rDate != null && !rDate.isBefore(startOfWeek) && rDate.isBefore(endOfWeek)) {
-        final double amt = ReceiptModel.parseDouble(r['grand_total']) ?? ReceiptModel.parseDouble(r['total']) ?? 0.0;
+        final String cur = (r['currency'] as String?) ?? '₹';
+        final double rawAmt = ReceiptModel.parseDouble(r['grand_total']) ?? ReceiptModel.parseDouble(r['total']) ?? 0.0;
+        final double amt = CurrencyConverterService.convertToInr(rawAmt, currency: cur);
         final int dayIdx = rDate.weekday - 1; // 0 = Mon, 6 = Sun
         if (dayIdx >= 0 && dayIdx < 7) {
           weeklyDayTotals[dayIdx] += amt;
@@ -277,7 +279,9 @@ class FinancialAnalyticsService {
       for (final r in allReceipts) {
         final rDate = parseReceiptDate(r);
         if (rDate != null && !rDate.isBefore(targetMonth) && rDate.isBefore(nextMonth)) {
-          mTotal += ReceiptModel.parseDouble(r['grand_total']) ?? ReceiptModel.parseDouble(r['total']) ?? 0.0;
+          final String cur = (r['currency'] as String?) ?? '₹';
+          final double rawAmt = ReceiptModel.parseDouble(r['grand_total']) ?? ReceiptModel.parseDouble(r['total']) ?? 0.0;
+          mTotal += CurrencyConverterService.convertToInr(rawAmt, currency: cur);
         }
       }
       monthlyTrends.add(MonthlyTrendPoint(
