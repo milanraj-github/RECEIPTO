@@ -67,7 +67,7 @@ class AnalyticsBudgetsTab extends StatelessWidget {
 
           // Section 4: Recurring Expenses & Subscriptions
           _buildRecurringExpensesSection(context, totalMonthlyRecurring),
-          const SizedBox(height: 140),
+          const SizedBox(height: 24),
         ],
       ),
     );

@@ -61,7 +61,7 @@ class _AnalyticsCategoriesTabState extends State<AnalyticsCategoriesTab> {
 
           // Product Intelligence Card
           _buildProductIntelligenceCard(data),
-          const SizedBox(height: 140),
+          const SizedBox(height: 24),
         ],
       ),
     );

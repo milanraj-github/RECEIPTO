@@ -110,7 +110,7 @@ class _AnalyticsAiInsightsTabState extends ConsumerState<AnalyticsAiInsightsTab>
 
           // 4. Interactive AI Assistant Button
           _buildAiAssistantTrigger(),
-          const SizedBox(height: 140),
+          const SizedBox(height: 24),
         ],
       ),
     );

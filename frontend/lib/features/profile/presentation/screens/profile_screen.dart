@@ -54,7 +54,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ),
           SafeArea(
-            bottom: false,
             child: SingleChildScrollView(
           physics: const BouncingScrollPhysics(),
           padding: const EdgeInsets.symmetric(
@@ -223,8 +222,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               // Footer app info
               _buildFooter(context),
 
-              // Bottom navbar margin spacer
-              const SizedBox(height: 110),
+              // Bottom margin spacer
+              const SizedBox(height: 24),
             ],
           ),
         ),

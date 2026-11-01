@@ -346,8 +346,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
             ),
           ),
           SafeArea(
-            bottom: false,
-        child: Column(
+            child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Header Title Bar
@@ -496,7 +495,7 @@ class _ReceiptsScreenState extends ConsumerState<ReceiptsScreen> {
                         padding: const EdgeInsets.only(
                           left: AppSpacing.gutter,
                           right: AppSpacing.gutter,
-                          bottom: 120,
+                          bottom: 24,
                         ),
                         itemCount: filteredItems.length,
                         separatorBuilder: (context, index) => const SizedBox(height: 12),

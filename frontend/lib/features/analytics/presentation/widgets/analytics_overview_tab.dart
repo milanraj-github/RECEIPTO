@@ -83,7 +83,7 @@ class _AnalyticsOverviewTabState extends State<AnalyticsOverviewTab> {
 
           // Financial Health Snapshots (Goals & Recurring)
           _buildGoalsAndRecurringSnapshot(),
-          const SizedBox(height: 140),
+          const SizedBox(height: 24),
         ],
       ),
     );

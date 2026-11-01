@@ -190,7 +190,6 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> with SingleTi
             ),
           ),
           SafeArea(
-            bottom: false,
             child: receiptsAsync.when(
           loading: () => const Center(child: CircularProgressIndicator(color: AppColors.primary)),
           error: (err, stack) => Center(
@@ -470,7 +469,7 @@ class _AnalyticsScreenState extends ConsumerState<AnalyticsScreen> with SingleTi
 
   Widget _buildFAB() {
     return Container(
-      margin: const EdgeInsets.only(bottom: 96, right: 4),
+      margin: const EdgeInsets.only(bottom: 16, right: 4),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         boxShadow: [

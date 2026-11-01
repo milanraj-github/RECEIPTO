@@ -293,7 +293,7 @@ class DashboardScreen extends ConsumerWidget {
                   _buildRecentReceiptsHeader(context),
                   const SizedBox(height: 16),
                   _buildReceiptList(context, recentReceipts),
-                  const SizedBox(height: 110),
+                  const SizedBox(height: 24),
                 ],
               ),
             ),

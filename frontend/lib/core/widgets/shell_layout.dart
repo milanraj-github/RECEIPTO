@@ -34,7 +34,7 @@ class ShellLayout extends StatelessWidget {
       child: Scaffold(
         backgroundColor: AppColors.background,
         body: navigationShell,
-        extendBody: true,
+        extendBody: false,
         bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.only(bottom: 12, left: 16, right: 16),
         child: SizedBox(
