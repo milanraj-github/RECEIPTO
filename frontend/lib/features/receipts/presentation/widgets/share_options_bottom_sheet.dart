@@ -51,9 +51,6 @@ class _ShareOptionsBottomSheetState extends State<ShareOptionsBottomSheet> {
   String _loadingMessage = '';
 
   Future<File> _getOrGeneratePdf() async {
-    if (widget.cachedPdfFile != null && await widget.cachedPdfFile!.exists()) {
-      return widget.cachedPdfFile!;
-    }
     setState(() {
       _isLoading = true;
       _loadingMessage = 'Generating PDF Invoice...';

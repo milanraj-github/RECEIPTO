@@ -328,8 +328,9 @@ class PdfInvoiceService {
 
     // Save to file
     final outputDir = await getTemporaryDirectory();
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
     final sanitizeInvoice = (detail.invoiceNumber ?? 'receipt_${detail.id}').replaceAll(RegExp(r'[^\w\.-]'), '_');
-    final filePath = '${outputDir.path}/Invoice_$sanitizeInvoice.pdf';
+    final filePath = '${outputDir.path}/Invoice_${sanitizeInvoice}_$timestamp.pdf';
     final file = File(filePath);
     await file.writeAsBytes(await pdf.save());
     return file;
