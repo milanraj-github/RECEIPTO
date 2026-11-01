@@ -253,7 +253,7 @@ class ReceiptExportService {
                   children: [
                     pw.Text('TOTAL EXPENSE (INR)', style: const pw.TextStyle(fontSize: 9, color: PdfColors.grey600)),
                     pw.Text(
-                      CurrencyFormatter.formatPdf(grandSumInr, currency: 'INR'),
+                      _formatCurrency(grandSumInr, currency: 'INR'),
                       style: pw.TextStyle(fontSize: 14, fontWeight: pw.FontWeight.bold, color: PdfColors.teal900),
                     ),
                   ],
@@ -278,8 +278,8 @@ class ReceiptExportService {
                   cleanMerchant,
                   r['category']?.toString() ?? 'Other',
                   r['invoice_number']?.toString() ?? '-',
-                  CurrencyFormatter.formatPdf(amt, currency: cur),
-                  CurrencyFormatter.formatPdf(inrAmt, currency: 'INR'),
+                  _formatCurrency(amt, currency: cur),
+                  _formatCurrency(inrAmt, currency: 'INR'),
                 ];
               }).toList(),
               headerStyle: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 9, color: PdfColors.white),
@@ -307,5 +307,16 @@ class ReceiptExportService {
       return '"${field.replaceAll('"', '""')}"';
     }
     return field;
+  }
+
+  static String _formatCurrency(double amount, {String? currency}) {
+    final cur = (currency == null || currency.trim().isEmpty) ? 'INR' : currency.trim();
+    final isRupee = cur == '₹' || cur.toUpperCase() == 'INR';
+    final prefix = isRupee ? 'INR ' : (cur == r'$' ? r'$' : '$cur ');
+
+    final parts = amount.abs().toStringAsFixed(2).split('.');
+    final RegExp reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
+    final formattedInteger = parts[0].replaceAllMapped(reg, (Match m) => '${m[1]},');
+    return '$prefix$formattedInteger.${parts[1]}';
   }
 }

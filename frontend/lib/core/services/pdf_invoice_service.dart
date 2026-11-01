@@ -149,11 +149,11 @@ class PdfInvoiceService {
                         ),
                         pw.Padding(
                           padding: const pw.EdgeInsets.all(6),
-                          child: pw.Text(CurrencyFormatter.formatPdf(detail.amount, currency: detail.currency), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 10)),
+                          child: pw.Text(_formatCurrency(detail.amount, currency: detail.currency), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 10)),
                         ),
                         pw.Padding(
                           padding: const pw.EdgeInsets.all(6),
-                          child: pw.Text(CurrencyFormatter.formatPdf(detail.amount, currency: detail.currency), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 10)),
+                          child: pw.Text(_formatCurrency(detail.amount, currency: detail.currency), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 10)),
                         ),
                       ],
                     )
@@ -178,7 +178,7 @@ class PdfInvoiceService {
                           ),
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(6),
-                            child: pw.Text(CurrencyFormatter.formatPdf(prod.unitPrice, currency: detail.currency), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 10)),
+                            child: pw.Text(_formatCurrency(prod.unitPrice, currency: detail.currency), textAlign: pw.TextAlign.right, style: const pw.TextStyle(fontSize: 10)),
                           ),
                           pw.Padding(
                             padding: const pw.EdgeInsets.all(6),
@@ -186,7 +186,7 @@ class PdfInvoiceService {
                               crossAxisAlignment: pw.CrossAxisAlignment.end,
                               children: [
                                 pw.Text(
-                                  CurrencyFormatter.formatPdf(prod.price, currency: detail.currency),
+                                  _formatCurrency(prod.price, currency: detail.currency),
                                   textAlign: pw.TextAlign.right,
                                   style: const pw.TextStyle(fontSize: 10),
                                 ),
@@ -214,15 +214,15 @@ class PdfInvoiceService {
                     child: pw.Column(
                       children: [
                         if (detail.subtotal != null)
-                          _buildSummaryPdfRow('Subtotal', CurrencyFormatter.formatPdf(detail.subtotal!, currency: detail.currency)),
+                          _buildSummaryPdfRow('Subtotal', _formatCurrency(detail.subtotal!, currency: detail.currency)),
                         if (detail.tax != null)
-                          _buildSummaryPdfRow('Tax / GST', CurrencyFormatter.formatPdf(detail.tax!, currency: detail.currency)),
+                          _buildSummaryPdfRow('Tax / GST', _formatCurrency(detail.tax!, currency: detail.currency)),
                         if (detail.discount != null)
-                          _buildSummaryPdfRow('Discount', '-${CurrencyFormatter.formatPdf(detail.discount!, currency: detail.currency)}'),
+                          _buildSummaryPdfRow('Discount', '-${_formatCurrency(detail.discount!, currency: detail.currency)}'),
                         pw.Divider(color: PdfColors.grey400),
                         _buildSummaryPdfRow(
                           'Grand Total',
-                          CurrencyFormatter.formatPdf(detail.amount, currency: detail.currency),
+                          _formatCurrency(detail.amount, currency: detail.currency),
                           isBold: true,
                         ),
                         if (CurrencyConverterService.isForeign(detail.currency)) ...[
@@ -361,5 +361,16 @@ class PdfInvoiceService {
         ],
       ),
     );
+  }
+
+  static String _formatCurrency(double amount, {String? currency}) {
+    final cur = (currency == null || currency.trim().isEmpty) ? 'INR' : currency.trim();
+    final isRupee = cur == '₹' || cur.toUpperCase() == 'INR';
+    final prefix = isRupee ? 'INR ' : (cur == r'$' ? r'$' : '$cur ');
+
+    final parts = amount.abs().toStringAsFixed(2).split('.');
+    final RegExp reg = RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))');
+    final formattedInteger = parts[0].replaceAllMapped(reg, (Match m) => '${m[1]},');
+    return '$prefix$formattedInteger.${parts[1]}';
   }
 }
