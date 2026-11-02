@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Receipto</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0c0f17;
+      --card-bg: #141926;
+      --accent: #6366f1;
+      --accent-light: #818cf8;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --border: rgba(255, 255, 255, 0.08);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text-main);
+      line-height: 1.7;
+      padding: 40px 20px;
+    }
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      background: var(--card-bg);
+      padding: 48px 40px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+    }
+    .badge {
+      display: inline-block;
+      padding: 6px 14px;
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--accent-light);
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+    .subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 32px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 20px;
+    }
+    h2 {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-top: 32px;
+      margin-bottom: 12px;
+    }
+    h3 {
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--accent-light);
+      margin-top: 16px;
+      margin-bottom: 8px;
+    }
+    p {
+      color: #cbd5e1;
+      margin-bottom: 14px;
+      font-size: 15px;
+    }
+    ul {
+      margin-left: 20px;
+      margin-bottom: 16px;
+      color: #cbd5e1;
+    }
+    li {
+      margin-bottom: 8px;
+      font-size: 15px;
+    }
+    .callout {
+      background: rgba(99, 102, 241, 0.08);
+      border-left: 4px solid var(--accent);
+      padding: 16px 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      font-size: 14.5px;
+    }
+    a {
+      color: var(--accent-light);
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    footer {
+      margin-top: 40px;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="badge">Legal Document</div>
+    <h1>Privacy Policy for Receipto</h1>
+    <div class="subtitle">Last Updated: November 2, 2026 • Effective Immediately</div>
+
+    <p>Welcome to <strong>Receipto</strong> (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;). We are committed to protecting your privacy and ensuring your personal information is handled in a safe and responsible manner. This Privacy Policy outlines how we collect, use, disclose, and safeguard your data when you use the Receipto mobile application.</p>
+
+    <h2>1. Information We Collect</h2>
+    
+    <h3>A. Information You Provide</h3>
+    <ul>
+      <li><strong>Account Information:</strong> Name, email address, and authentication credentials.</li>
+      <li><strong>Receipts &amp; Expense Data:</strong> When you scan or upload receipts, we process the images to extract vendor name, transaction date, line items, taxes, currency, and total amounts.</li>
+      <li><strong>User Notes &amp; Categories:</strong> Custom categories, tags, and notes you assign to your receipts.</li>
+    </ul>
+
+    <h3>B. Device &amp; Permission-Based Access</h3>
+    <ul>
+      <li><strong>Camera Access:</strong> Used solely to capture physical receipts for scanning. We only access the camera when you deliberately trigger the capture button.</li>
+      <li><strong>Photo &amp; Storage Access:</strong> Used only when you choose to import an existing photo or PDF from your gallery.</li>
+      <li><strong>Device Diagnostics:</strong> Basic device model and crash logs used strictly to ensure app stability.</li>
+    </ul>
+
+    <div class="callout">
+      <strong>🔒 Financial Security Guarantee:</strong> Receipto <em>NEVER</em> asks for, collects, or stores your bank account numbers, credit/debit card numbers, CVVs, PINs, or online banking passwords.
+    </div>
+
+    <h2>2. How We Use Your Information</h2>
+    <p>We use your information exclusively to provide core application features:</p>
+    <ul>
+      <li>To extract and categorize expense details using AI and OCR.</li>
+      <li>To compute spending analytics, monthly category breakdowns, and trends.</li>
+      <li>To generate downloadable PDF invoices and expense summaries.</li>
+      <li>To securely sync your receipts across your authorized devices.</li>
+    </ul>
+
+    <h2>3. Third-Party Services</h2>
+    <p>We work only with reputable, enterprise-grade cloud providers:</p>
+    <ul>
+      <li><strong>Supabase:</strong> For secure database storage and authentication.</li>
+      <li><strong>Google Gemini API:</strong> For state-of-the-art receipt text parsing. Data sent for parsing is processed securely and is never used to train public models.</li>
+      <li><strong>Google Play Services:</strong> For secure app distribution and update delivery.</li>
+    </ul>
+
+    <h2>4. Data Storage &amp; Security</h2>
+    <p>All data is encrypted in transit using industry-standard TLS (HTTPS) and encrypted at rest with AES encryption. Access to your receipts is strictly restricted to your authenticated user account.</p>
+
+    <h2>5. Data Retention &amp; Account Deletion</h2>
+    <p>You have complete control over your data:</p>
+    <ul>
+      <li><strong>Delete Receipts:</strong> You can delete any receipt directly inside the app at any time.</li>
+      <li><strong>Delete Account:</strong> You can request complete deletion of your account and all associated data by contacting us at <a href="mailto:milanraj660@gmail.com">milanraj660@gmail.com</a>. All data will be permanently wiped within 30 days.</li>
+    </ul>
+
+    <h2>6. Contact Us</h2>
+    <p>If you have any questions or feedback regarding this Privacy Policy, please contact:</p>
+    <p>
+      <strong>Developer:</strong> Milanraj D Kunder<br>
+      <strong>Email:</strong> <a href="mailto:milanraj660@gmail.com">milanraj660@gmail.com</a><br>
+      <strong>Application:</strong> Receipto
+    </p>
+
+    <footer>
+      &copy; 2026 Receipto. All rights reserved.
+    </footer>
+  </div>
+</body>
+</html>
