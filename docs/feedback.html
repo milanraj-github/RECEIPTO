@@ -1844,7 +1844,7 @@
       </nav>
 
       <!-- Multi-Step Form -->
-      <form id="betaFeedbackForm" onsubmit="handleFormSubmit(event)">
+      <form id="betaFeedbackForm" novalidate onsubmit="handleFormSubmit(event)">
 
         <!-- STEP 1: TESTER INFORMATION -->
         <div class="section-card active" id="step1Card">
@@ -1857,22 +1857,22 @@
           <div class="form-grid-2">
             <div class="form-group">
               <label class="field-label" for="testerName">Full Name<span class="req-star">*</span></label>
-              <input type="text" id="testerName" placeholder="Milanraj" required>
+              <input type="text" id="testerName" placeholder="Milanraj">
             </div>
             <div class="form-group">
               <label class="field-label" for="testerEmail">Email Address<span class="req-star">*</span></label>
-              <input type="email" id="testerEmail" placeholder="your@email.com" required>
+              <input type="email" id="testerEmail" placeholder="your@email.com">
             </div>
           </div>
 
           <div class="form-grid-2">
             <div class="form-group">
               <label class="field-label" for="deviceModel">Device Brand &amp; Model<span class="req-star">*</span></label>
-              <input type="text" id="deviceModel" placeholder="e.g. OnePlus 11, Samsung S24, Pixel 8" required>
+              <input type="text" id="deviceModel" placeholder="e.g. OnePlus 11, Samsung S24, Pixel 8">
             </div>
             <div class="form-group">
               <label class="field-label" for="androidVersion">Android OS Version<span class="req-star">*</span></label>
-              <select id="androidVersion" required>
+              <select id="androidVersion">
                 <option value="">Select Android OS Version</option>
                 <option value="Android 10">Android 10</option>
                 <option value="Android 11">Android 11</option>
@@ -1895,7 +1895,7 @@
             </div>
             <div class="form-group">
               <label class="field-label" for="testingDuration">Testing Duration<span class="req-star">*</span></label>
-              <select id="testingDuration" required>
+              <select id="testingDuration">
                 <option value="">Select Testing Duration</option>
                 <option value="Less than one day">Less than one day</option>
                 <option value="1–3 days" selected>1–3 days</option>
@@ -2230,7 +2230,7 @@
           <div class="form-grid-2" style="margin-top: 20px;">
             <div class="form-group">
               <label class="field-label">Did the application crash?<span class="req-star">*</span></label>
-              <select id="crashFrequency" required>
+              <select id="crashFrequency">
                 <option value="Never" selected>Never</option>
                 <option value="Once">Once</option>
                 <option value="Occasionally">Occasionally</option>
@@ -2239,7 +2239,7 @@
             </div>
             <div class="form-group">
               <label class="field-label">Did you experience loading delays?<span class="req-star">*</span></label>
-              <select id="delayFrequency" required>
+              <select id="delayFrequency">
                 <option value="Never" selected>Never</option>
                 <option value="Rarely">Rarely</option>
                 <option value="Sometimes">Sometimes</option>
@@ -2339,7 +2339,7 @@
 
           <div class="form-group">
             <label class="field-label">What is your favourite feature in Receipto?<span class="req-star">*</span></label>
-            <input type="text" id="favFeature" placeholder="e.g. Instant warranty duration tracking, offline mode, clean cyber UI..." required>
+            <input type="text" id="favFeature" placeholder="e.g. Instant warranty duration tracking, offline mode, clean cyber UI...">
           </div>
 
           <div class="form-group">
@@ -2349,7 +2349,7 @@
 
           <div class="form-group">
             <label class="field-label">What would you improve before the official launch?<span class="req-star">*</span></label>
-            <textarea id="improvements" placeholder="Any UI clunkiness, missing merchant categories, or notification adjustments..." required></textarea>
+            <textarea id="improvements" placeholder="Any UI clunkiness, missing merchant categories, or notification adjustments..."></textarea>
           </div>
 
           <div class="form-group">
@@ -2374,7 +2374,7 @@
 
             <div class="form-group">
               <label class="field-label">Will you continue using Receipto after its official launch?<span class="req-star">*</span></label>
-              <select id="continueUsing" required>
+              <select id="continueUsing">
                 <option value="Definitely Yes" selected>Definitely Yes</option>
                 <option value="Probably Yes">Probably Yes</option>
                 <option value="Not Sure">Not Sure</option>
@@ -2391,7 +2391,7 @@
 
           <div class="form-btn-bar">
             <button type="button" class="btn-prev" onclick="goToStep(4)">← Previous</button>
-            <button type="submit" class="btn-next btn-submit" id="submitBtn">
+            <button type="button" class="btn-next btn-submit" id="submitBtn" onclick="handleFormSubmit(event)">
               <span>SUBMIT FEEDBACK</span>
               <span>🚀</span>
             </button>
@@ -2752,146 +2752,191 @@
 
     // --- 5. Form Submission Handler ---
     async function handleFormSubmit(e) {
-      e.preventDefault();
+      if (e) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
       const submitBtn = document.getElementById('submitBtn');
-      submitBtn.disabled = true;
-      submitBtn.innerHTML = '<span>⏳ Submitting...</span>';
-
-      const hasBug = document.getElementById('hasBugInput').value === 'Yes';
-
-      // Validate required fields on final submission with highlighting
-      clearFieldErrors(document.getElementById('step5Card'));
-      const favEl = document.getElementById('favFeature');
-      const impEl = document.getElementById('improvements');
-      let firstInvalid = null;
-
-      if (!favEl.value.trim()) {
-        highlightField(favEl, 'Please tell us your favourite feature');
-        firstInvalid = firstInvalid || favEl;
+      if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<span>⏳ Submitting...</span>';
       }
-      if (!impEl.value.trim()) {
-        highlightField(impEl, 'Please tell us what we can improve before launch');
-        firstInvalid = firstInvalid || impEl;
-      }
-      if (hasBug) {
-        const bugDesc = document.getElementById('bugDescription');
-        if (!bugDesc.value.trim()) {
-          highlightField(bugDesc, 'Please describe the bug encountered');
-          firstInvalid = firstInvalid || bugDesc;
+
+      try {
+        const hasBug = document.getElementById('hasBugInput') ? (document.getElementById('hasBugInput').value === 'Yes') : false;
+
+        // Validate required fields on final submission with highlighting
+        clearFieldErrors(document.getElementById('step5Card'));
+        const favEl = document.getElementById('favFeature');
+        const impEl = document.getElementById('improvements');
+        let firstInvalid = null;
+
+        if (favEl && !favEl.value.trim()) {
+          highlightField(favEl, 'Please tell us your favourite feature');
+          firstInvalid = firstInvalid || favEl;
         }
-      }
+        if (impEl && !impEl.value.trim()) {
+          highlightField(impEl, 'Please tell us what we can improve before launch');
+          firstInvalid = firstInvalid || impEl;
+        }
+        if (hasBug) {
+          const bugDesc = document.getElementById('bugDescription');
+          if (bugDesc && !bugDesc.value.trim()) {
+            highlightField(bugDesc, 'Please describe the bug encountered');
+            firstInvalid = firstInvalid || bugDesc;
+          }
+        }
 
-      if (firstInvalid) {
-        firstInvalid.focus();
-        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        showToast('Incomplete Fields', 'Please complete the highlighted feedback questions.', '⚠️');
-        submitBtn.disabled = false;
-        submitBtn.innerHTML = '<span>SUBMIT FEEDBACK</span><span>🚀</span>';
-        return;
-      }
+        if (firstInvalid) {
+          firstInvalid.focus();
+          firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showToast('Incomplete Fields', 'Please complete the highlighted feedback questions.', '⚠️');
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>SUBMIT FEEDBACK</span><span>🚀</span>';
+          }
+          return;
+        }
 
-      const formData = {
-        id: 'rev-' + Date.now(),
-        name: document.getElementById('testerName').value.trim(),
-        email: document.getElementById('testerEmail').value.trim(),
-        device: `${document.getElementById('deviceModel').value.trim()} (${document.getElementById('androidVersion').value})`,
-        rating: parseInt(document.getElementById('overallRating').value) || 5,
-        easeOfUse: document.getElementById('easeOfUseInput').value,
-        appVersion: document.getElementById('appVersion').value,
-        testingDuration: document.getElementById('testingDuration').value,
-        features: { ...featureScores },
-        manualCorrection: document.getElementById('manualCorrectionInput').value,
-        comments: {},
-        uiUx: {
-          design: featureScores.ui_design || 5,
-          nav: featureScores.ui_nav || 5,
-          speed: featureScores.ui_speed || 5,
-          crashFrequency: document.getElementById('crashFrequency').value,
-          delayFrequency: document.getElementById('delayFrequency').value
-        },
-        hasBug: hasBug,
-        bugReport: hasBug ? {
-          feature: document.getElementById('bugFeature').value,
-          description: document.getElementById('bugDescription').value.trim(),
-          steps: document.getElementById('bugSteps').value.trim(),
-          expected: document.getElementById('bugExpected').value.trim(),
-          actual: document.getElementById('bugActual').value.trim(),
-          frequency: document.getElementById('bugOccurs').value,
-          severity: document.getElementById('bugSeverity').value
-        } : null,
-        suggestions: {
-          favFeature: document.getElementById('favFeature').value.trim(),
-          impressedFeature: document.getElementById('impressedFeature').value.trim(),
-          improvements: document.getElementById('improvements').value.trim(),
-          futureWishes: document.getElementById('futureWishes').value.trim()
-        },
-        finalEvaluation: {
-          overallSatisfaction: parseInt(document.getElementById('finalSatRating').value) || 5,
-          continueUsing: document.getElementById('continueUsing').value,
-          devMessage: document.getElementById('devMessage').value.trim()
-        },
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        helpful: 0
-      };
+        // Check if tester profile was filled
+        const nameVal = document.getElementById('testerName') ? document.getElementById('testerName').value.trim() : '';
+        const emailVal = document.getElementById('testerEmail') ? document.getElementById('testerEmail').value.trim() : '';
+        const deviceVal = document.getElementById('deviceModel') ? document.getElementById('deviceModel').value.trim() : '';
+        const androidVal = document.getElementById('androidVersion') ? document.getElementById('androidVersion').value : 'Android 14';
 
-      // Message summary for fallback
-      formData.message = formData.suggestions.favFeature
-        ? `★ Favourite: "${formData.suggestions.favFeature}". Improve: "${formData.suggestions.improvements}"`
-        : `Overall Experience: ${formData.rating}/5. Testing duration: ${formData.testingDuration}.`;
+        if (!nameVal) {
+          goToStep(1);
+          const nameEl = document.getElementById('testerName');
+          if (nameEl) highlightField(nameEl, 'Please enter your name');
+          showToast('Incomplete Profile', 'Please enter your name in Step 1.', '⚠️');
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>SUBMIT FEEDBACK</span><span>🚀</span>';
+          }
+          return;
+        }
 
-      // 1. Submit Full Payload to Supabase Cloud
-      if (supabaseClient) {
+        const formData = {
+          id: 'rev-' + Date.now(),
+          name: nameVal,
+          email: emailVal,
+          device: `${deviceVal} (${androidVal})`,
+          rating: parseInt(document.getElementById('overallRating') ? document.getElementById('overallRating').value : '5') || 5,
+          easeOfUse: document.getElementById('easeOfUseInput') ? document.getElementById('easeOfUseInput').value : 'Very Easy',
+          appVersion: document.getElementById('appVersion') ? document.getElementById('appVersion').value : '1.0.0 (Build 1)',
+          testingDuration: document.getElementById('testingDuration') ? document.getElementById('testingDuration').value : '1–3 days',
+          features: { ...featureScores },
+          manualCorrection: document.getElementById('manualCorrectionInput') ? document.getElementById('manualCorrectionInput').value : 'Rarely',
+          comments: {},
+          uiUx: {
+            design: featureScores.ui_design || 5,
+            nav: featureScores.ui_nav || 5,
+            speed: featureScores.ui_speed || 5,
+            crashFrequency: document.getElementById('crashFrequency') ? document.getElementById('crashFrequency').value : 'Never',
+            delayFrequency: document.getElementById('delayFrequency') ? document.getElementById('delayFrequency').value : 'Never'
+          },
+          hasBug: hasBug,
+          bugReport: hasBug ? {
+            feature: document.getElementById('bugFeature') ? document.getElementById('bugFeature').value : 'General',
+            description: document.getElementById('bugDescription') ? document.getElementById('bugDescription').value.trim() : '',
+            steps: document.getElementById('bugSteps') ? document.getElementById('bugSteps').value.trim() : '',
+            expected: document.getElementById('bugExpected') ? document.getElementById('bugExpected').value.trim() : '',
+            actual: document.getElementById('bugActual') ? document.getElementById('bugActual').value.trim() : '',
+            frequency: document.getElementById('bugOccurs') ? document.getElementById('bugOccurs').value : 'Once',
+            severity: document.getElementById('bugSeverity') ? document.getElementById('bugSeverity').value : 'Low'
+          } : null,
+          suggestions: {
+            favFeature: favEl ? favEl.value.trim() : '',
+            impressedFeature: document.getElementById('impressedFeature') ? document.getElementById('impressedFeature').value.trim() : '',
+            improvements: impEl ? impEl.value.trim() : '',
+            futureWishes: document.getElementById('futureWishes') ? document.getElementById('futureWishes').value.trim() : ''
+          },
+          finalEvaluation: {
+            overallSatisfaction: parseInt(document.getElementById('finalSatRating') ? document.getElementById('finalSatRating').value : '5') || 5,
+            continueUsing: document.getElementById('continueUsing') ? document.getElementById('continueUsing').value : 'Definitely Yes',
+            devMessage: document.getElementById('devMessage') ? document.getElementById('devMessage').value.trim() : ''
+          },
+          date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          helpful: 0
+        };
+
+        // Message summary
+        formData.message = formData.suggestions.favFeature
+          ? `★ Favourite: "${formData.suggestions.favFeature}". Improve: "${formData.suggestions.improvements}"`
+          : `Overall Experience: ${formData.rating}/5. Testing duration: ${formData.testingDuration}.`;
+
+        // 1. Submit Full Payload to Supabase Cloud
+        if (supabaseClient) {
+          try {
+            const cloudPayload = {
+              message: formData.message,
+              suggestions: formData.suggestions,
+              finalEvaluation: formData.finalEvaluation,
+              bugReport: formData.bugReport,
+              hasBug: formData.hasBug,
+              uiUx: formData.uiUx,
+              comments: formData.comments,
+              easeOfUse: formData.easeOfUse,
+              testingDuration: formData.testingDuration,
+              appVersion: formData.appVersion
+            };
+
+            await supabaseClient.from('feedbacks').insert([{
+              name: formData.name,
+              email: formData.email,
+              device: formData.device,
+              rating: formData.rating,
+              message: JSON.stringify(cloudPayload),
+              features: formData.features,
+              tags: [
+                `v${formData.appVersion.split(' ')[0]}`,
+                formData.testingDuration,
+                hasBug ? '⚠️ Bug Logged' : '✅ Smooth'
+              ]
+            }]);
+          } catch(err) {
+            console.log('Supabase sync note:', err);
+          }
+        }
+
+        // 2. Add to Local Storage and Cache
         try {
-          const cloudPayload = {
-            message: formData.message,
-            suggestions: formData.suggestions,
-            finalEvaluation: formData.finalEvaluation,
-            bugReport: formData.bugReport,
-            hasBug: formData.hasBug,
-            uiUx: formData.uiUx,
-            comments: formData.comments,
-            easeOfUse: formData.easeOfUse,
-            testingDuration: formData.testingDuration,
-            appVersion: formData.appVersion
-          };
+          feedbackRecords.unshift(formData);
+          localStorage.setItem('receipto_feedbacks', JSON.stringify(feedbackRecords));
+          renderCommunityFeed();
+          renderAdminResponses();
+        } catch(storageErr) {
+          console.log('Storage note:', storageErr);
+        }
 
-          await supabaseClient.from('feedbacks').insert([{
-            name: formData.name,
-            email: formData.email,
-            device: formData.device,
-            rating: formData.rating,
-            message: JSON.stringify(cloudPayload),
-            features: formData.features,
-            tags: [
-              `v${formData.appVersion.split(' ')[0]}`,
-              formData.testingDuration,
-              hasBug ? '⚠️ Bug Logged' : '✅ Smooth'
-            ]
-          }]);
-        } catch(err) {
-          console.log('Supabase sync note:', err);
+        // 3. Show Celebration & Success View
+        if (window.confetti) {
+          try {
+            window.confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+          } catch(cErr) {}
+        }
+
+        const formEl = document.getElementById('betaFeedbackForm');
+        const navEl = document.getElementById('stepperNav');
+        const successEl = document.getElementById('successCard');
+
+        if (formEl) formEl.style.display = 'none';
+        if (navEl) navEl.style.display = 'none';
+        if (successEl) {
+          successEl.classList.add('show');
+          successEl.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        showToast('Feedback Successfully Submitted!', 'Thank you for shaping Receipto.', '🎉');
+      } catch(fatalErr) {
+        console.error('Fatal submission error:', fatalErr);
+        showToast('Error Submitting', fatalErr.message || 'Please check fields and try again.', '⚠️');
+      } finally {
+        if (submitBtn) {
+          submitBtn.disabled = false;
+          submitBtn.innerHTML = '<span>SUBMIT FEEDBACK</span><span>🚀</span>';
         }
       }
-
-      // 2. Add to Local Storage and Cache
-      feedbackRecords.unshift(formData);
-      localStorage.setItem('receipto_feedbacks', JSON.stringify(feedbackRecords));
-      renderCommunityFeed();
-      renderAdminResponses();
-
-      // 3. Show Celebration & Success View
-      if (window.confetti) {
-        window.confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
-      }
-
-      document.getElementById('betaFeedbackForm').style.display = 'none';
-      document.getElementById('stepperNav').style.display = 'none';
-      document.getElementById('successCard').classList.add('show');
-      document.getElementById('successCard').scrollIntoView({ behavior: 'smooth' });
-
-      showToast('Feedback Successfully Submitted!', 'Thank you for shaping Receipto.', '🎉');
-      submitBtn.disabled = false;
-      submitBtn.innerHTML = '<span>SUBMIT FEEDBACK</span><span>🚀</span>';
     }
 
     function resetFormToStart() {
@@ -2903,6 +2948,17 @@
     }
 
     // --- 6. Render Community Wall Feed (Full User Feedback Details) ---
+    const featureIcons = {
+      nlp_ocr: '⚡',
+      receipts: '🗄️',
+      warranty: '🛡️',
+      reminders: '🔔',
+      ai_assistant: '🤖',
+      analytics: '📊',
+      pdf: '📑',
+      whatsapp: '💬'
+    };
+
     const featureDisplayNames = {
       nlp_ocr: '⚡ NLP OCR',
       receipts: '🗄️ Receipts',
