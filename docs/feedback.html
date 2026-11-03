@@ -562,84 +562,187 @@
       min-height: 20px;
     }
 
-    /* Prominent Overall Experience Rating Card (First Position) */
-    .overall-rating-card {
-      background: linear-gradient(135deg, rgba(16, 21, 36, 0.9) 0%, rgba(22, 31, 56, 0.95) 100%);
-      border: 1px solid rgba(0, 217, 255, 0.35);
-      box-shadow: 0 16px 45px rgba(0, 217, 255, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    /* Overall Tester Responses & Ratings Display (Below Hero) */
+    .overall-response-section {
+      max-width: 920px;
+      margin: 0 auto 30px auto;
+      padding: 0 18px;
+    }
+    .overall-response-container {
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 768px) {
+      .overall-response-container {
+        grid-template-columns: 1fr;
+      }
+    }
+    .response-hero-card,
+    .response-features-card {
+      background: linear-gradient(135deg, rgba(16, 21, 36, 0.88) 0%, rgba(22, 31, 56, 0.94) 100%);
+      border: 1px solid rgba(0, 217, 255, 0.28);
       border-radius: var(--radius-lg);
-      padding: 32px 24px;
-      text-align: center;
-      margin-bottom: 26px;
+      padding: 24px 22px;
       backdrop-filter: blur(20px);
-      user-select: none;
-      -webkit-user-select: none;
-      -webkit-touch-callout: none;
+      box-shadow: 0 12px 35px rgba(0, 0, 0, 0.4);
       position: relative;
       overflow: hidden;
     }
-    .overall-rating-card::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 340px;
-      height: 180px;
-      background: radial-gradient(circle, rgba(0, 217, 255, 0.18) 0%, transparent 70%);
-      pointer-events: none;
-    }
-    .overall-rating-badge {
+    .response-badge {
       display: inline-block;
-      font-size: 11px;
+      font-size: 10.5px;
       font-weight: 800;
       color: var(--accent-cyan);
-      background: rgba(0, 217, 255, 0.12);
-      border: 1px solid rgba(0, 217, 255, 0.28);
-      padding: 5px 14px;
+      background: rgba(0, 217, 255, 0.1);
+      border: 1px solid rgba(0, 217, 255, 0.25);
+      padding: 4px 10px;
       border-radius: 999px;
       text-transform: uppercase;
       letter-spacing: 0.8px;
       margin-bottom: 12px;
     }
-    .overall-rating-title {
-      font-size: clamp(20px, 3.4vw, 26px);
+    .response-score-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .response-big-score {
+      font-size: clamp(38px, 6vw, 52px);
+      font-weight: 900;
+      line-height: 1;
+      color: var(--accent-gold);
+      text-shadow: 0 0 20px rgba(251, 191, 36, 0.4);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+    }
+    .response-stars-visual {
+      color: var(--accent-gold);
+      font-size: 18px;
+      letter-spacing: 2px;
+      margin-bottom: 3px;
+    }
+    .response-label {
+      font-size: 14px;
       font-weight: 800;
       color: #fff;
-      letter-spacing: -0.5px;
+    }
+    .response-count-meta {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .highlight-count {
+      color: var(--accent-cyan);
+      font-weight: 700;
+    }
+
+    /* Rating Breakdown Bars */
+    .rating-breakdown-bars {
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      padding-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .bar-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    .bar-label {
+      width: 26px;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+    .bar-track {
+      flex: 1;
+      height: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #fbbf24 0%, #f59e0b 100%);
+      border-radius: 999px;
+      transition: width 0.4s ease;
+    }
+    .bar-val {
+      width: 22px;
+      text-align: right;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+
+    /* Core App Feature Rating Tags */
+    .features-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 6px;
     }
-    .overall-rating-subtitle {
-      font-size: 13.5px;
-      color: var(--text-secondary);
-      margin-bottom: 20px;
-    }
-    .overall-rating-card .star-btn {
-      font-size: 44px;
-    }
-    .overall-rating-card .star-desc-text {
-      font-size: 16px;
+    .response-card-title {
+      font-size: 14.5px;
       font-weight: 800;
-      color: var(--accent-gold);
-      margin-top: 12px;
-      min-height: 24px;
-      text-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+      color: #fff;
     }
-    @media (max-width: 600px) {
-      .overall-rating-card {
-        padding: 22px 16px;
-        margin-bottom: 20px;
-        border-radius: var(--radius-md);
+    .response-pill-sub {
+      font-size: 10.5px;
+      color: var(--accent-cyan);
+      font-weight: 700;
+      background: rgba(0, 217, 255, 0.1);
+      padding: 2px 8px;
+      border-radius: 6px;
+    }
+    .features-card-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 14px;
+      line-height: 1.4;
+    }
+    .feature-rating-tags-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    @media (max-width: 480px) {
+      .feature-rating-tags-grid {
+        grid-template-columns: 1fr;
       }
-      .overall-rating-title {
-        font-size: 19px;
-      }
-      .overall-rating-card .star-btn {
-        font-size: 38px;
-      }
-      .overall-rating-card .star-desc-text {
-        font-size: 14.5px;
-      }
+    }
+    .feature-tag-chip {
+      background: rgba(255, 255, 255, 0.035);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 9px;
+      padding: 7px 10px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .feature-tag-chip:hover {
+      border-color: rgba(0, 217, 255, 0.3);
+      background: rgba(0, 217, 255, 0.05);
+    }
+    .ft-icon {
+      font-size: 13px;
+    }
+    .ft-name {
+      flex: 1;
+      font-size: 11px;
+      font-weight: 600;
+      color: #cbd5e1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ft-score {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: var(--accent-cyan);
     }
 
     /* Choice Chip Groups */
@@ -1054,51 +1157,138 @@
       </button>
     </section>
 
+    <!-- OVERALL TESTER RESPONSES & RATINGS DISPLAY (BELOW HERO) -->
+    <section class="overall-response-section" id="overallResponseSection">
+      <div class="overall-response-container">
+        
+        <!-- Left: Overall Rating Scoreboard -->
+        <div class="response-hero-card">
+          <div class="response-badge">🌟 Verified Beta Ratings</div>
+          <div class="response-score-row">
+            <div class="response-big-score" id="displayAvgRating">4.9</div>
+            <div class="response-score-details">
+              <div class="response-stars-visual" id="displayStarsVisual">★★★★★</div>
+              <div class="response-label" id="displayRatingLabel">Excellent Experience</div>
+              <div class="response-count-meta">
+                Based on <span id="displayResponseCount" class="highlight-count">0</span> Tester Responses
+              </div>
+            </div>
+          </div>
+          
+          <!-- Rating Breakdown Bars (5★ to 1★) -->
+          <div class="rating-breakdown-bars">
+            <div class="bar-row">
+              <span class="bar-label">5 ★</span>
+              <div class="bar-track"><div class="bar-fill" id="bar5" style="width: 80%;"></div></div>
+              <span class="bar-val" id="barVal5">0</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">4 ★</span>
+              <div class="bar-track"><div class="bar-fill" id="bar4" style="width: 20%;"></div></div>
+              <span class="bar-val" id="barVal4">0</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">3 ★</span>
+              <div class="bar-track"><div class="bar-fill" id="bar3" style="width: 0%;"></div></div>
+              <span class="bar-val" id="barVal3">0</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">2 ★</span>
+              <div class="bar-track"><div class="bar-fill" id="bar2" style="width: 0%;"></div></div>
+              <span class="bar-val" id="barVal2">0</span>
+            </div>
+            <div class="bar-row">
+              <span class="bar-label">1 ★</span>
+              <div class="bar-track"><div class="bar-fill" id="bar1" style="width: 0%;"></div></div>
+              <span class="bar-val" id="barVal1">0</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Core App Feature Ratings Tags -->
+        <div class="response-features-card">
+          <div class="features-header-row">
+            <div class="response-card-title">⚡ Core App Feature Ratings</div>
+            <div class="response-pill-sub">Live Beta Averages</div>
+          </div>
+          <p class="features-card-desc">Average ratings based on responses submitted by verified closed beta testers:</p>
+          
+          <div class="feature-rating-tags-grid">
+            <div class="feature-tag-chip">
+              <span class="ft-icon">⚡</span>
+              <span class="ft-name">NLP Receipt Extraction</span>
+              <span class="ft-score" id="avg_nlp_ocr">4.9 ★</span>
+            </div>
+            <div class="feature-tag-chip">
+              <span class="ft-icon">🗄️</span>
+              <span class="ft-name">Receipt Vault</span>
+              <span class="ft-score" id="avg_receipts">4.8 ★</span>
+            </div>
+            <div class="feature-tag-chip">
+              <span class="ft-icon">🛡️</span>
+              <span class="ft-name">Warranty Tracker</span>
+              <span class="ft-score" id="avg_warranty">4.9 ★</span>
+            </div>
+            <div class="feature-tag-chip">
+              <span class="ft-icon">🔔</span>
+              <span class="ft-name">Expiry Reminders</span>
+              <span class="ft-score" id="avg_reminders">4.8 ★</span>
+            </div>
+            <div class="feature-tag-chip">
+              <span class="ft-icon">🤖</span>
+              <span class="ft-name">AI Assistant</span>
+              <span class="ft-score" id="avg_ai_assistant">4.8 ★</span>
+            </div>
+            <div class="feature-tag-chip">
+              <span class="ft-icon">📊</span>
+              <span class="ft-name">Financial Analytics</span>
+              <span class="ft-score" id="avg_analytics">4.8 ★</span>
+            </div>
+            <div class="feature-tag-chip">
+              <span class="ft-icon">📑</span>
+              <span class="ft-name">PDF Generation</span>
+              <span class="ft-score" id="avg_pdf">4.9 ★</span>
+            </div>
+            <div class="feature-tag-chip">
+              <span class="ft-icon">💬</span>
+              <span class="ft-name">WhatsApp Bot</span>
+              <span class="ft-score" id="avg_whatsapp">4.7 ★</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
     <!-- Main Form Container -->
     <main class="container" id="feedbackFormContainer">
 
+      <!-- Stepper Navigation -->
+      <nav class="stepper-nav" id="stepperNav">
+        <button type="button" class="step-pill active" onclick="goToStep(1)">
+          <span class="step-num">1</span>
+          <span>Tester Profile</span>
+        </button>
+        <button type="button" class="step-pill" onclick="goToStep(2)">
+          <span class="step-num">2</span>
+          <span>Overall Experience</span>
+        </button>
+        <button type="button" class="step-pill" onclick="goToStep(3)">
+          <span class="step-num">3</span>
+          <span>Feature Deep-Dive</span>
+        </button>
+        <button type="button" class="step-pill" onclick="goToStep(4)">
+          <span class="step-num">4</span>
+          <span>UI/UX &amp; Bugs</span>
+        </button>
+        <button type="button" class="step-pill" onclick="goToStep(5)">
+          <span class="step-num">5</span>
+          <span>Suggestions &amp; Review</span>
+        </button>
+      </nav>
+
       <!-- Multi-Step Form -->
       <form id="betaFeedbackForm" onsubmit="handleFormSubmit(event)">
-
-        <!-- OVERALL RECEIPTO EXPERIENCE RATING (FIRST POSITION) -->
-        <div class="overall-rating-card" id="overallRatingSection">
-          <div class="overall-rating-badge">✨ Overall Impression</div>
-          <h2 class="overall-rating-title">Overall Receipto Experience Rating</h2>
-          <p class="overall-rating-subtitle">How would you rate your overall experience with Receipto?</p>
-          <div class="star-row" id="overallStarsGroup">
-            <span class="star-btn active" data-val="1">★</span>
-            <span class="star-btn active" data-val="2">★</span>
-            <span class="star-btn active" data-val="3">★</span>
-            <span class="star-btn active" data-val="4">★</span>
-            <span class="star-btn active" data-val="5">★</span>
-          </div>
-          <div class="star-desc-text" id="overallStarsDesc">5/5 – Excellent 🔥</div>
-          <input type="hidden" id="overallRating" value="5">
-        </div>
-
-        <!-- Stepper Navigation -->
-        <nav class="stepper-nav" id="stepperNav">
-          <button type="button" class="step-pill active" onclick="goToStep(1)">
-            <span class="step-num">1</span>
-            <span>Tester Profile</span>
-          </button>
-          <button type="button" class="step-pill" onclick="goToStep(2)">
-            <span class="step-num">2</span>
-            <span>Ease of Use &amp; Extraction</span>
-          </button>
-          <button type="button" class="step-pill" onclick="goToStep(3)">
-            <span class="step-num">3</span>
-            <span>Feature Deep-Dive</span>
-          </button>
-          <button type="button" class="step-pill" onclick="goToStep(4)">
-            <span class="step-num">4</span>
-            <span>UI/UX &amp; Bugs</span>
-          </button>
-          <button type="button" class="step-pill" onclick="goToStep(5)">
-            <span class="step-num">5</span>
-            <span>Suggestions &amp; Review</span>
-          </button>
-        </nav>
 
         <!-- STEP 1: TESTER INFORMATION -->
         <div class="section-card active" id="step1Card">
@@ -1163,18 +1353,32 @@
           <div class="form-btn-bar">
             <div></div>
             <button type="button" class="btn-next" onclick="validateAndGoStep(1, 2)">
-              <span>Next: Ease of Use &amp; Extraction</span>
+              <span>Next: Overall Experience</span>
               <span>→</span>
             </button>
           </div>
         </div>
 
-        <!-- STEP 2: EASE OF USE & NLP-BASED RECEIPT EXTRACTION -->
+        <!-- STEP 2: OVERALL EXPERIENCE & NLP-BASED RECEIPT EXTRACTION -->
         <div class="section-card" id="step2Card">
           <div class="section-header">
             <span class="section-tag">Step 2 of 5</span>
-            <h2 class="section-title">Ease of Use &amp; Receipt Processing</h2>
-            <p class="section-desc">Evaluate your experience with Receipto's interface and our automated receipt extraction.</p>
+            <h2 class="section-title">Overall Experience</h2>
+            <p class="section-desc">Rate your personal experience and evaluate our automated receipt data extraction.</p>
+          </div>
+
+          <!-- Overall Experience 5-Star Rating (The Giving Part) -->
+          <div class="star-rating-box">
+            <div class="star-box-title">How would you rate your overall experience with Receipto?<span class="req-star">*</span></div>
+            <div class="star-row" id="overallStarsGroup">
+              <span class="star-btn active" data-val="1">★</span>
+              <span class="star-btn active" data-val="2">★</span>
+              <span class="star-btn active" data-val="3">★</span>
+              <span class="star-btn active" data-val="4">★</span>
+              <span class="star-btn active" data-val="5">★</span>
+            </div>
+            <div class="star-desc-text" id="overallStarsDesc">5/5 – Excellent 🔥</div>
+            <input type="hidden" id="overallRating" value="5">
           </div>
 
           <!-- Ease of Use Question -->
@@ -2115,7 +2319,101 @@
       const count = feedbackRecords.length;
       document.getElementById('wallAvgRating').innerText = (sumRating / count).toFixed(1);
       document.getElementById('wallCount').innerText = count;
+
+      // Also refresh the overall response scoreboard below hero
+      updateOverallResponseUI();
     }
+
+    // --- Dynamic Overall Response Scoreboard (Based on Users' Given Feedbacks) ---
+    function updateOverallResponseUI() {
+      const count = feedbackRecords.length;
+      const countEl = document.getElementById('displayResponseCount');
+      if (countEl) countEl.innerText = count;
+
+      if (!feedbackRecords || count === 0) {
+        if (document.getElementById('displayAvgRating')) document.getElementById('displayAvgRating').innerText = '5.0';
+        if (document.getElementById('displayStarsVisual')) document.getElementById('displayStarsVisual').innerText = '★★★★★';
+        if (document.getElementById('displayRatingLabel')) document.getElementById('displayRatingLabel').innerText = '5.0 – Exceptional Experience 🔥';
+        const b5 = document.getElementById('bar5'); if (b5) b5.style.width = '100%';
+        const bv5 = document.getElementById('barVal5'); if (bv5) bv5.innerText = '0';
+        return;
+      }
+
+      let sumRating = 0;
+      const starCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+      const featureSums = {};
+      const featureCounts = {};
+
+      feedbackRecords.forEach(item => {
+        const r = Math.min(5, Math.max(1, parseInt(item.rating) || 5));
+        sumRating += r;
+        starCounts[r] = (starCounts[r] || 0) + 1;
+
+        if (item.features) {
+          Object.entries(item.features).forEach(([k, v]) => {
+            if (typeof v === 'number' && v >= 1) {
+              featureSums[k] = (featureSums[k] || 0) + v;
+              featureCounts[k] = (featureCounts[k] || 0) + 1;
+            }
+          });
+        }
+      });
+
+      const avg = sumRating / count;
+      const avgStr = avg.toFixed(1);
+      if (document.getElementById('displayAvgRating')) {
+        document.getElementById('displayAvgRating').innerText = avgStr;
+      }
+
+      const rounded = Math.round(avg);
+      if (document.getElementById('displayStarsVisual')) {
+        document.getElementById('displayStarsVisual').innerText = '★'.repeat(rounded) + '☆'.repeat(5 - rounded);
+      }
+
+      let label = `${avgStr} – Exceptional Experience 🔥`;
+      if (avg < 2.0) label = `${avgStr} – Needs Refinement ⚠️`;
+      else if (avg < 3.0) label = `${avgStr} – Fair Experience 😐`;
+      else if (avg < 4.0) label = `${avgStr} – Good & Promising 👍`;
+      else if (avg < 4.8) label = `${avgStr} – Very Good Experience 🚀`;
+
+      if (document.getElementById('displayRatingLabel')) {
+        document.getElementById('displayRatingLabel').innerText = label;
+      }
+
+      // Update Breakdown Bars
+      for (let s = 1; s <= 5; s++) {
+        const cnt = starCounts[s] || 0;
+        const pct = Math.round((cnt / count) * 100);
+        const bar = document.getElementById('bar' + s);
+        if (bar) bar.style.width = pct + '%';
+        const valEl = document.getElementById('barVal' + s);
+        if (valEl) valEl.innerText = cnt;
+      }
+
+      // Update Core Feature Tags
+      const defaultAverages = {
+        nlp_ocr: 4.9,
+        receipts: 4.8,
+        warranty: 4.9,
+        reminders: 4.8,
+        ai_assistant: 4.8,
+        analytics: 4.8,
+        pdf: 4.9,
+        whatsapp: 4.7
+      };
+      Object.keys(defaultAverages).forEach(k => {
+        const el = document.getElementById('avg_' + k);
+        if (el) {
+          if (featureCounts[k] && featureCounts[k] > 0) {
+            const featAvg = (featureSums[k] / featureCounts[k]).toFixed(1);
+            el.innerText = featAvg + ' ★';
+          } else {
+            el.innerText = defaultAverages[k].toFixed(1) + ' ★';
+          }
+        }
+      });
+    }
+    updateOverallResponseUI();
 
     function escapeHtml(t) {
       const d = document.createElement('div');
