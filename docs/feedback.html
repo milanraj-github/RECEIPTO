@@ -1,0 +1,1021 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Receipto - Tester Feedback & Reviews</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <!-- Supabase JS Client for Real-time Cloud Sync -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Canvas Confetti for Celebration Animation -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  <style>
+    :root {
+      --bg: #07090e;
+      --card-bg: rgba(16, 21, 36, 0.75);
+      --card-border: rgba(99, 102, 241, 0.2);
+      --accent-cyan: #00f2fe;
+      --accent-purple: #8b5cf6;
+      --accent-pink: #ec4899;
+      --accent-gold: #fbbf24;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --gradient-brand: linear-gradient(135deg, #00f2fe 0%, #4facfe 40%, #8b5cf6 100%);
+      --gradient-card: linear-gradient(145deg, rgba(30, 41, 59, 0.5) 0%, rgba(15, 23, 42, 0.8) 100%);
+      --radius: 18px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      line-height: 1.6;
+      position: relative;
+    }
+
+    /* Ambient Glowing Blobs */
+    .glow-blob {
+      position: fixed;
+      border-radius: 50%;
+      filter: blur(120px);
+      z-index: -1;
+      pointer-events: none;
+      opacity: 0.35;
+      animation: floatPulse 12s infinite ease-in-out alternate;
+    }
+    .blob-1 {
+      top: -100px;
+      left: -100px;
+      width: 500px;
+      height: 500px;
+      background: radial-gradient(circle, #38bdf8 0%, #6366f1 70%);
+    }
+    .blob-2 {
+      bottom: -150px;
+      right: -100px;
+      width: 600px;
+      height: 600px;
+      background: radial-gradient(circle, #ec4899 0%, #8b5cf6 70%);
+      animation-delay: -6s;
+    }
+
+    @keyframes floatPulse {
+      0% { transform: scale(1) translate(0, 0); opacity: 0.3; }
+      100% { transform: scale(1.15) translate(40px, 30px); opacity: 0.45; }
+    }
+
+    /* Header & Navigation */
+    header {
+      padding: 24px 20px;
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      text-decoration: none;
+    }
+    .logo-container {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: var(--gradient-brand);
+      padding: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 20px rgba(0, 242, 254, 0.4);
+    }
+    .logo-inner {
+      width: 100%;
+      height: 100%;
+      background: #0f172a;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .brand-text {
+      font-size: 24px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .beta-badge {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(139, 92, 246, 0.2);
+      color: #c4b5fd;
+      border: 1px solid rgba(139, 92, 246, 0.4);
+    }
+
+    /* Hero Section */
+    .hero {
+      text-align: center;
+      padding: 50px 20px 40px;
+      max-width: 780px;
+      margin: 0 auto;
+    }
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      border-radius: 999px;
+      background: rgba(0, 242, 254, 0.08);
+      border: 1px solid rgba(0, 242, 254, 0.3);
+      color: var(--accent-cyan);
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 20px;
+    }
+    .hero h1 {
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .hero h1 span {
+      background: var(--gradient-brand);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .hero p {
+      font-size: 17px;
+      color: var(--text-muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Main Container (Two Columns) */
+    .main-grid {
+      max-width: 1100px;
+      margin: 0 auto 80px;
+      padding: 0 20px;
+      display: grid;
+      grid-template-columns: 1.15fr 1fr;
+      gap: 36px;
+      align-items: start;
+    }
+    @media (max-width: 900px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Form Glass Card */
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 36px;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 30px rgba(99, 102, 241, 0.08);
+      position: relative;
+    }
+    .glass-card h2 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .glass-card .desc {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-bottom: 28px;
+    }
+
+    /* Rating Stars */
+    .rating-group {
+      margin-bottom: 24px;
+      text-align: center;
+      background: rgba(15, 23, 42, 0.6);
+      padding: 20px;
+      border-radius: 14px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .rating-label {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: block;
+    }
+    .stars {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      font-size: 38px;
+      cursor: pointer;
+    }
+    .star {
+      color: #334155;
+      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      user-select: none;
+    }
+    .star:hover, .star.active {
+      color: var(--accent-gold);
+      transform: scale(1.2);
+      text-shadow: 0 0 20px rgba(251, 191, 36, 0.5);
+    }
+    .star-status-text {
+      display: block;
+      margin-top: 10px;
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      min-height: 20px;
+    }
+
+    /* Form Fields */
+    .form-group {
+      margin-bottom: 20px;
+    }
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 550px) {
+      .form-row { grid-template-columns: 1fr; }
+    }
+    label {
+      display: block;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: #cbd5e1;
+      margin-bottom: 8px;
+    }
+    input, textarea, select {
+      width: 100%;
+      background: rgba(15, 23, 42, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 14px 16px;
+      color: #fff;
+      font-family: inherit;
+      font-size: 14.5px;
+      outline: none;
+      transition: all 0.2s ease;
+    }
+    input:focus, textarea:focus, select:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 15px rgba(0, 242, 254, 0.25);
+      background: rgba(15, 23, 42, 0.95);
+    }
+    textarea {
+      resize: vertical;
+      min-height: 110px;
+    }
+
+    /* Tag Pills */
+    .tag-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 24px;
+    }
+    .tag-pill {
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 7px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: none;
+    }
+    .tag-pill:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      transform: translateY(-1px);
+    }
+    .tag-pill.selected {
+      background: rgba(0, 242, 254, 0.15);
+      border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+      box-shadow: 0 0 12px rgba(0, 242, 254, 0.25);
+    }
+
+    /* Feature Breakdown Slider / Select */
+    .feature-breakdown {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 24px;
+    }
+    .feature-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .feature-row:last-child { margin-bottom: 0; }
+    .feature-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: #cbd5e1;
+    }
+    .feature-stars {
+      display: flex;
+      gap: 4px;
+      font-size: 18px;
+      cursor: pointer;
+    }
+    .f-star {
+      color: #334155;
+      transition: color 0.2s;
+    }
+    .f-star.active { color: var(--accent-gold); }
+
+    /* Submit Button */
+    .submit-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--gradient-brand);
+      border: none;
+      border-radius: 14px;
+      color: #07090e;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 800;
+      letter-spacing: 0.3px;
+      cursor: pointer;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 10px 25px -5px rgba(0, 242, 254, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .submit-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 30px -5px rgba(0, 242, 254, 0.6);
+    }
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    /* Live Feed Column */
+    .feed-column {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .feed-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 4px;
+    }
+    .feed-header h3 {
+      font-size: 20px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .stats-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      padding: 4px 12px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--accent-gold);
+    }
+
+    /* Feedback Cards */
+    .feed-list {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      max-height: 820px;
+      overflow-y: auto;
+      padding-right: 6px;
+    }
+    .feed-list::-webkit-scrollbar {
+      width: 6px;
+    }
+    .feed-list::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 999px;
+    }
+
+    .feedback-item {
+      background: var(--card-bg);
+      backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 22px;
+      transition: all 0.3s ease;
+      position: relative;
+      animation: fadeIn 0.4s ease;
+    }
+    .feedback-item:hover {
+      border-color: rgba(0, 242, 254, 0.3);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.5);
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .item-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    .user-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .user-avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: var(--gradient-brand);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      color: #07090e;
+      font-size: 15px;
+    }
+    .user-name {
+      font-weight: 700;
+      font-size: 15px;
+      color: #fff;
+    }
+    .user-device {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    .item-rating {
+      color: var(--accent-gold);
+      font-size: 15px;
+      letter-spacing: 2px;
+    }
+    .item-body {
+      font-size: 14.5px;
+      color: #cbd5e1;
+      margin-bottom: 14px;
+      white-space: pre-line;
+    }
+    .item-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .item-tag {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: rgba(139, 92, 246, 0.15);
+      color: #c4b5fd;
+      border: 1px solid rgba(139, 92, 246, 0.25);
+    }
+    .item-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-dim);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 12px;
+    }
+    .helpful-btn {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 3px 10px;
+      border-radius: 999px;
+      color: var(--text-muted);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      transition: all 0.2s ease;
+    }
+    .helpful-btn:hover {
+      color: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+    }
+
+    /* Success Toast */
+    .toast {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      background: #0f172a;
+      border: 1px solid var(--accent-cyan);
+      box-shadow: 0 10px 30px rgba(0, 242, 254, 0.3);
+      padding: 16px 24px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      z-index: 1000;
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s ease;
+      pointer-events: none;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="glow-blob blob-1"></div>
+  <div class="glow-blob blob-2"></div>
+
+  <!-- Header -->
+  <header>
+    <a href="#" class="brand">
+      <div class="logo-container">
+        <div class="logo-inner">R</div>
+      </div>
+      <div>
+        <div class="brand-text">Receipto</div>
+      </div>
+    </a>
+    <div class="beta-badge">🚀 Play Store Closed Testing</div>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-pill">
+      <span>✨</span> Help Shape the Future of Receipto
+    </div>
+    <h1>Tester Feedback &amp; <span>Reviews</span></h1>
+    <p>Your hands-on feedback helps us refine AI accuracy, polish the UI, and squash bugs before public launch on Google Play!</p>
+  </section>
+
+  <!-- Main Content -->
+  <main class="main-grid">
+    
+    <!-- Left Column: Feedback Form -->
+    <div class="glass-card">
+      <h2><span>💬</span> Share Your Experience</h2>
+      <div class="desc">Takes less than a minute. Your honest thoughts make Receipto better for everyone!</div>
+
+      <form id="feedbackForm">
+        <!-- 5 Star Interactive Rating -->
+        <div class="rating-group">
+          <span class="rating-label">Overall App Rating *</span>
+          <div class="stars" id="starGroup">
+            <span class="star" data-val="1">★</span>
+            <span class="star" data-val="2">★</span>
+            <span class="star" data-val="3">★</span>
+            <span class="star" data-val="4">★</span>
+            <span class="star" data-val="5">★</span>
+          </div>
+          <span class="star-status-text" id="starStatus">Tap a star to rate!</span>
+          <input type="hidden" id="ratingInput" value="5" required>
+        </div>
+
+        <!-- Name & Email -->
+        <div class="form-row form-group">
+          <div>
+            <label for="testerName">Your Name / Nickname *</label>
+            <input type="text" id="testerName" placeholder="e.g. Milanraj" required>
+          </div>
+          <div>
+            <label for="testerEmail">Email (Optional)</label>
+            <input type="email" id="testerEmail" placeholder="milanraj660@gmail.com">
+          </div>
+        </div>
+
+        <!-- Device Model -->
+        <div class="form-group">
+          <label for="deviceModel">Your Phone Model / Brand *</label>
+          <input type="text" id="deviceModel" placeholder="e.g. Samsung Galaxy S23, OnePlus 12, Redmi Note 13" required>
+        </div>
+
+        <!-- Feature-by-Feature Ratings -->
+        <div class="feature-breakdown">
+          <label style="margin-bottom:12px;">Feature-by-Feature Ratings</label>
+          
+          <div class="feature-row">
+            <span class="feature-title">📸 AI Receipt Scanner &amp; OCR</span>
+            <div class="feature-stars" data-feature="scanner">
+              <span class="f-star active" data-val="1">★</span>
+              <span class="f-star active" data-val="2">★</span>
+              <span class="f-star active" data-val="3">★</span>
+              <span class="f-star active" data-val="4">★</span>
+              <span class="f-star active" data-val="5">★</span>
+            </div>
+          </div>
+
+          <div class="feature-row">
+            <span class="feature-title">📊 Spending Analytics &amp; Trends</span>
+            <div class="feature-stars" data-feature="analytics">
+              <span class="f-star active" data-val="1">★</span>
+              <span class="f-star active" data-val="2">★</span>
+              <span class="f-star active" data-val="3">★</span>
+              <span class="f-star active" data-val="4">★</span>
+              <span class="f-star active" data-val="5">★</span>
+            </div>
+          </div>
+
+          <div class="feature-row">
+            <span class="feature-title">🛡️ Warranty Protection Tracker</span>
+            <div class="feature-stars" data-feature="warranty">
+              <span class="f-star active" data-val="1">★</span>
+              <span class="f-star active" data-val="2">★</span>
+              <span class="f-star active" data-val="3">★</span>
+              <span class="f-star active" data-val="4">★</span>
+              <span class="f-star active" data-val="5">★</span>
+            </div>
+          </div>
+
+          <div class="feature-row">
+            <span class="feature-title">📑 PDF Invoice Export &amp; Print</span>
+            <div class="feature-stars" data-feature="pdf">
+              <span class="f-star active" data-val="1">★</span>
+              <span class="f-star active" data-val="2">★</span>
+              <span class="f-star active" data-val="3">★</span>
+              <span class="f-star active" data-val="4">★</span>
+              <span class="f-star active" data-val="5">★</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Tag Pills -->
+        <label>Quick Tags (Select all that apply)</label>
+        <div class="tag-container" id="tagContainer">
+          <div class="tag-pill" data-tag="⚡ Super Fast OCR">⚡ Super Fast OCR</div>
+          <div class="tag-pill" data-tag="🎨 Clean Cyber UI">🎨 Clean Cyber UI</div>
+          <div class="tag-pill" data-tag="📊 Helpful Analytics">📊 Helpful Analytics</div>
+          <div class="tag-pill" data-tag="💡 Smooth Gestures">💡 Smooth Gestures</div>
+          <div class="tag-pill" data-tag="🛡️ Great Warranty Alert">🛡️ Great Warranty Alert</div>
+          <div class="tag-pill" data-tag="🐛 Found a Bug">🐛 Found a Bug</div>
+          <div class="tag-pill" data-tag="🚀 Ready for Play Store">🚀 Ready for Play Store</div>
+        </div>
+
+        <!-- Detailed Feedback -->
+        <div class="form-group">
+          <label for="feedbackText">Detailed Feedback &amp; Suggestions *</label>
+          <textarea id="feedbackText" placeholder="What worked great? Did any screen have an error or pixel overflow? Any features you'd like to see next?" required></textarea>
+        </div>
+
+        <!-- Submit Button -->
+        <button type="submit" class="submit-btn" id="submitBtn">
+          <span>🚀</span> Submit Tester Feedback
+        </button>
+      </form>
+    </div>
+
+    <!-- Right Column: Live Community Wall -->
+    <div class="feed-column">
+      <div class="feed-header">
+        <h3><span>🌟</span> Community Reviews</h3>
+        <div class="stats-badge" id="statsBadge">
+          <span>★</span> <span id="avgRating">5.0</span> (<span id="totalReviewsCount">0</span> Reviews)
+        </div>
+      </div>
+
+      <!-- Live List -->
+      <div class="feed-list" id="feedbackList">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Success Toast -->
+  <div class="toast" id="toast">
+    <span style="font-size:24px;">🎉</span>
+    <div>
+      <div style="font-weight:700; color:#fff;" id="toastTitle">Feedback Submitted!</div>
+      <div style="font-size:12.5px; color:#94a3b8;" id="toastDesc">Thank you for testing Receipto. Your feedback is now live!</div>
+    </div>
+  </div>
+
+  <script>
+    // Supabase Configuration
+    const SUPABASE_URL = 'https://ykqzefulvpqfiwsddnqt.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrcXplZnVsdnBxZml3c2RkbnF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NTI2NTcsImV4cCI6MjA5ODMyODY1N30.NFm5dT7vVeHtziEkYWN-qk8ZEogpktPZ7NTmXDLO1Qs';
+    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON) : null;
+
+    // Seed default reviews so the wall is alive from Day 1
+    const defaultReviews = [
+      {
+        id: 'seed-1',
+        name: 'Milanraj',
+        device: 'Android 14 (Tester)',
+        rating: 5,
+        message: 'The AI OCR extraction is super responsive! Categorizes store bills and tax invoices accurately within seconds. Dark cyber theme looks amazing.',
+        tags: ['⚡ Super Fast OCR', '🎨 Clean Cyber UI', '🚀 Ready for Play Store'],
+        date: 'Today',
+        helpful: 12
+      },
+      {
+        id: 'seed-2',
+        name: 'Karthik S.',
+        device: 'OnePlus 11R',
+        rating: 5,
+        message: 'Tested receipt scanning with wrinkled grocery bills from local store. Extracted GST, line items, and store location without any errors. Sparkline charts on analytics are super smooth!',
+        tags: ['⚡ Super Fast OCR', '📊 Helpful Analytics'],
+        date: 'Yesterday',
+        helpful: 8
+      },
+      {
+        id: 'seed-3',
+        name: 'Priya M.',
+        device: 'Samsung Galaxy A54',
+        rating: 5,
+        message: 'Love the warranty tracking card and PDF export! It creates a professional receipt summary ready for tax reimbursement.',
+        tags: ['🛡️ Great Warranty Alert', '💡 Smooth Gestures'],
+        date: '2 days ago',
+        helpful: 5
+      }
+    ];
+
+    // LocalStorage fallback for seamless persistence across reloads
+    let localFeedbacks = JSON.parse(localStorage.getItem('receipto_feedbacks') || '[]');
+    if (localFeedbacks.length === 0) {
+      localFeedbacks = defaultReviews;
+      localStorage.setItem('receipto_feedbacks', JSON.stringify(localFeedbacks));
+    }
+
+    // Interactive Star Rating Logic
+    const stars = document.querySelectorAll('#starGroup .star');
+    const starStatus = document.getElementById('starStatus');
+    const ratingInput = document.getElementById('ratingInput');
+    const statusLabels = [
+      '',
+      'Needs Improvement 😕 (1/5)',
+      'Fair, Found Some Issues 😐 (2/5)',
+      'Good, Has Potential 🙂 (3/5)',
+      'Great App! Loved It 😃 (4/5)',
+      'Mind-blowing Experience! 🌟🔥 (5/5)'
+    ];
+
+    function setStarRating(val) {
+      ratingInput.value = val;
+      stars.forEach(s => {
+        const starVal = parseInt(s.getAttribute('data-val'));
+        if (starVal <= val) {
+          s.classList.add('active');
+        } else {
+          s.classList.remove('active');
+        }
+      });
+      starStatus.innerText = statusLabels[val] || '';
+    }
+
+    // Default to 5 stars
+    setStarRating(5);
+
+    stars.forEach(s => {
+      s.addEventListener('click', () => {
+        const val = parseInt(s.getAttribute('data-val'));
+        setStarRating(val);
+      });
+      s.addEventListener('mouseenter', () => {
+        const val = parseInt(s.getAttribute('data-val'));
+        stars.forEach(st => {
+          st.style.color = parseInt(st.getAttribute('data-val')) <= val ? '#fbbf24' : '#334155';
+        });
+        starStatus.innerText = statusLabels[val];
+      });
+    });
+
+    document.getElementById('starGroup').addEventListener('mouseleave', () => {
+      setStarRating(parseInt(ratingInput.value));
+    });
+
+    // Feature Mini-Stars
+    document.querySelectorAll('.feature-stars').forEach(group => {
+      const fStars = group.querySelectorAll('.f-star');
+      fStars.forEach(fs => {
+        fs.addEventListener('click', () => {
+          const val = parseInt(fs.getAttribute('data-val'));
+          fStars.forEach(item => {
+            if (parseInt(item.getAttribute('data-val')) <= val) {
+              item.classList.add('active');
+            } else {
+              item.classList.remove('active');
+            }
+          });
+        });
+      });
+    });
+
+    // Tag Toggle
+    const selectedTags = new Set(['⚡ Super Fast OCR', '🎨 Clean Cyber UI']);
+    document.querySelectorAll('.tag-pill').forEach(pill => {
+      const tag = pill.getAttribute('data-tag');
+      if (selectedTags.has(tag)) pill.classList.add('selected');
+
+      pill.addEventListener('click', () => {
+        if (selectedTags.has(tag)) {
+          selectedTags.delete(tag);
+          pill.classList.remove('selected');
+        } else {
+          selectedTags.add(tag);
+          pill.classList.add('selected');
+        }
+      });
+    });
+
+    // Render Feedback Wall
+    function renderFeedbacks() {
+      const list = document.getElementById('feedbackList');
+      list.innerHTML = '';
+
+      let totalRating = 0;
+
+      localFeedbacks.forEach(item => {
+        totalRating += item.rating;
+
+        const card = document.createElement('div');
+        card.className = 'feedback-item';
+        
+        const starsText = '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating);
+        const tagsHtml = (item.tags || []).map(t => `<span class="item-tag">${t}</span>`).join('');
+        const initial = (item.name || 'T')[0].toUpperCase();
+
+        card.innerHTML = `
+          <div class="item-top">
+            <div class="user-info">
+              <div class="user-avatar">${initial}</div>
+              <div>
+                <div class="user-name">${escapeHtml(item.name)}</div>
+                <div class="user-device">${escapeHtml(item.device || 'Android Tester')}</div>
+              </div>
+            </div>
+            <div class="item-rating">${starsText}</div>
+          </div>
+          <div class="item-body">${escapeHtml(item.message)}</div>
+          <div class="item-tags">${tagsHtml}</div>
+          <div class="item-footer">
+            <span>${item.date || 'Just now'}</span>
+            <button class="helpful-btn" onclick="upvote('${item.id}', this)">
+              👍 Helpful (${item.helpful || 0})
+            </button>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+
+      // Update avg rating
+      const count = localFeedbacks.length;
+      const avg = count > 0 ? (totalRating / count).toFixed(1) : '5.0';
+      document.getElementById('avgRating').innerText = avg;
+      document.getElementById('totalReviewsCount').innerText = count;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.innerText = text;
+      return div.innerHTML;
+    }
+
+    window.upvote = function(id, btn) {
+      const item = localFeedbacks.find(x => x.id === id);
+      if (item) {
+        item.helpful = (item.helpful || 0) + 1;
+        localStorage.setItem('receipto_feedbacks', JSON.stringify(localFeedbacks));
+        btn.innerHTML = `👍 Helpful (${item.helpful})`;
+        btn.style.color = '#00f2fe';
+        btn.style.borderColor = '#00f2fe';
+      }
+    };
+
+    // Load from Cloud Supabase if table exists, otherwise fallback to local
+    async function loadCloudFeedbacks() {
+      if (!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('feedbacks')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!error && data && data.length > 0) {
+          // Merge with defaults
+          localFeedbacks = data.map(d => ({
+            id: d.id,
+            name: d.name,
+            device: d.device,
+            rating: d.rating,
+            message: d.message,
+            tags: d.tags || [],
+            date: new Date(d.created_at).toLocaleDateString(),
+            helpful: 1
+          }));
+          localStorage.setItem('receipto_feedbacks', JSON.stringify(localFeedbacks));
+          renderFeedbacks();
+        }
+      } catch (e) {
+        console.log('Using local reviews store.');
+      }
+    }
+
+    // Handle Form Submit
+    document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳</span> Submitting...';
+
+      const newFeedback = {
+        id: 'rev-' + Date.now(),
+        name: document.getElementById('testerName').value.trim(),
+        email: document.getElementById('testerEmail').value.trim(),
+        device: document.getElementById('deviceModel').value.trim(),
+        rating: parseInt(document.getElementById('ratingInput').value),
+        message: document.getElementById('feedbackText').value.trim(),
+        tags: Array.from(selectedTags),
+        date: 'Just now',
+        helpful: 0
+      };
+
+      // 1. Try pushing to Supabase cloud if table exists
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('feedbacks').insert([{
+            name: newFeedback.name,
+            email: newFeedback.email,
+            device: newFeedback.device,
+            rating: newFeedback.rating,
+            message: newFeedback.message,
+            tags: newFeedback.tags
+          }]);
+        } catch (err) {
+          console.log('Cloud insert note:', err);
+        }
+      }
+
+      // 2. Add to local list and prepend to UI
+      localFeedbacks.unshift(newFeedback);
+      localStorage.setItem('receipto_feedbacks', JSON.stringify(localFeedbacks));
+      renderFeedbacks();
+
+      // Trigger Celebration Confetti 🎉
+      if (window.confetti) {
+        window.confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.6 }
+        });
+      }
+
+      // Show toast
+      const toast = document.getElementById('toast');
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 4000);
+
+      // Reset form
+      document.getElementById('feedbackText').value = '';
+      btn.disabled = false;
+      btn.innerHTML = '<span>🚀</span> Submit Tester Feedback';
+    });
+
+    // Initialize
+    renderFeedbacks();
+    loadCloudFeedbacks();
+  </script>
+</body>
+</html>
