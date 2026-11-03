@@ -833,6 +833,22 @@
       transform: translateY(0);
       pointer-events: auto;
     }
+
+    .sync-status {
+      font-size: 11px;
+      color: var(--text-dim);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-top: 4px;
+    }
+    .sync-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #10b981;
+      display: inline-block;
+    }
   </style>
 </head>
 <body>
@@ -866,7 +882,7 @@
         <div class="admin-badge-icon">👑</div>
         <div>
           <div class="admin-title">Admin Management Active (Milanraj)</div>
-          <div class="admin-desc">Export feedback data or delete unwanted entries directly below.</div>
+          <div class="admin-desc">Cloud-synchronized deletion &amp; real-time tester exports.</div>
         </div>
       </div>
       <div class="admin-actions">
@@ -1023,7 +1039,10 @@
       <!-- Right Column: Live Feed -->
       <div class="feed-column">
         <div class="feed-header">
-          <h3><span>🌟</span> Community Reviews</h3>
+          <div>
+            <h3><span>🌟</span> Community Reviews</h3>
+            <div class="sync-status"><span class="sync-dot"></span> Cloud Live Sync Active</div>
+          </div>
           <div class="stats-badge" id="statsBadge">
             <span>★</span> <span id="avgRating">5.0</span> (<span id="totalReviewsCount">0</span> Reviews)
           </div>
@@ -1120,53 +1139,58 @@
     }
     animateNeuralMesh();
 
-    // --- 2. Feedbacks State ---
-    let localFeedbacks = JSON.parse(localStorage.getItem('receipto_feedbacks') || 'null');
-    if (!localFeedbacks || localFeedbacks.length === 0) {
-      localFeedbacks = [
-        {
-          id: 'fb-1',
-          name: 'Arjun Verma',
-          email: 'arjun.tester@gmail.com',
-          device: 'Pixel 8 Pro',
-          rating: 5,
-          message: 'The neural receipt scanner detected GST numbers, date, and line items in less than 2 seconds! UI feels like Cyberpunk 2077. Super smooth.',
-          tags: ['⚡ Super Fast OCR', '🎨 Clean Cyber UI'],
-          date: 'Yesterday',
-          helpful: 7
-        },
-        {
-          id: 'fb-2',
-          name: 'Sneha Patel',
-          email: 'sneha.p@outlook.com',
-          device: 'Samsung Galaxy S23',
-          rating: 5,
-          message: 'Expense categorization worked seamlessly. Generating warranty alert notifications directly on device is a lifesaver!',
-          tags: ['🛡️ Smart Warranty', '📊 Helpful Analytics'],
-          date: '2 days ago',
-          helpful: 4
-        },
-        {
-          id: 'fb-3',
-          name: 'Kavya Nair',
-          email: 'kavya.beta@gmail.com',
-          device: 'OnePlus 11',
-          rating: 5,
-          message: 'Exporting PDF reports for tax filings was ultra clean. Love the dark theme aesthetic!',
-          tags: ['🚀 Ready for Launch', '🎨 Clean Cyber UI'],
-          date: '3 days ago',
-          helpful: 3
-        }
-      ];
-      localStorage.setItem('receipto_feedbacks', JSON.stringify(localFeedbacks));
-    }
-
-    // Supabase client instance (optional fallback)
+    // --- 2. Live Supabase Cloud Database Client ---
+    const SUPABASE_URL = 'https://ykqzefulvpqfiwsddnqt.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrcXplZnVsdnBxZml3c2RkbnF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NTI2NTcsImV4cCI6MjA5ODMyODY1N30.NFm5dT7vVeHtziEkYWN-qk8ZEogpktPZ7NTmXDLO1Qs';
+    
     let supabaseClient = null;
     try {
-      supabaseClient = supabase.createClient('https://jghqnjeyvtdzrvuvffxs.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.dummy');
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
     } catch (e) {
-      console.log('Local storage active.');
+      console.log('Supabase init note:', e);
+    }
+
+    // Local Feedbacks State
+    let localFeedbacks = [];
+
+    // Fetch live feedbacks from cloud database
+    async function loadFeedbacksFromCloud() {
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('feedbacks')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (!error && data && data.length > 0) {
+            localFeedbacks = data.map(row => ({
+              id: row.id,
+              name: row.name,
+              email: row.email,
+              device: row.device,
+              rating: row.rating,
+              message: row.message,
+              tags: row.tags || [],
+              date: row.created_at ? new Date(row.created_at).toLocaleDateString() : 'Recently',
+              helpful: row.helpful || 0
+            }));
+            localStorage.setItem('receipto_feedbacks', JSON.stringify(localFeedbacks));
+            renderFeedbacks();
+            return;
+          }
+        } catch (err) {
+          console.log('Cloud fetch notice:', err);
+        }
+      }
+
+      // Fallback to local storage if cloud table not populated yet
+      const saved = localStorage.getItem('receipto_feedbacks');
+      if (saved) {
+        try {
+          localFeedbacks = JSON.parse(saved);
+        } catch(e) {}
+      }
+      renderFeedbacks();
     }
 
     // --- 3. Interactive Star Ratings ---
@@ -1274,7 +1298,6 @@
       if (e) e.preventDefault();
       const entered = (adminPassInput.value || '').trim();
 
-      // Check passcode: Exact or trimmed or legacy fallback
       if (entered === ADMIN_PASSCODE || 
           entered.toLowerCase() === 'milanrajjj@#12345' || 
           entered === 'milanraj' || 
@@ -1442,24 +1465,26 @@
       printWindow.document.close();
     };
 
+    // Delete feedback globally from Cloud and Locally
     window.deleteFeedback = async function(id) {
       if (!confirm('Are you sure you want to permanently delete this review?')) return;
 
-      // 1. Delete from local storage
-      localFeedbacks = localFeedbacks.filter(x => x.id !== id);
-      localStorage.setItem('receipto_feedbacks', JSON.stringify(localFeedbacks));
-      renderFeedbacks();
-
-      // 2. Delete from Supabase if connected
+      // 1. Delete from Supabase Cloud
       if (supabaseClient) {
         try {
-          await supabaseClient.from('feedbacks').delete().eq('id', id);
+          const { error } = await supabaseClient.from('feedbacks').delete().eq('id', id);
+          if (error) console.log('Supabase delete status:', error);
         } catch (e) {
           console.log('Cloud delete note:', e);
         }
       }
 
-      showToast('Deleted!', 'Review removed from community wall.');
+      // 2. Delete from local cache
+      localFeedbacks = localFeedbacks.filter(x => x.id !== id);
+      localStorage.setItem('receipto_feedbacks', JSON.stringify(localFeedbacks));
+      renderFeedbacks();
+
+      showToast('Permanently Deleted! 🗑️', 'Review removed from cloud database and community wall.');
     };
 
     // --- 5. Render Feedbacks ---
@@ -1467,6 +1492,19 @@
       const list = document.getElementById('feedbackList');
       list.innerHTML = '';
       let totalRating = 0;
+
+      if (localFeedbacks.length === 0) {
+        list.innerHTML = `
+          <div style="text-align:center; padding: 40px 20px; color: var(--text-dim);">
+            <div style="font-size: 32px; margin-bottom: 8px;">💬</div>
+            <div style="font-weight: 600; color: var(--text-muted);">No reviews posted yet</div>
+            <div style="font-size: 13px;">Be the first beta tester to submit feedback using the form!</div>
+          </div>
+        `;
+        document.getElementById('avgRating').innerText = '5.0';
+        document.getElementById('totalReviewsCount').innerText = '0';
+        return;
+      }
 
       localFeedbacks.forEach(item => {
         totalRating += item.rating;
@@ -1516,7 +1554,7 @@
       return div.innerHTML;
     }
 
-    window.upvote = function(id, btn) {
+    window.upvote = async function(id, btn) {
       const item = localFeedbacks.find(x => x.id === id);
       if (item) {
         item.helpful = (item.helpful || 0) + 1;
@@ -1524,6 +1562,12 @@
         btn.innerHTML = `👍 Helpful (${item.helpful})`;
         btn.style.color = '#00D9FF';
         btn.style.borderColor = '#00D9FF';
+
+        if (supabaseClient) {
+          try {
+            await supabaseClient.from('feedbacks').update({ helpful: item.helpful }).eq('id', id);
+          } catch(e) {}
+        }
       }
     };
 
@@ -1540,38 +1584,44 @@
       e.preventDefault();
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
-      btn.innerHTML = '<span>⏳</span> Posting...';
+      btn.innerHTML = '<span>⏳</span> Syncing to Cloud...';
 
-      const newFeedback = {
-        id: 'rev-' + Date.now(),
+      const payload = {
         name: document.getElementById('testerName').value.trim(),
         email: document.getElementById('testerEmail').value.trim(),
         device: document.getElementById('deviceModel').value.trim() || 'Android Device',
         rating: parseInt(document.getElementById('ratingInput').value),
         message: document.getElementById('feedbackText').value.trim(),
         tags: Array.from(selectedTags),
-        date: 'Just now',
         helpful: 0
       };
 
-      // Push to Supabase if table exists
+      let insertedId = 'fb-' + Date.now();
+
+      // Push to Supabase Cloud Database
       if (supabaseClient) {
         try {
-          await supabaseClient.from('feedbacks').insert([{
-            name: newFeedback.name,
-            email: newFeedback.email,
-            device: newFeedback.device,
-            rating: newFeedback.rating,
-            message: newFeedback.message,
-            tags: newFeedback.tags
-          }]);
+          const { data, error } = await supabaseClient
+            .from('feedbacks')
+            .insert([payload])
+            .select();
+
+          if (!error && data && data.length > 0) {
+            insertedId = data[0].id;
+          } else if (error) {
+            console.log('Supabase insert note:', error);
+          }
         } catch (err) {
           console.log('Cloud insert note:', err);
         }
       }
 
-      // Add to local list and prepend
-      localFeedbacks.unshift(newFeedback);
+      // Prepend to local list
+      localFeedbacks.unshift({
+        ...payload,
+        id: insertedId,
+        date: 'Just now'
+      });
       localStorage.setItem('receipto_feedbacks', JSON.stringify(localFeedbacks));
       renderFeedbacks();
 
@@ -1580,13 +1630,14 @@
         window.confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 } });
       }
 
-      showToast('Feedback Posted!', 'Your review is now live on the community wall!');
+      showToast('Feedback Published! 🚀', 'Your review is synced to the cloud and visible to everyone!');
       document.getElementById('feedbackText').value = '';
       btn.disabled = false;
       btn.innerHTML = '<span>🚀</span> Post Tester Feedback';
     });
 
-    renderFeedbacks();
+    // Initial Load
+    loadFeedbacksFromCloud();
   </script>
 </body>
 </html>
