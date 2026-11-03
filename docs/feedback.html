@@ -562,6 +562,86 @@
       min-height: 20px;
     }
 
+    /* Prominent Overall Experience Rating Card (First Position) */
+    .overall-rating-card {
+      background: linear-gradient(135deg, rgba(16, 21, 36, 0.9) 0%, rgba(22, 31, 56, 0.95) 100%);
+      border: 1px solid rgba(0, 217, 255, 0.35);
+      box-shadow: 0 16px 45px rgba(0, 217, 255, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-lg);
+      padding: 32px 24px;
+      text-align: center;
+      margin-bottom: 26px;
+      backdrop-filter: blur(20px);
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+      position: relative;
+      overflow: hidden;
+    }
+    .overall-rating-card::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 340px;
+      height: 180px;
+      background: radial-gradient(circle, rgba(0, 217, 255, 0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .overall-rating-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--accent-cyan);
+      background: rgba(0, 217, 255, 0.12);
+      border: 1px solid rgba(0, 217, 255, 0.28);
+      padding: 5px 14px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 12px;
+    }
+    .overall-rating-title {
+      font-size: clamp(20px, 3.4vw, 26px);
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.5px;
+      margin-bottom: 6px;
+    }
+    .overall-rating-subtitle {
+      font-size: 13.5px;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+    .overall-rating-card .star-btn {
+      font-size: 44px;
+    }
+    .overall-rating-card .star-desc-text {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--accent-gold);
+      margin-top: 12px;
+      min-height: 24px;
+      text-shadow: 0 0 15px rgba(251, 191, 36, 0.4);
+    }
+    @media (max-width: 600px) {
+      .overall-rating-card {
+        padding: 22px 16px;
+        margin-bottom: 20px;
+        border-radius: var(--radius-md);
+      }
+      .overall-rating-title {
+        font-size: 19px;
+      }
+      .overall-rating-card .star-btn {
+        font-size: 38px;
+      }
+      .overall-rating-card .star-desc-text {
+        font-size: 14.5px;
+      }
+    }
+
     /* Choice Chip Groups */
     .choice-chips-grid {
       display: grid;
@@ -977,32 +1057,48 @@
     <!-- Main Form Container -->
     <main class="container" id="feedbackFormContainer">
 
-      <!-- Stepper Navigation -->
-      <nav class="stepper-nav" id="stepperNav">
-        <button type="button" class="step-pill active" onclick="goToStep(1)">
-          <span class="step-num">1</span>
-          <span>Tester Profile</span>
-        </button>
-        <button type="button" class="step-pill" onclick="goToStep(2)">
-          <span class="step-num">2</span>
-          <span>Overall Experience</span>
-        </button>
-        <button type="button" class="step-pill" onclick="goToStep(3)">
-          <span class="step-num">3</span>
-          <span>Feature Deep-Dive</span>
-        </button>
-        <button type="button" class="step-pill" onclick="goToStep(4)">
-          <span class="step-num">4</span>
-          <span>UI/UX &amp; Bugs</span>
-        </button>
-        <button type="button" class="step-pill" onclick="goToStep(5)">
-          <span class="step-num">5</span>
-          <span>Suggestions &amp; Review</span>
-        </button>
-      </nav>
-
       <!-- Multi-Step Form -->
       <form id="betaFeedbackForm" onsubmit="handleFormSubmit(event)">
+
+        <!-- OVERALL RECEIPTO EXPERIENCE RATING (FIRST POSITION) -->
+        <div class="overall-rating-card" id="overallRatingSection">
+          <div class="overall-rating-badge">✨ Overall Impression</div>
+          <h2 class="overall-rating-title">Overall Receipto Experience Rating</h2>
+          <p class="overall-rating-subtitle">How would you rate your overall experience with Receipto?</p>
+          <div class="star-row" id="overallStarsGroup">
+            <span class="star-btn active" data-val="1">★</span>
+            <span class="star-btn active" data-val="2">★</span>
+            <span class="star-btn active" data-val="3">★</span>
+            <span class="star-btn active" data-val="4">★</span>
+            <span class="star-btn active" data-val="5">★</span>
+          </div>
+          <div class="star-desc-text" id="overallStarsDesc">5/5 – Excellent 🔥</div>
+          <input type="hidden" id="overallRating" value="5">
+        </div>
+
+        <!-- Stepper Navigation -->
+        <nav class="stepper-nav" id="stepperNav">
+          <button type="button" class="step-pill active" onclick="goToStep(1)">
+            <span class="step-num">1</span>
+            <span>Tester Profile</span>
+          </button>
+          <button type="button" class="step-pill" onclick="goToStep(2)">
+            <span class="step-num">2</span>
+            <span>Ease of Use &amp; Extraction</span>
+          </button>
+          <button type="button" class="step-pill" onclick="goToStep(3)">
+            <span class="step-num">3</span>
+            <span>Feature Deep-Dive</span>
+          </button>
+          <button type="button" class="step-pill" onclick="goToStep(4)">
+            <span class="step-num">4</span>
+            <span>UI/UX &amp; Bugs</span>
+          </button>
+          <button type="button" class="step-pill" onclick="goToStep(5)">
+            <span class="step-num">5</span>
+            <span>Suggestions &amp; Review</span>
+          </button>
+        </nav>
 
         <!-- STEP 1: TESTER INFORMATION -->
         <div class="section-card active" id="step1Card">
@@ -1029,15 +1125,19 @@
               <input type="text" id="deviceModel" placeholder="e.g. OnePlus 11, Samsung S24, Pixel 8" required>
             </div>
             <div class="form-group">
-              <label class="field-label" for="androidVersion">Android Version<span class="req-star">*</span></label>
+              <label class="field-label" for="androidVersion">Android OS Version<span class="req-star">*</span></label>
               <select id="androidVersion" required>
-                <option value="">Select Android Version</option>
-                <option value="Android 15">Android 15 (Vanilla Ice Cream)</option>
-                <option value="Android 14" selected>Android 14 (Upside Down Cake)</option>
-                <option value="Android 13">Android 13 (Tiramisu)</option>
-                <option value="Android 12">Android 12 (Snow Cone)</option>
+                <option value="">Select Android OS Version</option>
+                <option value="Android 10">Android 10</option>
                 <option value="Android 11">Android 11</option>
-                <option value="Other">Other / Custom ROM</option>
+                <option value="Android 12">Android 12</option>
+                <option value="Android 12L">Android 12L</option>
+                <option value="Android 13">Android 13</option>
+                <option value="Android 14" selected>Android 14</option>
+                <option value="Android 15">Android 15</option>
+                <option value="Android 16">Android 16</option>
+                <option value="Android 17">Android 17</option>
+                <option value="Other / Not Sure">Other / Not Sure</option>
               </select>
             </div>
           </div>
@@ -1063,32 +1163,18 @@
           <div class="form-btn-bar">
             <div></div>
             <button type="button" class="btn-next" onclick="validateAndGoStep(1, 2)">
-              <span>Next: Overall Experience</span>
+              <span>Next: Ease of Use &amp; Extraction</span>
               <span>→</span>
             </button>
           </div>
         </div>
 
-        <!-- STEP 2: OVERALL EXPERIENCE & NLP-BASED RECEIPT EXTRACTION -->
+        <!-- STEP 2: EASE OF USE & NLP-BASED RECEIPT EXTRACTION -->
         <div class="section-card" id="step2Card">
           <div class="section-header">
             <span class="section-tag">Step 2 of 5</span>
-            <h2 class="section-title">Overall Experience</h2>
-            <p class="section-desc">Evaluate your core experience and our automated receipt data extraction.</p>
-          </div>
-
-          <!-- Overall Experience 5-Star Rating -->
-          <div class="star-rating-box">
-            <div class="star-box-title">How would you rate your overall experience with Receipto?</div>
-            <div class="star-row" id="overallStarsGroup">
-              <span class="star-btn active" data-val="1">★</span>
-              <span class="star-btn active" data-val="2">★</span>
-              <span class="star-btn active" data-val="3">★</span>
-              <span class="star-btn active" data-val="4">★</span>
-              <span class="star-btn active" data-val="5">★</span>
-            </div>
-            <div class="star-desc-text" id="overallStarsDesc">5 Stars – Excellent 🔥</div>
-            <input type="hidden" id="overallRating" value="5">
+            <h2 class="section-title">Ease of Use &amp; Receipt Processing</h2>
+            <p class="section-desc">Evaluate your experience with Receipto's interface and our automated receipt extraction.</p>
           </div>
 
           <!-- Ease of Use Question -->
@@ -1700,8 +1786,13 @@
         pill.classList.toggle('active', (idx + 1) === step);
         pill.classList.toggle('completed', (idx + 1) < step);
       });
-      const container = document.getElementById('feedbackFormContainer');
-      container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const activeCard = document.getElementById('step' + step + 'Card');
+      if (activeCard && step > 1) {
+        activeCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } else {
+        const container = document.getElementById('feedbackFormContainer');
+        container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
     }
 
     function validateAndGoStep(fromStep, toStep) {
@@ -1754,11 +1845,11 @@
 
     // --- 4. Interactive Five-Star Rating Components ---
     const starDescriptions = {
-      1: '1 Star – Poor ⚠️',
-      2: '2 Stars – Fair 😐',
-      3: '3 Stars – Good 👍',
-      4: '4 Stars – Very Good 🚀',
-      5: '5 Stars – Excellent 🔥'
+      1: '1/5 – Poor ⚠️',
+      2: '2/5 – Fair 😐',
+      3: '3/5 – Good 👍',
+      4: '4/5 – Very Good 🚀',
+      5: '5/5 – Excellent 🔥'
     };
 
     function setupStarRating(groupEl, descEl, inputEl) {
