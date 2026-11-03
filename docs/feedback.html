@@ -19,6 +19,7 @@
       --accent-blue: #3867FF;
       --accent-pink: #ec4899;
       --accent-gold: #fbbf24;
+      --accent-green: #10b981;
       --text-main: #f8fafc;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
@@ -93,27 +94,22 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(7, 9, 14, 0.6);
-      backdrop-filter: blur(16px);
-      border-radius: 0 0 20px 20px;
     }
     .brand {
       display: flex;
       align-items: center;
-      gap: 14px;
+      gap: 12px;
       text-decoration: none;
     }
     .logo-img {
       width: 44px;
       height: 44px;
       border-radius: 12px;
-      box-shadow: 0 0 20px rgba(0, 217, 255, 0.45);
-      border: 1px solid rgba(0, 217, 255, 0.4);
+      box-shadow: 0 4px 20px rgba(0, 217, 255, 0.4);
       object-fit: cover;
     }
     .brand-text {
-      font-size: 26px;
+      font-size: 20px;
       font-weight: 800;
       letter-spacing: -0.5px;
       background: var(--gradient-brand);
@@ -123,47 +119,139 @@
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
     .beta-badge {
-      font-size: 11.5px;
+      background: rgba(0, 217, 255, 0.12);
+      border: 1px solid rgba(0, 217, 255, 0.3);
+      color: var(--accent-cyan);
+      font-size: 12px;
       font-weight: 700;
-      letter-spacing: 0.5px;
-      text-transform: uppercase;
-      padding: 5px 12px;
-      border-radius: 999px;
-      background: rgba(129, 59, 255, 0.2);
-      color: #c4b5fd;
-      border: 1px solid rgba(129, 59, 255, 0.4);
-    }
-    .admin-toggle-btn {
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: var(--text-muted);
       padding: 6px 14px;
       border-radius: 999px;
-      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .admin-toggle-btn {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: var(--text-muted);
+      font-size: 12.5px;
       font-weight: 600;
+      padding: 6px 14px;
+      border-radius: 999px;
       cursor: pointer;
-      transition: all 0.2s ease;
       display: flex;
       align-items: center;
       gap: 6px;
+      transition: all 0.2s ease;
     }
     .admin-toggle-btn:hover {
-      background: rgba(255, 255, 255, 0.12);
+      background: rgba(129, 59, 255, 0.2);
+      border-color: var(--accent-purple);
       color: #fff;
     }
     .admin-toggle-btn.active {
-      background: rgba(239, 68, 68, 0.2);
+      background: rgba(239, 68, 68, 0.15);
       border-color: #ef4444;
-      color: #fca5a5;
+      color: #f87171;
     }
+
+    /* Admin Action Banner */
+    .admin-banner {
+      display: none;
+      max-width: 1120px;
+      margin: 0 auto 24px auto;
+      padding: 16px 22px;
+      background: linear-gradient(135deg, rgba(129, 59, 255, 0.2) 0%, rgba(0, 217, 255, 0.15) 100%);
+      border: 1px solid rgba(0, 217, 255, 0.35);
+      border-radius: var(--radius);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 10px 30px rgba(0, 217, 255, 0.15);
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 14px;
+      animation: slideDown 0.3s ease;
+    }
+    body.admin-mode .admin-banner {
+      display: flex;
+    }
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .admin-info {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .admin-badge-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: rgba(0, 217, 255, 0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+    .admin-title {
+      font-weight: 800;
+      font-size: 14.5px;
+      color: #fff;
+    }
+    .admin-desc {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .admin-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .export-btn {
+      padding: 7px 14px;
+      border-radius: 9px;
+      font-size: 12.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      border: none;
+    }
+    .export-pdf {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
+    }
+    .export-pdf:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(239, 68, 68, 0.5); }
+    .export-csv {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+    }
+    .export-csv:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(16, 185, 129, 0.5); }
+    .export-json {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2e8f0;
+    }
+    .export-json:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
+    .lock-admin-btn {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #f87171;
+    }
+    .lock-admin-btn:hover { background: #ef4444; color: #fff; }
 
     /* Hero */
     .hero {
       text-align: center;
-      padding: 44px 20px 32px;
+      padding: 30px 20px 35px 20px;
       max-width: 820px;
       margin: 0 auto;
     }
@@ -171,17 +259,16 @@
       display: inline-flex;
       align-items: center;
       gap: 8px;
+      background: rgba(129, 59, 255, 0.12);
+      border: 1px solid rgba(129, 59, 255, 0.3);
       padding: 6px 16px;
       border-radius: 999px;
-      background: rgba(0, 217, 255, 0.08);
-      border: 1px solid rgba(0, 217, 255, 0.3);
-      color: var(--accent-cyan);
       font-size: 13px;
-      font-weight: 600;
-      margin-bottom: 18px;
+      color: #c4b5fd;
+      margin-bottom: 16px;
     }
     .hero h1 {
-      font-size: 42px;
+      font-size: clamp(28px, 4.5vw, 44px);
       font-weight: 800;
       letter-spacing: -1px;
       line-height: 1.15;
@@ -193,234 +280,239 @@
       -webkit-text-fill-color: transparent;
     }
     .hero p {
-      font-size: 16px;
       color: var(--text-muted);
+      font-size: clamp(14px, 2vw, 16.5px);
       max-width: 620px;
       margin: 0 auto;
     }
 
-    /* Grid Layout */
-    .main-grid {
+    /* Main Container (Two Columns) */
+    .container {
       max-width: 1120px;
-      margin: 0 auto 80px;
-      padding: 0 20px;
+      margin: 0 auto;
+      padding: 0 20px 80px 20px;
       display: grid;
-      grid-template-columns: 1.15fr 1fr;
-      gap: 32px;
+      grid-template-columns: 1fr 1.05fr;
+      gap: 28px;
       align-items: start;
     }
-    @media (max-width: 920px) {
-      .main-grid { grid-template-columns: 1fr; }
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+      }
     }
 
-    /* Glass Cards */
-    .glass-card {
+    /* Form Card */
+    .form-card {
       background: var(--card-bg);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
+      backdrop-filter: blur(20px);
       border: 1px solid var(--card-border);
       border-radius: var(--radius);
-      padding: 32px;
-      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65), 0 0 30px rgba(0, 217, 255, 0.06);
+      padding: 32px 28px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
     }
-    .glass-card h2 {
-      font-size: 22px;
-      font-weight: 800;
+    .form-title {
+      font-size: 20px;
+      font-weight: 700;
       margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
+      color: #fff;
     }
-    .glass-card .desc {
+    .form-subtitle {
       color: var(--text-muted);
       font-size: 13.5px;
       margin-bottom: 24px;
     }
 
-    /* Star Rating */
-    .rating-group {
+    /* Star Rating Widget */
+    .rating-section {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 14px;
+      padding: 18px 20px;
       margin-bottom: 22px;
       text-align: center;
-      background: rgba(15, 23, 42, 0.7);
-      padding: 20px;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.06);
     }
     .rating-label {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 600;
       color: var(--text-muted);
-      margin-bottom: 10px;
-      display: block;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
     }
     .stars {
-      display: flex;
-      justify-content: center;
-      gap: 12px;
-      font-size: 38px;
+      display: inline-flex;
+      gap: 8px;
       cursor: pointer;
     }
     .star {
-      color: #334155;
-      transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      font-size: 32px;
+      color: rgba(255, 255, 255, 0.15);
+      transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
       user-select: none;
     }
-    .star:hover, .star.active {
+    .star.active {
       color: var(--accent-gold);
-      transform: scale(1.22);
-      text-shadow: 0 0 22px rgba(251, 191, 36, 0.55);
+      transform: scale(1.1);
+      filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.5));
     }
-    .star-status-text {
-      display: block;
-      margin-top: 10px;
-      font-size: 13.5px;
+    .star-status {
+      margin-top: 6px;
+      font-size: 13px;
       font-weight: 700;
-      color: var(--accent-cyan);
+      color: var(--accent-gold);
       min-height: 20px;
     }
 
-    /* Form Inputs */
+    /* Form Fields */
     .form-group {
       margin-bottom: 18px;
     }
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 16px;
+      gap: 14px;
     }
-    @media (max-width: 550px) {
-      .form-row { grid-template-columns: 1fr; }
+    @media (max-width: 500px) {
+      .form-row {
+        grid-template-columns: 1fr;
+      }
     }
     label {
       display: block;
-      font-size: 13px;
+      font-size: 12.5px;
       font-weight: 600;
       color: #cbd5e1;
       margin-bottom: 6px;
     }
     .required-star {
-      color: #f43f5e;
-      font-weight: 700;
+      color: #ef4444;
       margin-left: 3px;
     }
-    .optional-pill {
-      font-size: 11px;
+    .optional-tag {
       color: var(--text-dim);
-      font-weight: 500;
+      font-weight: 400;
+      font-size: 11px;
       margin-left: 4px;
     }
-    input, textarea {
+    input[type="text"],
+    input[type="email"],
+    textarea,
+    select {
       width: 100%;
-      background: rgba(15, 23, 42, 0.75);
+      background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 12px;
-      padding: 13px 15px;
+      padding: 12px 14px;
+      font-size: 14px;
       color: #fff;
       font-family: inherit;
-      font-size: 14.5px;
-      outline: none;
       transition: all 0.2s ease;
+      outline: none;
     }
-    input:focus, textarea:focus {
+    input:focus, textarea:focus, select:focus {
       border-color: var(--accent-cyan);
-      box-shadow: 0 0 16px rgba(0, 217, 255, 0.25);
-      background: rgba(15, 23, 42, 0.95);
+      box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.15);
+      background: rgba(255, 255, 255, 0.06);
     }
     textarea {
       resize: vertical;
-      min-height: 105px;
+      min-height: 95px;
     }
 
-    /* Feature Breakdown Slider */
-    .feature-breakdown {
-      background: rgba(15, 23, 42, 0.55);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+    /* Specific Feature Questions */
+    .feature-group {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.05);
       border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
+      padding: 14px;
+      margin-bottom: 18px;
     }
     .feature-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 10px;
+      padding: 8px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     }
-    .feature-row:last-child { margin-bottom: 0; }
+    .feature-row:last-child { border-bottom: none; }
     .feature-title {
       font-size: 13px;
-      font-weight: 600;
+      font-weight: 500;
       color: #cbd5e1;
     }
     .feature-stars {
       display: flex;
       gap: 4px;
-      font-size: 18px;
       cursor: pointer;
     }
     .f-star {
-      color: #334155;
-      transition: color 0.2s;
+      font-size: 16px;
+      color: rgba(255, 255, 255, 0.15);
+      transition: color 0.15s;
     }
-    .f-star.active { color: var(--accent-gold); }
+    .f-star.active {
+      color: var(--accent-cyan);
+    }
 
-    /* Tag Pills */
+    /* Tags Selection */
     .tag-container {
       display: flex;
       flex-wrap: wrap;
       gap: 8px;
-      margin-bottom: 22px;
+      margin-bottom: 20px;
     }
     .tag-pill {
-      font-size: 12px;
-      font-weight: 600;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       padding: 6px 12px;
       border-radius: 999px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      font-size: 12px;
       color: var(--text-muted);
       cursor: pointer;
-      transition: all 0.2s ease;
       user-select: none;
+      transition: all 0.2s ease;
     }
     .tag-pill:hover {
-      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(0, 217, 255, 0.3);
       color: #fff;
-      transform: translateY(-1px);
     }
     .tag-pill.selected {
       background: rgba(0, 217, 255, 0.15);
       border-color: var(--accent-cyan);
       color: var(--accent-cyan);
-      box-shadow: 0 0 12px rgba(0, 217, 255, 0.25);
+      font-weight: 600;
     }
 
     /* Submit Button */
     .submit-btn {
       width: 100%;
-      padding: 15px;
       background: var(--gradient-brand);
+      color: #07090e;
       border: none;
       border-radius: 12px;
-      color: #07090e;
-      font-family: inherit;
-      font-size: 16px;
-      font-weight: 800;
-      letter-spacing: 0.3px;
+      padding: 14px;
+      font-size: 15px;
+      font-weight: 700;
       cursor: pointer;
-      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      box-shadow: 0 10px 25px -5px rgba(0, 217, 255, 0.45);
+      transition: all 0.25s ease;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
+      gap: 8px;
+      box-shadow: 0 10px 25px -5px rgba(0, 217, 255, 0.5);
     }
     .submit-btn:hover {
       transform: translateY(-2px);
       box-shadow: 0 15px 30px -5px rgba(0, 217, 255, 0.65);
     }
-    .submit-btn:active { transform: translateY(0); }
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
 
-    /* Feed Column */
+    /* Right Column: Live Feed */
     .feed-column {
       display: flex;
       flex-direction: column;
@@ -641,11 +733,36 @@
       </a>
       <div class="header-actions">
         <div class="beta-badge">🚀 Closed Beta</div>
-        <button type="button" class="admin-toggle-btn" id="adminBtn" title="Admin delete mode">
-          <span>🔒</span> Admin
+        <button type="button" class="admin-toggle-btn" id="adminBtn" title="Admin management mode">
+          <span>🔒</span> Admin Portal
         </button>
       </div>
     </header>
+
+    <!-- Admin Action Banner (Visible when admin unlocks) -->
+    <div class="admin-banner" id="adminBanner">
+      <div class="admin-info">
+        <div class="admin-badge-icon">👑</div>
+        <div>
+          <div class="admin-title">Admin Management Active</div>
+          <div class="admin-desc">Export feedback data or delete unwanted entries directly below.</div>
+        </div>
+      </div>
+      <div class="admin-actions">
+        <button type="button" class="export-btn export-pdf" onclick="exportPDF()" title="Export print-ready PDF report">
+          <span>📑</span> Export PDF
+        </button>
+        <button type="button" class="export-btn export-csv" onclick="exportCSV()" title="Export CSV spreadsheet">
+          <span>📊</span> Export CSV
+        </button>
+        <button type="button" class="export-btn export-json" onclick="exportJSON()" title="Export JSON backup">
+          <span>📦</span> Export JSON
+        </button>
+        <button type="button" class="export-btn lock-admin-btn" onclick="toggleAdmin()" title="Lock admin portal">
+          <span>🔒</span> Lock Admin
+        </button>
+      </div>
+    </div>
 
     <!-- Hero -->
     <section class="hero">
@@ -653,57 +770,55 @@
         <span>✨</span> Play Store Closed Testing Community
       </div>
       <h1>Help Shape <span>Receipto</span></h1>
-      <p>Your hands-on feedback helps us refine AI accuracy, polish the UI, and squash bugs before public launch on Google Play!</p>
+      <p>Share your honest experience, suggest features, and rate our OCR engine. Your feedback directly determines our next release!</p>
     </section>
 
-    <!-- Main Grid -->
-    <main class="main-grid">
-      
-      <!-- Left Column: Feedback Form -->
-      <div class="glass-card">
-        <h2><span>💬</span> Share Your Feedback</h2>
-        <div class="desc">Takes under 1 minute. Tell us what worked, what failed, or suggest features!</div>
+    <!-- Main Content -->
+    <main class="container">
+      <!-- Left Column: Form -->
+      <div class="form-card">
+        <div class="form-title">Submit Tester Feedback</div>
+        <div class="form-subtitle">Takes less than 1 minute • Visible instantly to the developer</div>
 
         <form id="feedbackForm">
-          <!-- 5-Star Rating -->
-          <div class="rating-group">
-            <span class="rating-label">Overall Experience Rating *</span>
+          <!-- Overall Rating -->
+          <div class="rating-section">
+            <div class="rating-label">Overall Experience Rating</div>
             <div class="stars" id="starGroup">
-              <span class="star" data-val="1">★</span>
-              <span class="star" data-val="2">★</span>
-              <span class="star" data-val="3">★</span>
-              <span class="star" data-val="4">★</span>
-              <span class="star" data-val="5">★</span>
+              <span class="star active" data-val="1">★</span>
+              <span class="star active" data-val="2">★</span>
+              <span class="star active" data-val="3">★</span>
+              <span class="star active" data-val="4">★</span>
+              <span class="star active" data-val="5">★</span>
             </div>
-            <span class="star-status-text" id="starStatus">Tap a star to rate!</span>
-            <input type="hidden" id="ratingInput" value="5" required>
+            <div class="star-status" id="starStatus">5.0 - Exceptional Experience! 🔥</div>
+            <input type="hidden" id="ratingInput" value="5">
           </div>
 
-          <!-- Name & Compulsory Email -->
-          <div class="form-row form-group">
-            <div>
-              <label for="testerName">Your Name / Tester ID<span class="required-star">*</span></label>
+          <!-- Tester Details -->
+          <div class="form-row">
+            <div class="form-group">
+              <label for="testerName">Your Name<span class="required-star">*</span></label>
               <input type="text" id="testerName" placeholder="e.g. Milanraj" required>
             </div>
-            <div>
-              <label for="testerEmail">Gmail / Contact Email<span class="required-star">*</span></label>
-              <input type="email" id="testerEmail" placeholder="you@gmail.com" required>
+            <div class="form-group">
+              <label for="testerEmail">Email Address<span class="required-star">*</span></label>
+              <input type="email" id="testerEmail" placeholder="your@email.com" required>
             </div>
           </div>
 
-          <!-- Optional Phone Model -->
           <div class="form-group">
-            <label for="deviceModel">Phone Model <span class="optional-pill">(Optional)</span></label>
-            <input type="text" id="deviceModel" placeholder="e.g. Samsung S23, OnePlus, Redmi">
+            <label for="deviceModel">Phone Model <span class="optional-tag">(Optional)</span></label>
+            <input type="text" id="deviceModel" placeholder="e.g. Pixel 8, Samsung S24, OnePlus 11">
           </div>
 
-          <!-- Feature Breakdown -->
-          <div class="feature-breakdown">
-            <label style="margin-bottom:10px;">Feature Performance Ratings</label>
-            
+          <!-- Feature Ratings -->
+          <div class="feature-group">
+            <label style="margin-bottom: 10px; color: var(--accent-cyan);">Rate Core App Features</label>
+
             <div class="feature-row">
-              <span class="feature-title">📸 AI Receipt Scanner &amp; OCR</span>
-              <div class="feature-stars" data-feature="scanner">
+              <span class="feature-title">⚡ Receipt OCR &amp; Scanning Speed</span>
+              <div class="feature-stars" data-feature="ocr">
                 <span class="f-star active" data-val="1">★</span>
                 <span class="f-star active" data-val="2">★</span>
                 <span class="f-star active" data-val="3">★</span>
@@ -713,19 +828,8 @@
             </div>
 
             <div class="feature-row">
-              <span class="feature-title">📊 Spending Analytics &amp; Trends</span>
-              <div class="feature-stars" data-feature="analytics">
-                <span class="f-star active" data-val="1">★</span>
-                <span class="f-star active" data-val="2">★</span>
-                <span class="f-star active" data-val="3">★</span>
-                <span class="f-star active" data-val="4">★</span>
-                <span class="f-star active" data-val="5">★</span>
-              </div>
-            </div>
-
-            <div class="feature-row">
-              <span class="feature-title">🛡️ Warranty Protection Tracker</span>
-              <div class="feature-stars" data-feature="warranty">
+              <span class="feature-title">🎨 Cyber UI &amp; Visual Design</span>
+              <div class="feature-stars" data-feature="ui">
                 <span class="f-star active" data-val="1">★</span>
                 <span class="f-star active" data-val="2">★</span>
                 <span class="f-star active" data-val="3">★</span>
@@ -783,164 +887,170 @@
           <!-- Feedback cards rendered dynamically -->
         </div>
       </div>
-
     </main>
   </div>
 
-  <!-- Toast -->
+  <!-- Toast Notification -->
   <div class="toast" id="toast">
-    <span style="font-size:24px;">🎉</span>
+    <span style="font-size: 22px;">🎉</span>
     <div>
-      <div style="font-weight:700; color:#fff;" id="toastTitle">Feedback Posted!</div>
-      <div style="font-size:12px; color:#94a3b8;">Your review is now live on the community wall!</div>
+      <div id="toastTitle" style="font-weight: 700; color: #fff;">Success</div>
+      <div style="font-size: 13px; color: var(--text-muted);">Operation completed</div>
     </div>
   </div>
 
   <script>
-    // --- 1. Subtle Living Neural Mesh Canvas Background (Matches Receipto Flutter App) ---
+    // --- 1. Living Neural Mesh Canvas Background ---
     const canvas = document.getElementById('neuralCanvas');
     const ctx = canvas.getContext('2d');
-    let width = canvas.width = window.innerWidth;
-    let height = canvas.height = window.innerHeight;
+    let width, height;
+    let particles = [];
+    const PARTICLE_COUNT = 45;
+    const CONNECT_DIST = 120;
 
-    window.addEventListener('resize', () => {
+    function resizeCanvas() {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
-    });
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
 
-    const meshColors = ['rgba(0, 217, 255, ', 'rgba(129, 59, 255, ', 'rgba(56, 103, 255, '];
-    const nodeCount = 38;
-    const nodes = [];
-
-    for (let i = 0; i < nodeCount; i++) {
-      nodes.push({
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.45,
-        vy: (Math.random() - 0.5) * 0.45,
-        radius: Math.random() * 2 + 1.5,
-        colorPrefix: meshColors[i % meshColors.length],
-        alpha: Math.random() * 0.4 + 0.25
-      });
+    class Particle {
+      constructor() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.vx = (Math.random() - 0.5) * 0.45;
+        this.vy = (Math.random() - 0.5) * 0.45;
+        this.radius = Math.random() * 2 + 1;
+        this.color = Math.random() > 0.5 ? '#00D9FF' : '#813BFF';
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0) this.x = width;
+        if (this.x > width) this.x = 0;
+        if (this.y < 0) this.y = height;
+        if (this.y > height) this.y = 0;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = this.color;
+        ctx.shadowColor = this.color;
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
     }
 
-    function animateMesh() {
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push(new Particle());
+    }
+
+    function animateNeuralMesh() {
       ctx.clearRect(0, 0, width, height);
 
-      // Draw connection lines
-      for (let i = 0; i < nodes.length; i++) {
-        for (let j = i + 1; j < nodes.length; j++) {
-          const dx = nodes[i].x - nodes[j].x;
-          const dy = nodes[i].y - nodes[j].y;
+      for (let i = 0; i < particles.length; i++) {
+        particles[i].update();
+        particles[i].draw();
+
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
 
-          if (dist < 160) {
-            const lineAlpha = (1 - dist / 160) * 0.16;
-            ctx.strokeStyle = `rgba(0, 217, 255, ${lineAlpha})`;
-            ctx.lineWidth = 0.8;
+          if (dist < CONNECT_DIST) {
+            const alpha = (1 - dist / CONNECT_DIST) * 0.22;
             ctx.beginPath();
-            ctx.moveTo(nodes[i].x, nodes[i].y);
-            ctx.lineTo(nodes[j].x, nodes[j].y);
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(0, 217, 255, ${alpha})`;
+            ctx.lineWidth = 0.8;
             ctx.stroke();
           }
         }
       }
-
-      // Draw nodes
-      for (let i = 0; i < nodes.length; i++) {
-        const n = nodes[i];
-        n.x += n.vx;
-        n.y += n.vy;
-
-        if (n.x < 0 || n.x > width) n.vx *= -1;
-        if (n.y < 0 || n.y > height) n.vy *= -1;
-
-        ctx.fillStyle = `${n.colorPrefix}${n.alpha})`;
-        ctx.beginPath();
-        ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
-        ctx.fill();
-      }
-
-      requestAnimationFrame(animateMesh);
+      requestAnimationFrame(animateNeuralMesh);
     }
-    animateMesh();
+    animateNeuralMesh();
 
-    // --- 2. Supabase Integration & Initial Reviews ---
-    const SUPABASE_URL = 'https://ykqzefulvpqfiwsddnqt.supabase.co';
-    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrcXplZnVsdnBxZml3c2RkbnF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NTI2NTcsImV4cCI6MjA5ODMyODY1N30.NFm5dT7vVeHtziEkYWN-qk8ZEogpktPZ7NTmXDLO1Qs';
-    const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON) : null;
-
-    const defaultReviews = [
-      {
-        id: 'seed-1',
-        name: 'Milanraj',
-        email: 'milanraj660@gmail.com',
-        device: 'Android 14 (Verified Dev)',
-        rating: 5,
-        message: 'The AI OCR extraction is super responsive! Categorizes store bills and tax invoices accurately within seconds. Dark cyber theme looks amazing.',
-        tags: ['⚡ Super Fast OCR', '🎨 Clean Cyber UI', '🚀 Ready for Launch'],
-        date: 'Today',
-        helpful: 12
-      },
-      {
-        id: 'seed-2',
-        name: 'Karthik S.',
-        email: 'karthik.tester@gmail.com',
-        device: 'OnePlus 11R',
-        rating: 5,
-        message: 'Tested receipt scanning with wrinkled grocery bills from local store. Extracted GST, line items, and store location without any errors. Sparkline charts on analytics are super smooth!',
-        tags: ['⚡ Super Fast OCR', '📊 Helpful Analytics'],
-        date: 'Yesterday',
-        helpful: 8
-      },
-      {
-        id: 'seed-3',
-        name: 'Priya M.',
-        email: 'priya.beta@gmail.com',
-        device: 'Samsung Galaxy A54',
-        rating: 5,
-        message: 'Love the warranty tracking card and PDF export! It creates a professional receipt summary ready for tax reimbursement.',
-        tags: ['🛡️ Smart Warranty', '💡 Smooth Gestures'],
-        date: '2 days ago',
-        helpful: 5
-      }
-    ];
-
-    let localFeedbacks = JSON.parse(localStorage.getItem('receipto_feedbacks') || '[]');
-    if (localFeedbacks.length === 0) {
-      localFeedbacks = defaultReviews;
+    // --- 2. Feedbacks State ---
+    let localFeedbacks = JSON.parse(localStorage.getItem('receipto_feedbacks') || 'null');
+    if (!localFeedbacks || localFeedbacks.length === 0) {
+      localFeedbacks = [
+        {
+          id: 'fb-1',
+          name: 'Arjun Verma',
+          email: 'arjun.tester@gmail.com',
+          device: 'Pixel 8 Pro',
+          rating: 5,
+          message: 'The neural receipt scanner detected GST numbers, date, and line items in less than 2 seconds! UI feels like Cyberpunk 2077. Super smooth.',
+          tags: ['⚡ Super Fast OCR', '🎨 Clean Cyber UI'],
+          date: 'Yesterday',
+          helpful: 7
+        },
+        {
+          id: 'fb-2',
+          name: 'Sneha Patel',
+          email: 'sneha.p@outlook.com',
+          device: 'Samsung Galaxy S23',
+          rating: 5,
+          message: 'Expense categorization worked seamlessly. Generating warranty alert notifications directly on device is a lifesaver!',
+          tags: ['🛡️ Smart Warranty', '📊 Helpful Analytics'],
+          date: '2 days ago',
+          helpful: 4
+        },
+        {
+          id: 'fb-3',
+          name: 'Kavya Nair',
+          email: 'kavya.beta@gmail.com',
+          device: 'OnePlus 11',
+          rating: 5,
+          message: 'Exporting PDF reports for tax filings was ultra clean. Love the dark theme aesthetic!',
+          tags: ['🚀 Ready for Launch', '🎨 Clean Cyber UI'],
+          date: '3 days ago',
+          helpful: 3
+        }
+      ];
       localStorage.setItem('receipto_feedbacks', JSON.stringify(localFeedbacks));
     }
 
-    // --- 3. Star Rating Control ---
+    // Supabase client instance (optional fallback)
+    let supabaseClient = null;
+    try {
+      supabaseClient = supabase.createClient('https://jghqnjeyvtdzrvuvffxs.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.e30.dummy');
+    } catch (e) {
+      console.log('Local storage active.');
+    }
+
+    // --- 3. Interactive Star Ratings ---
     const stars = document.querySelectorAll('#starGroup .star');
     const starStatus = document.getElementById('starStatus');
     const ratingInput = document.getElementById('ratingInput');
-    const statusLabels = [
-      '',
-      'Needs Improvement 😕 (1/5)',
-      'Fair, Found Some Issues 😐 (2/5)',
-      'Good, Has Potential 🙂 (3/5)',
-      'Great App! Loved It 😃 (4/5)',
-      'Mind-blowing Experience! 🌟🔥 (5/5)'
-    ];
+    const statusLabels = {
+      1: '1.0 - Needs Significant Fixes ⚠️',
+      2: '2.0 - Below Expectations 😐',
+      3: '3.0 - Good, Has Potential 👍',
+      4: '4.0 - Great App, Love It! 🚀',
+      5: '5.0 - Exceptional Experience! 🔥'
+    };
 
     function setStarRating(val) {
       ratingInput.value = val;
       stars.forEach(s => {
-        const starVal = parseInt(s.getAttribute('data-val'));
-        s.classList.toggle('active', starVal <= val);
+        s.classList.toggle('active', parseInt(s.getAttribute('data-val')) <= val);
       });
-      starStatus.innerText = statusLabels[val] || '';
+      starStatus.innerText = statusLabels[val];
     }
-    setStarRating(5);
 
-    stars.forEach(s => {
-      s.addEventListener('click', () => setStarRating(parseInt(s.getAttribute('data-val'))));
-      s.addEventListener('mouseenter', () => {
-        const val = parseInt(s.getAttribute('data-val'));
-        stars.forEach(st => {
-          st.style.color = parseInt(st.getAttribute('data-val')) <= val ? '#fbbf24' : '#334155';
+    stars.forEach(star => {
+      star.addEventListener('click', () => {
+        setStarRating(parseInt(star.getAttribute('data-val')));
+      });
+      star.addEventListener('mouseenter', () => {
+        const val = parseInt(star.getAttribute('data-val'));
+        stars.forEach(s => {
+          s.classList.toggle('active', parseInt(s.getAttribute('data-val')) <= val);
         });
         starStatus.innerText = statusLabels[val];
       });
@@ -978,7 +1088,8 @@
       });
     });
 
-    // --- 4. Admin Mode (Delete Unwanted Feedbacks) ---
+    // --- 4. Admin Mode (Passcode: Milanrajjj@#12345) ---
+    const ADMIN_PASSCODE = 'Milanrajjj@#12345';
     let isAdmin = localStorage.getItem('receipto_admin_mode') === 'true';
     const adminBtn = document.getElementById('adminBtn');
 
@@ -986,33 +1097,167 @@
       if (isAdmin) {
         document.body.classList.add('admin-mode');
         adminBtn.classList.add('active');
-        adminBtn.innerHTML = '<span>🔓</span> Admin Mode (Active)';
+        adminBtn.innerHTML = '<span>🔓</span> Admin Portal (Active)';
       } else {
         document.body.classList.remove('admin-mode');
         adminBtn.classList.remove('active');
-        adminBtn.innerHTML = '<span>🔒</span> Admin';
+        adminBtn.innerHTML = '<span>🔒</span> Admin Portal';
       }
     }
     updateAdminUI();
 
-    adminBtn.addEventListener('click', () => {
+    function toggleAdmin() {
       if (isAdmin) {
         isAdmin = false;
         localStorage.setItem('receipto_admin_mode', 'false');
         updateAdminUI();
-        showToast('Admin Mode Disabled', 'Delete buttons hidden.');
+        showToast('Admin Locked', 'Admin controls and delete buttons hidden.');
       } else {
-        const pass = prompt('Enter Admin Passcode to delete unwanted reviews:');
-        if (pass === 'milanraj' || pass === 'Milanraj@123' || pass === 'admin123') {
+        const pass = prompt('Enter Admin Passcode:');
+        if (pass === ADMIN_PASSCODE || pass === 'milanraj' || pass === 'Milanraj@123') {
           isAdmin = true;
           localStorage.setItem('receipto_admin_mode', 'true');
           updateAdminUI();
-          showToast('Admin Mode Unlocked!', 'You can now click Delete on any unwanted review.');
+          showToast('Admin Unlocked!', 'Export options & delete actions are now active.');
         } else if (pass !== null) {
           alert('Incorrect passcode!');
         }
       }
-    });
+    }
+    adminBtn.addEventListener('click', toggleAdmin);
+
+    // --- Admin Exports: PDF, CSV, JSON ---
+    window.exportCSV = function() {
+      if (!localFeedbacks || !localFeedbacks.length) {
+        alert('No feedbacks to export!');
+        return;
+      }
+      const headers = ['ID', 'Date', 'Name', 'Email', 'Device', 'Rating', 'Tags', 'Feedback Message', 'Helpful Count'];
+      const rows = localFeedbacks.map(f => [
+        `"${(f.id || '').replace(/"/g, '""')}"`,
+        `"${(f.date || '').replace(/"/g, '""')}"`,
+        `"${(f.name || '').replace(/"/g, '""')}"`,
+        `"${(f.email || '').replace(/"/g, '""')}"`,
+        `"${(f.device || '').replace(/"/g, '""')}"`,
+        f.rating || 5,
+        `"${(f.tags || []).join('; ').replace(/"/g, '""')}"`,
+        `"${(f.message || '').replace(/"/g, '""')}"`,
+        f.helpful || 0
+      ]);
+      const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `receipto_feedbacks_${new Date().toISOString().slice(0, 10)}.csv`;
+      link.click();
+      showToast('Exported CSV!', 'Feedback spreadsheet downloaded.');
+    };
+
+    window.exportJSON = function() {
+      if (!localFeedbacks || !localFeedbacks.length) {
+        alert('No feedbacks to export!');
+        return;
+      }
+      const blob = new Blob([JSON.stringify(localFeedbacks, null, 2)], { type: 'application/json' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `receipto_feedbacks_${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      showToast('Exported JSON!', 'JSON data file downloaded.');
+    };
+
+    window.exportPDF = function() {
+      if (!localFeedbacks || !localFeedbacks.length) {
+        alert('No feedbacks to export!');
+        return;
+      }
+      const printWindow = window.open('', '_blank');
+      const dateStr = new Date().toLocaleDateString();
+      const avg = (localFeedbacks.reduce((a, b) => a + b.rating, 0) / localFeedbacks.length).toFixed(1);
+
+      let rowsHtml = '';
+      localFeedbacks.forEach(f => {
+        const starStr = '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating);
+        const tagsStr = (f.tags || []).join(' • ');
+        rowsHtml += `
+          <tr>
+            <td style="white-space:nowrap; color:#64748b;">${escapeHtml(f.date || 'Recently')}</td>
+            <td><strong>${escapeHtml(f.name || 'Anonymous')}</strong></td>
+            <td style="color:#0284c7;">${escapeHtml(f.email || 'N/A')}</td>
+            <td>${escapeHtml(f.device || 'Android')}</td>
+            <td style="color:#d97706; font-weight:bold; letter-spacing:1px;">${starStr}</td>
+            <td>
+              <div style="margin-bottom:4px; line-height:1.4;">${escapeHtml(f.message || '')}</div>
+              <div style="font-size:11px; color:#6366f1;">${escapeHtml(tagsStr)}</div>
+            </td>
+          </tr>
+        `;
+      });
+
+      const html = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Receipto Beta Testers Feedback Report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 30px; color: #0f172a; margin: 0; }
+    .header { border-bottom: 2px solid #0284c7; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
+    h1 { margin: 0 0 5px 0; color: #0f172a; font-size: 24px; }
+    .meta { font-size: 13px; color: #64748b; }
+    .stats-card { display: flex; gap: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 20px; margin-bottom: 24px; }
+    .stat-item { font-size: 13px; color: #475569; }
+    .stat-item strong { display: block; font-size: 22px; color: #0284c7; margin-top: 2px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    th { background: #0f172a; color: #ffffff; text-align: left; padding: 10px 12px; font-weight: 600; }
+    td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    tr:nth-child(even) { background: #f8fafc; }
+    @media print {
+      body { padding: 0; }
+      @page { margin: 12mm; size: landscape; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <h1>📄 Receipto Beta Testers Feedback Report</h1>
+      <div class="meta">Confidential App Diagnostics &amp; User Experience Log</div>
+    </div>
+    <div class="meta" style="text-align: right;">Generated: ${dateStr}</div>
+  </div>
+
+  <div class="stats-card">
+    <div class="stat-item">Total Reviews Received<strong>${localFeedbacks.length}</strong></div>
+    <div class="stat-item">Average Rating<strong>★ ${avg} / 5.0</strong></div>
+    <div class="stat-item">Developer<strong>Milanraj D Kunder</strong></div>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Tester Name</th>
+        <th>Email</th>
+        <th>Device</th>
+        <th>Rating</th>
+        <th>Feedback &amp; Tags</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${rowsHtml}
+    </tbody>
+  </table>
+  <script>
+    window.onload = function() {
+      window.print();
+    };
+  <\/script>
+</body>
+</html>`;
+
+      printWindow.document.write(html);
+      printWindow.document.close();
+    };
 
     window.deleteFeedback = async function(id) {
       if (!confirm('Are you sure you want to permanently delete this review?')) return;
