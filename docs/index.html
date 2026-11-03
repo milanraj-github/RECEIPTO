@@ -3797,13 +3797,22 @@
             .select('*')
             .order('created_at', { ascending: false });
           if (!error && data && data.length > 0) {
-            feedbackRecords = data.map(row => {
+            const cloudRecords = data.map(row => {
               let parsed = null;
               try {
-                if (row.message && row.message.trim().startsWith('{')) {
+                if (row.message && typeof row.message === 'string' && row.message.trim().startsWith('{')) {
                   parsed = JSON.parse(row.message);
                 }
               } catch(e) {}
+
+              const ft = (parsed && parsed.features) ? parsed.features : (row.features || {});
+              const sug = (parsed && parsed.suggestions) ? parsed.suggestions : {
+                favFeature: (parsed && parsed.favFeature) || (row.message && !row.message.startsWith('{') ? row.message : ''),
+                impressedFeature: (parsed && parsed.impressedFeature) || '',
+                improvements: (parsed && parsed.improvements) || '',
+                futureWishes: (parsed && parsed.futureWishes) || '',
+                devMessage: (parsed && parsed.devMessage) || ''
+              };
 
               return {
                 id: row.id,
@@ -3812,18 +3821,12 @@
                 device: row.device || 'Android Device',
                 rating: parseInt(row.rating) || 5,
                 message: (parsed && parsed.message) ? parsed.message : (row.message || ''),
-                features: row.features || (parsed ? parsed.features : {}),
-                suggestions: (parsed && parsed.suggestions) ? parsed.suggestions : {
-                  favFeature: (parsed && parsed.favFeature) || (row.message && row.message.includes('★ Favourite:') ? row.message : ''),
-                  improvements: (parsed && parsed.improvements) || '',
-                  futureWishes: (parsed && parsed.futureWishes) || '',
-                  continueUsing: (parsed && parsed.continueUsing) || 'Definitely Yes',
-                  devMessage: (parsed && parsed.devMessage) || ''
-                },
+                features: ft,
+                suggestions: sug,
                 finalEvaluation: (parsed && parsed.finalEvaluation) || {
                   overallSatisfaction: parseInt(row.rating) || 5,
-                  continueUsing: (parsed && parsed.continueUsing) || 'Definitely Yes',
-                  devMessage: (parsed && parsed.devMessage) || ''
+                  continueUsing: 'Definitely Yes',
+                  devMessage: sug.devMessage || ''
                 },
                 bugReport: (parsed && parsed.bugReport) ? parsed.bugReport : null,
                 hasBug: parsed ? (parsed.hasBug || false) : (row.tags && row.tags.some(t => t.includes('Bug'))),
@@ -3835,6 +3838,15 @@
                 date: row.created_at ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' } ) : 'Recently'
               };
             });
+
+            // Merge cloud records and INITIAL_RECORDS
+            const seenIds = new Set(cloudRecords.map(r => r.id));
+            const merged = [...cloudRecords];
+            INITIAL_RECORDS.forEach(init => {
+              if (!seenIds.has(init.id)) merged.push(init);
+            });
+
+            feedbackRecords = merged;
             localStorage.setItem('receipto_feedbacks', JSON.stringify(feedbackRecords));
           }
         } catch(e) {
@@ -3847,6 +3859,8 @@
       renderCommunityFeed();
       renderAdminResponses();
     }
+    // Initial immediate synchronous render so cards appear instantly!
+    renderCommunityFeed();
     loadCloudFeedbacks();
   </script>
 </body>
