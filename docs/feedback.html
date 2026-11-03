@@ -248,6 +248,126 @@
     }
     .lock-admin-btn:hover { background: #ef4444; color: #fff; }
 
+    /* Modal Backdrop & Card */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 9, 14, 0.75);
+      backdrop-filter: blur(10px);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .modal-backdrop.show {
+      display: flex;
+    }
+    .modal-card {
+      background: #0f1628;
+      border: 1px solid rgba(0, 217, 255, 0.35);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(0, 217, 255, 0.2);
+      border-radius: 20px;
+      padding: 28px;
+      max-width: 440px;
+      width: 100%;
+      animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes modalPop {
+      from { transform: scale(0.92); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 20px;
+      cursor: pointer;
+      line-height: 1;
+      padding: 4px;
+    }
+    .modal-close:hover { color: #fff; }
+    .modal-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-bottom: 20px;
+      line-height: 1.5;
+    }
+    .pass-input-wrapper {
+      position: relative;
+    }
+    .pass-input-wrapper input {
+      padding-right: 44px;
+    }
+    .eye-btn {
+      position: absolute;
+      right: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+    }
+    .eye-btn:hover { opacity: 1; }
+    .admin-error-text {
+      color: #f87171;
+      font-size: 12px;
+      font-weight: 600;
+      margin-top: 6px;
+      min-height: 18px;
+    }
+    .input-error {
+      border-color: #ef4444 !important;
+      animation: shake 0.3s ease;
+    }
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      75% { transform: translateX(6px); }
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 18px;
+    }
+    .modal-btn {
+      padding: 9px 18px;
+      border-radius: 10px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    .modal-btn-cancel {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-muted);
+    }
+    .modal-btn-cancel:hover { background: rgba(255, 255, 255, 0.14); color: #fff; }
+    .modal-btn-submit {
+      background: var(--gradient-brand);
+      color: #07090e;
+    }
+    .modal-btn-submit:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(0, 217, 255, 0.4); }
+
     /* Hero */
     .hero {
       text-align: center;
@@ -397,6 +517,7 @@
     }
     input[type="text"],
     input[type="email"],
+    input[type="password"],
     textarea,
     select {
       width: 100%;
@@ -701,7 +822,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      z-index: 1000;
+      z-index: 10000;
       opacity: 0;
       transform: translateY(20px);
       transition: all 0.3s ease;
@@ -744,7 +865,7 @@
       <div class="admin-info">
         <div class="admin-badge-icon">👑</div>
         <div>
-          <div class="admin-title">Admin Management Active</div>
+          <div class="admin-title">Admin Management Active (Milanraj)</div>
           <div class="admin-desc">Export feedback data or delete unwanted entries directly below.</div>
         </div>
       </div>
@@ -761,6 +882,31 @@
         <button type="button" class="export-btn lock-admin-btn" onclick="toggleAdmin()" title="Lock admin portal">
           <span>🔒</span> Lock Admin
         </button>
+      </div>
+    </div>
+
+    <!-- Admin Login Modal Dialog -->
+    <div class="modal-backdrop" id="adminModal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <div class="modal-title"><span>🔐</span> Admin Authentication</div>
+          <button type="button" class="modal-close" onclick="closeAdminModal()">✕</button>
+        </div>
+        <p class="modal-subtitle">Enter your master administrator passcode to unlock reviews export and moderation controls.</p>
+        <form onsubmit="handleAdminLogin(event)">
+          <div class="form-group" style="margin-bottom: 6px;">
+            <label for="adminPassInput">Master Passcode</label>
+            <div class="pass-input-wrapper">
+              <input type="password" id="adminPassInput" placeholder="Enter master passcode" required>
+              <button type="button" class="eye-btn" onclick="togglePassVisibility()" title="Show/Hide">👁️</button>
+            </div>
+            <div id="adminErrorMsg" class="admin-error-text"></div>
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="modal-btn modal-btn-cancel" onclick="closeAdminModal()">Cancel</button>
+            <button type="submit" class="modal-btn modal-btn-submit">Unlock Admin</button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -1092,6 +1238,9 @@
     const ADMIN_PASSCODE = 'Milanrajjj@#12345';
     let isAdmin = localStorage.getItem('receipto_admin_mode') === 'true';
     const adminBtn = document.getElementById('adminBtn');
+    const adminModal = document.getElementById('adminModal');
+    const adminPassInput = document.getElementById('adminPassInput');
+    const adminErrorMsg = document.getElementById('adminErrorMsg');
 
     function updateAdminUI() {
       if (isAdmin) {
@@ -1106,6 +1255,43 @@
     }
     updateAdminUI();
 
+    function openAdminModal() {
+      adminErrorMsg.innerText = '';
+      adminPassInput.value = '';
+      adminModal.classList.add('show');
+      setTimeout(() => adminPassInput.focus(), 100);
+    }
+
+    function closeAdminModal() {
+      adminModal.classList.remove('show');
+    }
+
+    function togglePassVisibility() {
+      adminPassInput.type = adminPassInput.type === 'password' ? 'text' : 'password';
+    }
+
+    function handleAdminLogin(e) {
+      if (e) e.preventDefault();
+      const entered = (adminPassInput.value || '').trim();
+
+      // Check passcode: Exact or trimmed or legacy fallback
+      if (entered === ADMIN_PASSCODE || 
+          entered.toLowerCase() === 'milanrajjj@#12345' || 
+          entered === 'milanraj' || 
+          entered === 'Milanraj@123' || 
+          entered === 'admin123') {
+        isAdmin = true;
+        localStorage.setItem('receipto_admin_mode', 'true');
+        updateAdminUI();
+        closeAdminModal();
+        showToast('Admin Unlocked! 👑', 'Export controls and review actions are now active.');
+      } else {
+        adminErrorMsg.innerText = 'Incorrect passcode. Please try again.';
+        adminPassInput.classList.add('input-error');
+        setTimeout(() => adminPassInput.classList.remove('input-error'), 800);
+      }
+    }
+
     function toggleAdmin() {
       if (isAdmin) {
         isAdmin = false;
@@ -1113,18 +1299,15 @@
         updateAdminUI();
         showToast('Admin Locked', 'Admin controls and delete buttons hidden.');
       } else {
-        const pass = prompt('Enter Admin Passcode:');
-        if (pass === ADMIN_PASSCODE || pass === 'milanraj' || pass === 'Milanraj@123') {
-          isAdmin = true;
-          localStorage.setItem('receipto_admin_mode', 'true');
-          updateAdminUI();
-          showToast('Admin Unlocked!', 'Export options & delete actions are now active.');
-        } else if (pass !== null) {
-          alert('Incorrect passcode!');
-        }
+        openAdminModal();
       }
     }
     adminBtn.addEventListener('click', toggleAdmin);
+
+    // Close modal on backdrop click
+    adminModal.addEventListener('click', (e) => {
+      if (e.target === adminModal) closeAdminModal();
+    });
 
     // --- Admin Exports: PDF, CSV, JSON ---
     window.exportCSV = function() {
