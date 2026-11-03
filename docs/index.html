@@ -493,6 +493,30 @@
       min-height: 90px;
     }
 
+    /* Field Validation & Error Highlighting */
+    .input-error {
+      border-color: #ef4444 !important;
+      background: rgba(239, 68, 68, 0.08) !important;
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.45) !important;
+      animation: fieldShake 0.35s ease;
+    }
+    @keyframes fieldShake {
+      0%, 100% { transform: translateX(0); }
+      25% { transform: translateX(-6px); }
+      50% { transform: translateX(6px); }
+      75% { transform: translateX(-4px); }
+    }
+    .field-error-text {
+      color: #f87171;
+      font-size: 11.5px;
+      font-weight: 700;
+      margin-top: 5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      animation: fadeIn 0.2s ease;
+    }
+
     /* Interactive Five-Star Component */
     .star-rating-box {
       background: rgba(255, 255, 255, 0.025);
@@ -987,42 +1011,159 @@
       grid-template-columns: 1fr;
       gap: 14px;
     }
+    /* Enhanced Public Feedback Cards (Full Details Display) */
     .feed-card {
-      background: rgba(16, 21, 36, 0.7);
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(16, 21, 36, 0.78);
+      border: 1px solid rgba(255, 255, 255, 0.08);
       border-radius: var(--radius-md);
-      padding: 18px;
+      padding: 20px;
       animation: fadeIn 0.3s ease;
+      margin-bottom: 16px;
+      transition: all 0.2s ease;
     }
     .feed-card:hover {
-      border-color: rgba(0, 217, 255, 0.25);
+      border-color: rgba(0, 217, 255, 0.3);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
     }
     .feed-top {
-      display: flex; justify-content: space-between; align-items: center;
-      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 14px;
     }
-    .feed-user { display: flex; align-items: center; gap: 10px; }
+    .feed-user { display: flex; align-items: center; gap: 12px; }
     .feed-avatar {
-      width: 32px; height: 32px; border-radius: 50%;
+      width: 36px; height: 36px; border-radius: 50%;
       background: var(--gradient-brand);
       display: flex; align-items: center; justify-content: center;
-      font-weight: 800; color: #07090e; font-size: 13px;
+      font-weight: 800; color: #07090e; font-size: 14px;
     }
-    .feed-name { font-weight: 700; font-size: 13.5px; color: #fff; }
-    .feed-meta { font-size: 11px; color: var(--text-muted); }
-    .feed-stars { color: var(--accent-gold); font-size: 13px; letter-spacing: 2px; }
-    .feed-body { font-size: 13px; color: #cbd5e1; margin-bottom: 10px; line-height: 1.5; }
-    .feed-chips-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-    .feed-chip {
-      font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 6px;
-      background: rgba(0, 217, 255, 0.1); color: var(--accent-cyan);
+    .feed-name { font-weight: 800; font-size: 14.5px; color: #fff; }
+    .feed-meta { font-size: 11.5px; color: var(--text-muted); }
+    .feed-stars-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(251, 191, 36, 0.1);
+      border: 1px solid rgba(251, 191, 36, 0.25);
+      padding: 4px 10px;
+      border-radius: 999px;
+      color: var(--accent-gold);
+      font-size: 13px;
+    }
+    .feed-stars-val {
+      font-weight: 800;
+      font-size: 12px;
+      color: #fff;
+    }
+    .feed-insights-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .feed-quote-item {
+      background: rgba(255, 255, 255, 0.03);
+      border-radius: 8px;
+      padding: 10px 12px;
+      font-size: 13px;
+      line-height: 1.5;
+      color: #e2e8f0;
+    }
+    .feed-quote-item.fav {
+      border-left: 3px solid var(--accent-cyan);
+    }
+    .feed-quote-item.imp {
+      border-left: 3px solid #f59e0b;
+    }
+    .feed-quote-item.wish {
+      border-left: 3px solid var(--accent-purple);
+    }
+    .feed-quote-title {
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 3px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .feed-quote-title.fav { color: var(--accent-cyan); }
+    .feed-quote-title.imp { color: #fbbf24; }
+    .feed-quote-title.wish { color: #c4b5fd; }
+    .feed-meta-chips-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-bottom: 12px;
+    }
+    .feed-badge-pill {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: #cbd5e1;
+    }
+    .feed-feature-chip {
+      font-size: 11px;
+      font-weight: 700;
+      padding: 3px 9px;
+      border-radius: 6px;
+      background: rgba(0, 217, 255, 0.08);
       border: 1px solid rgba(0, 217, 255, 0.2);
+      color: var(--accent-cyan);
+    }
+    .feed-details-accordion {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 12px;
+      color: #94a3b8;
+      margin-bottom: 12px;
+      display: none;
+      animation: fadeIn 0.2s ease;
+    }
+    .feed-details-accordion.show {
+      display: block;
+    }
+    .feed-accordion-btn {
+      background: transparent;
+      border: none;
+      color: var(--accent-cyan);
+      font-size: 11.5px;
+      font-weight: 700;
+      cursor: pointer;
+      padding: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+    .feed-accordion-btn:hover {
+      text-decoration: underline;
     }
     .feed-footer {
-      display: flex; justify-content: space-between; align-items: center;
-      font-size: 11px; color: var(--text-muted);
-      border-top: 1px solid rgba(255, 255, 255, 0.04);
-      padding-top: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+      color: var(--text-muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 10px;
+      margin-top: 8px;
+    }
+    .verified-tag {
+      color: var(--accent-green);
+      font-weight: 700;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
     }
     .feed-del-btn {
       display: none;
@@ -1033,6 +1174,234 @@
       font-size: 10.5px; font-weight: 700; cursor: pointer;
     }
     body.admin-mode .feed-del-btn { display: inline-flex; align-items: center; gap: 4px; }
+
+    /* Admin Dedicated Full Responses Dashboard */
+    .admin-responses-dashboard {
+      display: none;
+      max-width: 1140px;
+      margin: 0 auto 30px auto;
+      padding: 24px;
+      background: rgba(16, 21, 36, 0.92);
+      border: 1px solid rgba(0, 217, 255, 0.35);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(24px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.3s ease;
+    }
+    body.admin-mode .admin-responses-dashboard {
+      display: block;
+    }
+    .admin-dash-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 16px;
+      margin-bottom: 20px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 16px;
+    }
+    .admin-dash-badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 800;
+      color: var(--accent-gold);
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      padding: 4px 12px;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 6px;
+    }
+    .admin-dash-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+    }
+    .admin-dash-subtitle {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 2px;
+    }
+    .admin-stats-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .admin-stat-pill {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 6px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+    .admin-filter-bar {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    .admin-search-input {
+      flex: 1;
+      min-width: 260px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 13px;
+    }
+    .admin-search-input:focus {
+      outline: none;
+      border-color: var(--accent-cyan);
+    }
+    .admin-filter-select {
+      background: #0f1628;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      padding: 10px 14px;
+      color: #fff;
+      font-size: 13px;
+    }
+    .admin-records-list {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .admin-full-card {
+      background: rgba(22, 29, 49, 0.72);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: var(--radius-md);
+      padding: 22px;
+      transition: border-color 0.2s ease;
+    }
+    .admin-full-card:hover {
+      border-color: rgba(0, 217, 255, 0.35);
+    }
+    .admin-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 14px;
+    }
+    .admin-user-title {
+      font-size: 17px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .admin-user-email {
+      font-size: 12.5px;
+      color: var(--accent-cyan);
+      margin-top: 3px;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .admin-user-email:hover {
+      text-decoration: underline;
+    }
+    .admin-user-meta {
+      font-size: 11.5px;
+      color: var(--text-muted);
+      margin-top: 3px;
+    }
+    .admin-card-rating {
+      text-align: right;
+    }
+    .admin-stars {
+      color: var(--accent-gold);
+      font-size: 18px;
+      letter-spacing: 2px;
+    }
+    .admin-rating-badge {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--accent-gold);
+      margin-top: 2px;
+    }
+    .admin-q-row {
+      margin-bottom: 14px;
+    }
+    .admin-q-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .admin-q-content {
+      background: rgba(255, 255, 255, 0.03);
+      border-left: 3px solid var(--accent-cyan);
+      padding: 10px 14px;
+      border-radius: 0 8px 8px 0;
+      font-size: 13.5px;
+      color: #f1f5f9;
+      line-height: 1.5;
+    }
+    .admin-q-content.to-improve {
+      border-left-color: #f59e0b;
+    }
+    .admin-q-content.wishlist {
+      border-left-color: var(--accent-purple);
+    }
+    .admin-meta-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.2);
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      color: #cbd5e1;
+      margin-bottom: 14px;
+    }
+    .admin-bug-alert-box {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 14px;
+    }
+    .admin-bug-title {
+      font-size: 13.5px;
+      font-weight: 800;
+      color: #f87171;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+    .admin-bug-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      font-size: 12px;
+      color: #cbd5e1;
+    }
+    @media (max-width: 600px) {
+      .admin-bug-grid { grid-template-columns: 1fr; }
+    }
+    .admin-card-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 8px;
+      margin-top: 14px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+      padding-top: 12px;
+    }
 
     /* Toast */
     .toast {
@@ -1112,6 +1481,36 @@
         </button>
       </div>
     </div>
+
+    <!-- Admin Full Responses Dashboard (Displays full responses and feedback in Admin Mode) -->
+    <section class="admin-responses-dashboard" id="adminResponsesDashboard">
+      <div class="admin-dash-header-row">
+        <div>
+          <div class="admin-dash-badge">👑 Master Admin Portal</div>
+          <h2 class="admin-dash-title">Tester Feedback &amp; Evaluation Records</h2>
+          <p class="admin-dash-subtitle">Viewing full, un-truncated diagnostic evaluations submitted by closed beta testers.</p>
+        </div>
+        <div class="admin-stats-pills">
+          <span class="admin-stat-pill">Total: <b id="adminTotalCount" style="color: var(--accent-cyan);">0</b></span>
+          <span class="admin-stat-pill">Avg: <b id="adminAvgScore" style="color: var(--accent-gold);">5.0</b> ★</span>
+          <span class="admin-stat-pill" style="color: #f87171;">Bugs: <b id="adminBugsCount">0</b></span>
+        </div>
+      </div>
+      <div class="admin-filter-bar">
+        <input type="text" id="adminSearchInput" class="admin-search-input" placeholder="🔍 Search full responses by tester name, email, device or keyword..." oninput="filterAdminResponses()">
+        <select id="adminRatingFilter" class="admin-filter-select" onchange="filterAdminResponses()">
+          <option value="all">All Ratings (1★ – 5★)</option>
+          <option value="5">5 Stars (Excellent)</option>
+          <option value="4">4 Stars (Very Good)</option>
+          <option value="3">3 Stars &amp; Below</option>
+          <option value="bugs">With Bug Reports Only</option>
+        </select>
+      </div>
+
+      <div class="admin-records-list" id="adminRecordsList">
+        <!-- Populated live by renderAdminResponses() -->
+      </div>
+    </section>
 
     <!-- Admin Login Modal -->
     <div class="modal-backdrop" id="adminModal">
@@ -1999,16 +2398,73 @@
       }
     }
 
+    // --- Field Validation & Error Highlighting Helpers ---
+    function highlightField(el, msg) {
+      if (!el) return;
+      el.classList.add('input-error');
+
+      const parent = el.parentElement;
+      const oldErr = parent.querySelector('.field-error-text');
+      if (oldErr) oldErr.remove();
+
+      const errEl = document.createElement('div');
+      errEl.className = 'field-error-text';
+      errEl.innerHTML = `<span>⚠️</span> <span>${msg || 'This field is required'}</span>`;
+      parent.appendChild(errEl);
+
+      const clearError = () => {
+        el.classList.remove('input-error');
+        const e = parent.querySelector('.field-error-text');
+        if (e) e.remove();
+        el.removeEventListener('input', clearError);
+        el.removeEventListener('change', clearError);
+      };
+      el.addEventListener('input', clearError);
+      el.addEventListener('change', clearError);
+    }
+
+    function clearFieldErrors(container) {
+      const root = container || document;
+      root.querySelectorAll('.input-error').forEach(el => el.classList.remove('input-error'));
+      root.querySelectorAll('.field-error-text').forEach(el => el.remove());
+    }
+
     function validateAndGoStep(fromStep, toStep) {
       if (fromStep === 1) {
-        const name = document.getElementById('testerName').value.trim();
-        const email = document.getElementById('testerEmail').value.trim();
-        const device = document.getElementById('deviceModel').value.trim();
-        const android = document.getElementById('androidVersion').value;
-        const duration = document.getElementById('testingDuration').value;
+        clearFieldErrors(document.getElementById('step1Card'));
+        const nameEl = document.getElementById('testerName');
+        const emailEl = document.getElementById('testerEmail');
+        const deviceEl = document.getElementById('deviceModel');
+        const androidEl = document.getElementById('androidVersion');
+        const durationEl = document.getElementById('testingDuration');
 
-        if (!name || !email || !device || !android || !duration) {
-          showToast('Incomplete Fields', 'Please complete all required tester details.', '⚠️');
+        let firstInvalid = null;
+
+        if (!nameEl.value.trim()) {
+          highlightField(nameEl, 'Please enter your full name');
+          firstInvalid = firstInvalid || nameEl;
+        }
+        if (!emailEl.value.trim() || !emailEl.value.includes('@')) {
+          highlightField(emailEl, 'Please enter a valid email address');
+          firstInvalid = firstInvalid || emailEl;
+        }
+        if (!deviceEl.value.trim()) {
+          highlightField(deviceEl, 'Please enter your phone brand and model');
+          firstInvalid = firstInvalid || deviceEl;
+        }
+        if (!androidEl.value) {
+          highlightField(androidEl, 'Please select your Android OS version');
+          firstInvalid = firstInvalid || androidEl;
+        }
+        if (!durationEl.value) {
+          highlightField(durationEl, 'Please select your testing duration');
+          firstInvalid = firstInvalid || durationEl;
+        }
+
+        if (firstInvalid) {
+          firstInvalid.focus();
+          firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          showToast('Incomplete Fields', 'Please complete the highlighted required fields.', '⚠️');
           return;
         }
       }
@@ -2143,6 +2599,37 @@
 
       const hasBug = document.getElementById('hasBugInput').value === 'Yes';
 
+      // Validate required fields on final submission with highlighting
+      clearFieldErrors(document.getElementById('step5Card'));
+      const favEl = document.getElementById('favFeature');
+      const impEl = document.getElementById('improvements');
+      let firstInvalid = null;
+
+      if (!favEl.value.trim()) {
+        highlightField(favEl, 'Please tell us your favourite feature');
+        firstInvalid = firstInvalid || favEl;
+      }
+      if (!impEl.value.trim()) {
+        highlightField(impEl, 'Please tell us what we can improve before launch');
+        firstInvalid = firstInvalid || impEl;
+      }
+      if (hasBug) {
+        const bugDesc = document.getElementById('bugDescription');
+        if (!bugDesc.value.trim()) {
+          highlightField(bugDesc, 'Please describe the bug encountered');
+          firstInvalid = firstInvalid || bugDesc;
+        }
+      }
+
+      if (firstInvalid) {
+        firstInvalid.focus();
+        firstInvalid.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        showToast('Incomplete Fields', 'Please complete the highlighted feedback questions.', '⚠️');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>SUBMIT FEEDBACK</span><span>🚀</span>';
+        return;
+      }
+
       const formData = {
         id: 'rev-' + Date.now(),
         name: document.getElementById('testerName').value.trim(),
@@ -2196,20 +2683,33 @@
         helpful: 0
       };
 
-      // Message summary for feed card
+      // Message summary for fallback
       formData.message = formData.suggestions.favFeature
         ? `★ Favourite: "${formData.suggestions.favFeature}". Improve: "${formData.suggestions.improvements}"`
         : `Overall Experience: ${formData.rating}/5. Testing duration: ${formData.testingDuration}.`;
 
-      // 1. Submit to Supabase Cloud
+      // 1. Submit Full Payload to Supabase Cloud
       if (supabaseClient) {
         try {
+          const cloudPayload = {
+            message: formData.message,
+            suggestions: formData.suggestions,
+            finalEvaluation: formData.finalEvaluation,
+            bugReport: formData.bugReport,
+            hasBug: formData.hasBug,
+            uiUx: formData.uiUx,
+            comments: formData.comments,
+            easeOfUse: formData.easeOfUse,
+            testingDuration: formData.testingDuration,
+            appVersion: formData.appVersion
+          };
+
           await supabaseClient.from('feedbacks').insert([{
             name: formData.name,
             email: formData.email,
             device: formData.device,
             rating: formData.rating,
-            message: formData.message,
+            message: JSON.stringify(cloudPayload),
             features: formData.features,
             tags: [
               `v${formData.appVersion.split(' ')[0]}`,
@@ -2226,6 +2726,7 @@
       feedbackRecords.unshift(formData);
       localStorage.setItem('receipto_feedbacks', JSON.stringify(feedbackRecords));
       renderCommunityFeed();
+      renderAdminResponses();
 
       // 3. Show Celebration & Success View
       if (window.confetti) {
@@ -2250,7 +2751,7 @@
       goToStep(1);
     }
 
-    // --- 6. Render Community Wall Feed ---
+    // --- 6. Render Community Wall Feed (Full User Feedback Details) ---
     const featureDisplayNames = {
       nlp_ocr: '⚡ NLP OCR',
       receipts: '🗄️ Receipts',
@@ -2260,6 +2761,15 @@
       analytics: '📊 Analytics',
       pdf: '📑 PDF',
       whatsapp: '💬 WhatsApp'
+    };
+
+    window.toggleCardDetails = function(id) {
+      const el = document.getElementById('detailsAccordion_' + id);
+      const btn = document.getElementById('detailsToggleBtn_' + id);
+      if (el) {
+        const isShown = el.classList.toggle('show');
+        if (btn) btn.innerHTML = isShown ? 'Hide Full Diagnostics ▲' : 'View Full Evaluation Details ▼';
+      }
     };
 
     function renderCommunityFeed() {
@@ -2276,6 +2786,7 @@
         `;
         document.getElementById('wallAvgRating').innerText = '5.0';
         document.getElementById('wallCount').innerText = '0';
+        updateOverallResponseUI();
         return;
       }
 
@@ -2287,12 +2798,25 @@
         const initial = (item.name || 'T')[0].toUpperCase();
         const starsText = '★'.repeat(item.rating || 5) + '☆'.repeat(5 - (item.rating || 5));
 
+        const sug = item.suggestions || {};
+        const fav = sug.favFeature || '';
+        const imp = sug.improvements || '';
+        const wish = sug.futureWishes || '';
+        const impressed = sug.impressedFeature || '';
+        const devMsg = (item.finalEvaluation && item.finalEvaluation.devMessage) || sug.devMessage || '';
+        const comments = item.comments || {};
+        const hasBug = item.hasBug || (item.bugReport !== null && item.bugReport !== undefined);
+        const bug = item.bugReport || null;
+        const ease = item.easeOfUse || 'Very Easy';
+        const dur = item.testingDuration || '1–3 days';
+        const ver = item.appVersion || '1.0.0 (Build 1)';
+        const ocrComment = comments.nlp_ocr || '';
+
         // Format feature rating tags
         const ft = item.features || {};
         const chipsHtml = Object.entries(ft)
           .filter(([k, v]) => v !== null && featureDisplayNames[k])
-          .slice(0, 6)
-          .map(([k, v]) => `<span class="feed-chip">${featureDisplayNames[k]}: ${v}★</span>`)
+          .map(([k, v]) => `<span class="feed-feature-chip">${featureDisplayNames[k]}: ${v}★</span>`)
           .join('');
 
         card.innerHTML = `
@@ -2304,12 +2828,74 @@
                 <div class="feed-meta">${escapeHtml(item.device || 'Android Tester')} • ${item.date || 'Recently'}</div>
               </div>
             </div>
-            <div class="feed-stars">${starsText}</div>
+            <div class="feed-stars-badge">
+              <span>${starsText}</span>
+              <span class="feed-stars-val">${(item.rating || 5).toFixed(1)}</span>
+            </div>
           </div>
-          <div class="feed-body">${escapeHtml(item.message || '')}</div>
-          <div class="feed-chips-row">${chipsHtml}</div>
+
+          <!-- Metadata Badges -->
+          <div class="feed-meta-chips-row">
+            <span class="feed-badge-pill">⏱️ Tested: ${escapeHtml(dur)}</span>
+            <span class="feed-badge-pill">⚡ Ease: ${escapeHtml(ease)}</span>
+            ${hasBug ? `<span class="feed-badge-pill" style="border-color: rgba(239,68,68,0.4); color: #f87171;">⚠️ Bug Logged</span>` : `<span class="feed-badge-pill" style="color: #34d399;">✅ Zero Crashes</span>`}
+          </div>
+
+          <!-- Key Feedback Insights (Full User Details) -->
+          <div class="feed-insights-list">
+            ${fav ? `
+              <div class="feed-quote-item fav">
+                <div class="feed-quote-title fav">❤️ Favourite Feature</div>
+                <div>"${escapeHtml(fav)}"</div>
+              </div>
+            ` : ''}
+
+            ${imp ? `
+              <div class="feed-quote-item imp">
+                <div class="feed-quote-title imp">💡 Suggested Improvement</div>
+                <div>"${escapeHtml(imp)}"</div>
+              </div>
+            ` : ''}
+
+            ${wish ? `
+              <div class="feed-quote-item wish">
+                <div class="feed-quote-title wish">✨ Future Wishlist</div>
+                <div>"${escapeHtml(wish)}"</div>
+              </div>
+            ` : ''}
+
+            ${!fav && !imp && item.message ? `
+              <div class="feed-quote-item">
+                <div>${escapeHtml(item.message)}</div>
+              </div>
+            ` : ''}
+          </div>
+
+          <!-- Evaluated Feature Chips -->
+          <div class="feed-meta-chips-row">${chipsHtml}</div>
+
+          <!-- Expandable Diagnostics Accordion -->
+          <div class="feed-details-accordion" id="detailsAccordion_${item.id}">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; margin-bottom: 8px;">
+              <div><strong>App Version:</strong> ${escapeHtml(ver)}</div>
+              <div><strong>Will Continue:</strong> ${escapeHtml(sug.continueUsing || (item.finalEvaluation && item.finalEvaluation.continueUsing) || 'Definitely Yes')}</div>
+              ${impressed ? `<div style="grid-column: 1 / -1;"><strong>Most Impressed:</strong> "${escapeHtml(impressed)}"</div>` : ''}
+              ${ocrComment ? `<div style="grid-column: 1 / -1;"><strong>NLP OCR Note:</strong> "${escapeHtml(ocrComment)}"</div>` : ''}
+              ${devMsg ? `<div style="grid-column: 1 / -1;"><strong>Dev Note:</strong> "${escapeHtml(devMsg)}"</div>` : ''}
+            </div>
+            ${hasBug && bug ? `
+              <div style="background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); border-radius: 6px; padding: 8px 10px; margin-top: 6px; color: #fca5a5; font-size: 11.5px;">
+                <strong>⚠️ Bug Diagnostic:</strong> ${escapeHtml(bug.feature || 'Feature')} (${escapeHtml(bug.severity || 'Medium')}) – ${escapeHtml(bug.description || '')}
+              </div>
+            ` : ''}
+          </div>
+
+          <button type="button" class="feed-accordion-btn" id="detailsToggleBtn_${item.id}" onclick="toggleCardDetails('${item.id}')">
+            View Full Evaluation Details ▼
+          </button>
+
           <div class="feed-footer">
-            <span>Verified Beta Tester</span>
+            <span class="verified-tag">✓ Verified Closed Beta Tester</span>
             <button class="feed-del-btn" onclick="deleteFeedback('${item.id}')">🗑️ Delete</button>
           </div>
         `;
@@ -2320,9 +2906,174 @@
       document.getElementById('wallAvgRating').innerText = (sumRating / count).toFixed(1);
       document.getElementById('wallCount').innerText = count;
 
-      // Also refresh the overall response scoreboard below hero
+      // Refresh overall response scoreboard below hero
       updateOverallResponseUI();
     }
+
+    // --- 7. Admin Dedicated Full Responses & Feedback Console ---
+    function renderAdminResponses(query = '', filter = 'all') {
+      const listEl = document.getElementById('adminRecordsList');
+      if (!listEl) return;
+      listEl.innerHTML = '';
+
+      const q = (query || '').toLowerCase().trim();
+      let filtered = feedbackRecords.filter(item => {
+        if (filter === '5' && (item.rating || 5) !== 5) return false;
+        if (filter === '4' && (item.rating || 5) !== 4) return false;
+        if (filter === '3' && (item.rating || 5) > 3) return false;
+        if (filter === 'bugs' && !item.hasBug && !item.bugReport) return false;
+
+        if (q) {
+          const str = `${item.name || ''} ${item.email || ''} ${item.device || ''} ${JSON.stringify(item.suggestions || {})} ${JSON.stringify(item.bugReport || {})}`.toLowerCase();
+          return str.includes(q);
+        }
+        return true;
+      });
+
+      // Update counters
+      const totalCount = feedbackRecords.length;
+      const bugCount = feedbackRecords.filter(x => x.hasBug || x.bugReport).length;
+      let sum = 0;
+      feedbackRecords.forEach(x => sum += (x.rating || 5));
+      const avg = totalCount > 0 ? (sum / totalCount).toFixed(1) : '5.0';
+
+      if (document.getElementById('adminTotalCount')) document.getElementById('adminTotalCount').innerText = totalCount;
+      if (document.getElementById('adminAvgScore')) document.getElementById('adminAvgScore').innerText = avg;
+      if (document.getElementById('adminBugsCount')) document.getElementById('adminBugsCount').innerText = bugCount;
+
+      if (!filtered || filtered.length === 0) {
+        listEl.innerHTML = `
+          <div style="text-align: center; padding: 40px 20px; color: var(--text-muted);">
+            <div style="font-size: 32px; margin-bottom: 8px;">🔍</div>
+            <div style="font-weight: 700; color: #fff;">No feedback records match your query</div>
+            <div style="font-size: 13px;">Clear search filters or wait for beta testers to submit responses.</div>
+          </div>
+        `;
+        return;
+      }
+
+      filtered.forEach(item => {
+        const sug = item.suggestions || {};
+        const fin = item.finalEvaluation || {};
+        const fav = sug.favFeature || '';
+        const imp = sug.improvements || '';
+        const wish = sug.futureWishes || '';
+        const impressed = sug.impressedFeature || '';
+        const devMsg = fin.devMessage || sug.devMessage || '';
+        const comments = item.comments || {};
+        const bug = item.bugReport || null;
+        const starsText = '★'.repeat(item.rating || 5) + '☆'.repeat(5 - (item.rating || 5));
+
+        const card = document.createElement('div');
+        card.className = 'admin-full-card';
+
+        // Format feature list
+        const ft = item.features || {};
+        const featPills = Object.entries(ft)
+          .filter(([k, v]) => v !== null && featureDisplayNames[k])
+          .map(([k, v]) => `<span class="feed-feature-chip">${featureDisplayNames[k]}: ${v}★</span>`)
+          .join('');
+
+        card.innerHTML = `
+          <div class="admin-card-header">
+            <div>
+              <div class="admin-user-title">
+                <span>👤</span>
+                <span>${escapeHtml(item.name || 'Anonymous Tester')}</span>
+              </div>
+              ${item.email ? `<a href="mailto:${escapeHtml(item.email)}" class="admin-user-email">📧 ${escapeHtml(item.email)}</a>` : ''}
+              <div class="admin-user-meta">
+                📱 ${escapeHtml(item.device || 'Android Device')} • ⏱️ ${escapeHtml(item.testingDuration || '1–3 days')} • 📦 ${escapeHtml(item.appVersion || '1.0.0')} • 📅 ${item.date || 'Recently'}
+              </div>
+            </div>
+            <div class="admin-card-rating">
+              <div class="admin-stars">${starsText}</div>
+              <div class="admin-rating-badge">${(item.rating || 5).toFixed(1)} / 5.0 (Overall)</div>
+            </div>
+          </div>
+
+          <!-- Evaluation Questions & Detailed Answers -->
+          <div class="admin-q-row">
+            <div class="admin-q-label">❤️ Favourite Feature</div>
+            <div class="admin-q-content">"${escapeHtml(fav || item.message || 'No specific favourite noted')}"</div>
+          </div>
+
+          <div class="admin-q-row">
+            <div class="admin-q-label" style="color: #fbbf24;">💡 Suggested Improvements Before Official Launch</div>
+            <div class="admin-q-content to-improve">"${escapeHtml(imp || 'Everything working smoothly.')}"</div>
+          </div>
+
+          ${wish ? `
+            <div class="admin-q-row">
+              <div class="admin-q-label" style="color: #c4b5fd;">✨ Future Updates Wishlist</div>
+              <div class="admin-q-content wishlist">"${escapeHtml(wish)}"</div>
+            </div>
+          ` : ''}
+
+          ${impressed ? `
+            <div class="admin-q-row">
+              <div class="admin-q-label">⭐ Most Impressive Capability</div>
+              <div class="admin-q-content">"${escapeHtml(impressed)}"</div>
+            </div>
+          ` : ''}
+
+          ${devMsg ? `
+            <div class="admin-q-row">
+              <div class="admin-q-label" style="color: #34d399;">💬 Developer Message</div>
+              <div class="admin-q-content" style="border-left-color: #10b981;">"${escapeHtml(devMsg)}"</div>
+            </div>
+          ` : ''}
+
+          <!-- Diagnostic Metadata Grid -->
+          <div class="admin-meta-grid">
+            <div><strong>Ease of Use:</strong> ${escapeHtml(item.easeOfUse || 'Very Easy')}</div>
+            <div><strong>Will Continue Using:</strong> ${escapeHtml(fin.continueUsing || sug.continueUsing || 'Definitely Yes')}</div>
+            <div><strong>Manual Corrections:</strong> ${escapeHtml(item.manualCorrection || 'Rarely')}</div>
+            <div><strong>Crashes Experienced:</strong> ${escapeHtml((item.uiUx && item.uiUx.crashFrequency) || 'Never')}</div>
+            <div><strong>Loading Delays:</strong> ${escapeHtml((item.uiUx && item.uiUx.delayFrequency) || 'Never')}</div>
+            ${comments.nlp_ocr ? `<div style="grid-column: 1 / -1;"><strong>NLP Scanner Note:</strong> "${escapeHtml(comments.nlp_ocr)}"</div>` : ''}
+          </div>
+
+          <!-- Feature Scores Matrix -->
+          <div style="margin-bottom: 14px;">
+            <div style="font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; margin-bottom: 6px;">Evaluated Modules:</div>
+            <div class="feed-meta-chips-row">${featPills}</div>
+          </div>
+
+          <!-- Bug Diagnostic Report if Logged -->
+          ${item.hasBug && bug ? `
+            <div class="admin-bug-alert-box">
+              <div class="admin-bug-title">
+                <span>⚠️</span>
+                <span>BUG REPORT [${escapeHtml(bug.severity || 'Medium').toUpperCase()}]</span>
+              </div>
+              <div class="admin-bug-grid">
+                <div><strong>Module:</strong> ${escapeHtml(bug.feature || 'General')}</div>
+                <div><strong>Occurs:</strong> ${escapeHtml(bug.frequency || 'Rarely')}</div>
+                <div style="grid-column: 1 / -1;"><strong>Description:</strong> ${escapeHtml(bug.description || '')}</div>
+                ${bug.steps ? `<div style="grid-column: 1 / -1;"><strong>Steps:</strong> ${escapeHtml(bug.steps)}</div>` : ''}
+                ${bug.expected ? `<div><strong>Expected:</strong> ${escapeHtml(bug.expected)}</div>` : ''}
+                ${bug.actual ? `<div><strong>Actual:</strong> ${escapeHtml(bug.actual)}</div>` : ''}
+              </div>
+            </div>
+          ` : ''}
+
+          <div class="admin-card-actions">
+            <span style="font-size: 11.5px; color: var(--text-muted); margin-right: auto;">ID: ${escapeHtml(item.id)}</span>
+            <button type="button" class="export-btn lock-admin-btn" onclick="deleteFeedback('${item.id}')">
+              🗑️ Delete Record
+            </button>
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+    }
+
+    window.filterAdminResponses = function() {
+      const q = document.getElementById('adminSearchInput').value;
+      const f = document.getElementById('adminRatingFilter').value;
+      renderAdminResponses(q, f);
+    };
 
     // --- Dynamic Overall Response Scoreboard (Based on Users' Given Feedbacks) ---
     function updateOverallResponseUI() {
@@ -2421,7 +3172,7 @@
       return d.innerHTML;
     }
 
-    // --- 7. Admin Mode & Exports (Passcode: Milanrajjj@#12345) ---
+    // --- 8. Admin Mode & Exports (Passcode: Milanrajjj@#12345) ---
     const ADMIN_PASSCODE = 'Milanrajjj@#12345';
     let isAdmin = localStorage.getItem('receipto_admin_mode') === 'true';
 
@@ -2431,6 +3182,7 @@
         document.body.classList.add('admin-mode');
         btn.classList.add('active');
         btn.innerHTML = '<span>🔓</span> Admin Portal (Active)';
+        renderAdminResponses();
       } else {
         document.body.classList.remove('admin-mode');
         btn.classList.remove('active');
@@ -2478,7 +3230,8 @@
       feedbackRecords = feedbackRecords.filter(x => x.id !== id);
       localStorage.setItem('receipto_feedbacks', JSON.stringify(feedbackRecords));
       renderCommunityFeed();
-      showToast('Deleted', 'Evaluation removed from feed.', '🗑️');
+      renderAdminResponses();
+      showToast('Deleted', 'Evaluation removed permanently.', '🗑️');
     };
 
     // Admin Export CSV
@@ -2616,21 +3369,52 @@
             .select('*')
             .order('created_at', { ascending: false });
           if (!error && data && data.length > 0) {
-            feedbackRecords = data.map(row => ({
-              id: row.id,
-              name: row.name,
-              email: row.email,
-              device: row.device,
-              rating: row.rating,
-              message: row.message,
-              features: row.features || {},
-              date: row.created_at ? new Date(row.created_at).toLocaleDateString() : 'Recently'
-            }));
+            feedbackRecords = data.map(row => {
+              let parsed = null;
+              try {
+                if (row.message && row.message.trim().startsWith('{')) {
+                  parsed = JSON.parse(row.message);
+                }
+              } catch(e) {}
+
+              return {
+                id: row.id,
+                name: row.name || 'Anonymous Tester',
+                email: row.email || '',
+                device: row.device || 'Android Device',
+                rating: parseInt(row.rating) || 5,
+                message: (parsed && parsed.message) ? parsed.message : (row.message || ''),
+                features: row.features || (parsed ? parsed.features : {}),
+                suggestions: (parsed && parsed.suggestions) ? parsed.suggestions : {
+                  favFeature: (parsed && parsed.favFeature) || (row.message && row.message.includes('★ Favourite:') ? row.message : ''),
+                  improvements: (parsed && parsed.improvements) || '',
+                  futureWishes: (parsed && parsed.futureWishes) || '',
+                  continueUsing: (parsed && parsed.continueUsing) || 'Definitely Yes',
+                  devMessage: (parsed && parsed.devMessage) || ''
+                },
+                finalEvaluation: (parsed && parsed.finalEvaluation) || {
+                  overallSatisfaction: parseInt(row.rating) || 5,
+                  continueUsing: (parsed && parsed.continueUsing) || 'Definitely Yes',
+                  devMessage: (parsed && parsed.devMessage) || ''
+                },
+                bugReport: (parsed && parsed.bugReport) ? parsed.bugReport : null,
+                hasBug: parsed ? (parsed.hasBug || false) : (row.tags && row.tags.some(t => t.includes('Bug'))),
+                comments: (parsed && parsed.comments) ? parsed.comments : {},
+                uiUx: (parsed && parsed.uiUx) ? parsed.uiUx : {},
+                easeOfUse: (parsed && parsed.easeOfUse) ? parsed.easeOfUse : 'Very Easy',
+                testingDuration: (parsed && parsed.testingDuration) ? parsed.testingDuration : '1–3 days',
+                appVersion: (parsed && parsed.appVersion) ? parsed.appVersion : '1.0.0 (Build 1)',
+                date: row.created_at ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' } ) : 'Recently'
+              };
+            });
             localStorage.setItem('receipto_feedbacks', JSON.stringify(feedbackRecords));
           }
-        } catch(e) {}
+        } catch(e) {
+          console.log('Cloud feedback sync note:', e);
+        }
       }
       renderCommunityFeed();
+      renderAdminResponses();
     }
     loadCloudFeedbacks();
   </script>
