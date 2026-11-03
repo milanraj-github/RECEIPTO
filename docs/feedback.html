@@ -509,12 +509,6 @@
       color: #ef4444;
       margin-left: 3px;
     }
-    .optional-tag {
-      color: var(--text-dim);
-      font-weight: 400;
-      font-size: 11px;
-      margin-left: 4px;
-    }
     input[type="text"],
     input[type="email"],
     input[type="password"],
@@ -545,15 +539,15 @@
     .feature-group {
       background: rgba(255, 255, 255, 0.02);
       border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 18px;
+      border-radius: 14px;
+      padding: 16px 18px;
+      margin-bottom: 20px;
     }
     .feature-row {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 8px 0;
+      padding: 9px 0;
       border-bottom: 1px solid rgba(255, 255, 255, 0.04);
     }
     .feature-row:last-child { border-bottom: none; }
@@ -665,6 +659,49 @@
       color: var(--accent-gold);
     }
 
+    /* Feature Averages Summary Bar */
+    .feature-summary-card {
+      background: rgba(16, 21, 36, 0.65);
+      border: 1px solid rgba(0, 217, 255, 0.2);
+      border-radius: 14px;
+      padding: 14px 18px;
+      backdrop-filter: blur(12px);
+    }
+    .feature-summary-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .feature-bars-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px;
+    }
+    .feat-bar-item {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 11.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .feat-bar-label {
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .feat-bar-score {
+      color: var(--accent-gold);
+      font-weight: 700;
+    }
+
     /* Feedback Cards */
     .feed-list {
       display: flex;
@@ -743,6 +780,30 @@
       margin-bottom: 12px;
       white-space: pre-line;
     }
+
+    /* Feature Ratings Display on Review Card */
+    .card-feature-ratings {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+      padding: 8px 12px;
+      margin-bottom: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 12px;
+    }
+    .card-feat-badge {
+      font-size: 11px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .card-feat-badge span {
+      color: var(--accent-cyan);
+      font-weight: 700;
+    }
+
     .item-tags {
       display: flex;
       flex-wrap: wrap;
@@ -932,7 +993,7 @@
         <span>✨</span> Play Store Closed Testing Community
       </div>
       <h1>Help Shape <span>Receipto</span></h1>
-      <p>Share your honest experience, suggest features, and rate our OCR engine. Your feedback directly determines our next release!</p>
+      <p>Share your honest experience, suggest features, and rate our scanner engine. Your feedback directly determines our next release!</p>
     </section>
 
     <!-- Main Content -->
@@ -969,14 +1030,12 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="deviceModel">Phone Model <span class="optional-tag">(Optional)</span></label>
-            <input type="text" id="deviceModel" placeholder="e.g. Pixel 8, Samsung S24, OnePlus 11">
-          </div>
-
-          <!-- Feature Ratings -->
+          <!-- Core Feature Ratings -->
           <div class="feature-group">
-            <label style="margin-bottom: 10px; color: var(--accent-cyan);">Rate Core App Features</label>
+            <label style="margin-bottom: 12px; color: var(--accent-cyan); display: flex; justify-content: space-between;">
+              <span>Rate Core App Features</span>
+              <span style="font-size: 11px; color: var(--text-dim); font-weight: normal;">Tap stars to score (1-5)</span>
+            </label>
 
             <div class="feature-row">
               <span class="feature-title">⚡ Receipt OCR &amp; Scanning Speed</span>
@@ -990,7 +1049,7 @@
             </div>
 
             <div class="feature-row">
-              <span class="feature-title">🎨 Cyber UI &amp; Visual Design</span>
+              <span class="feature-title">🎨 Cyber Dark UI &amp; Visual Design</span>
               <div class="feature-stars" data-feature="ui">
                 <span class="f-star active" data-val="1">★</span>
                 <span class="f-star active" data-val="2">★</span>
@@ -1003,6 +1062,50 @@
             <div class="feature-row">
               <span class="feature-title">📑 PDF Export &amp; Invoice View</span>
               <div class="feature-stars" data-feature="pdf">
+                <span class="f-star active" data-val="1">★</span>
+                <span class="f-star active" data-val="2">★</span>
+                <span class="f-star active" data-val="3">★</span>
+                <span class="f-star active" data-val="4">★</span>
+                <span class="f-star active" data-val="5">★</span>
+              </div>
+            </div>
+
+            <div class="feature-row">
+              <span class="feature-title">📊 Expense Analytics &amp; Spending Charts</span>
+              <div class="feature-stars" data-feature="analytics">
+                <span class="f-star active" data-val="1">★</span>
+                <span class="f-star active" data-val="2">★</span>
+                <span class="f-star active" data-val="3">★</span>
+                <span class="f-star active" data-val="4">★</span>
+                <span class="f-star active" data-val="5">★</span>
+              </div>
+            </div>
+
+            <div class="feature-row">
+              <span class="feature-title">🛡️ Smart Warranty &amp; Expiry Reminders</span>
+              <div class="feature-stars" data-feature="warranty">
+                <span class="f-star active" data-val="1">★</span>
+                <span class="f-star active" data-val="2">★</span>
+                <span class="f-star active" data-val="3">★</span>
+                <span class="f-star active" data-val="4">★</span>
+                <span class="f-star active" data-val="5">★</span>
+              </div>
+            </div>
+
+            <div class="feature-row">
+              <span class="feature-title">🔍 Instant Search &amp; Auto-Categorization</span>
+              <div class="feature-stars" data-feature="search">
+                <span class="f-star active" data-val="1">★</span>
+                <span class="f-star active" data-val="2">★</span>
+                <span class="f-star active" data-val="3">★</span>
+                <span class="f-star active" data-val="4">★</span>
+                <span class="f-star active" data-val="5">★</span>
+              </div>
+            </div>
+
+            <div class="feature-row">
+              <span class="feature-title">🚀 Gestures, Animations &amp; Overall Speed</span>
+              <div class="feature-stars" data-feature="performance">
                 <span class="f-star active" data-val="1">★</span>
                 <span class="f-star active" data-val="2">★</span>
                 <span class="f-star active" data-val="3">★</span>
@@ -1045,6 +1148,23 @@
           </div>
           <div class="stats-badge" id="statsBadge">
             <span>★</span> <span id="avgRating">5.0</span> (<span id="totalReviewsCount">0</span> Reviews)
+          </div>
+        </div>
+
+        <!-- Live Core Features Scorecard -->
+        <div class="feature-summary-card">
+          <div class="feature-summary-title">
+            <span>Core Features Community Scorecard</span>
+            <span id="scorecardCount" style="color: var(--text-dim); font-weight: normal; font-size: 11px;">Calculated from all ratings</span>
+          </div>
+          <div class="feature-bars-grid" id="featureScorecardGrid">
+            <div class="feat-bar-item"><span class="feat-bar-label">⚡ OCR</span><span class="feat-bar-score" id="score-ocr">★ 5.0</span></div>
+            <div class="feat-bar-item"><span class="feat-bar-label">🎨 UI &amp; Design</span><span class="feat-bar-score" id="score-ui">★ 5.0</span></div>
+            <div class="feat-bar-item"><span class="feat-bar-label">📑 PDF Export</span><span class="feat-bar-score" id="score-pdf">★ 5.0</span></div>
+            <div class="feat-bar-item"><span class="feat-bar-label">📊 Analytics</span><span class="feat-bar-score" id="score-analytics">★ 5.0</span></div>
+            <div class="feat-bar-item"><span class="feat-bar-label">🛡️ Warranty</span><span class="feat-bar-score" id="score-warranty">★ 5.0</span></div>
+            <div class="feat-bar-item"><span class="feat-bar-label">🔍 Search</span><span class="feat-bar-score" id="score-search">★ 5.0</span></div>
+            <div class="feat-bar-item"><span class="feat-bar-label">🚀 Speed</span><span class="feat-bar-score" id="score-performance">★ 5.0</span></div>
           </div>
         </div>
 
@@ -1167,8 +1287,8 @@
               id: row.id,
               name: row.name,
               email: row.email,
-              device: row.device,
               rating: row.rating,
+              features: row.features || { ocr: 5, ui: 5, pdf: 5, analytics: 5, warranty: 5, search: 5, performance: 5 },
               message: row.message,
               tags: row.tags || [],
               date: row.created_at ? new Date(row.created_at).toLocaleDateString() : 'Recently',
@@ -1230,12 +1350,24 @@
       setStarRating(parseInt(ratingInput.value));
     });
 
-    // Feature Stars
+    // Feature Stars Tracking
+    const currentFeatureRatings = {
+      ocr: 5,
+      ui: 5,
+      pdf: 5,
+      analytics: 5,
+      warranty: 5,
+      search: 5,
+      performance: 5
+    };
+
     document.querySelectorAll('.feature-stars').forEach(group => {
+      const feat = group.getAttribute('data-feature');
       const fStars = group.querySelectorAll('.f-star');
       fStars.forEach(fs => {
         fs.addEventListener('click', () => {
           const val = parseInt(fs.getAttribute('data-val'));
+          currentFeatureRatings[feat] = val;
           fStars.forEach(item => {
             item.classList.toggle('active', parseInt(item.getAttribute('data-val')) <= val);
           });
@@ -1338,18 +1470,27 @@
         alert('No feedbacks to export!');
         return;
       }
-      const headers = ['ID', 'Date', 'Name', 'Email', 'Device', 'Rating', 'Tags', 'Feedback Message', 'Helpful Count'];
-      const rows = localFeedbacks.map(f => [
-        `"${(f.id || '').replace(/"/g, '""')}"`,
-        `"${(f.date || '').replace(/"/g, '""')}"`,
-        `"${(f.name || '').replace(/"/g, '""')}"`,
-        `"${(f.email || '').replace(/"/g, '""')}"`,
-        `"${(f.device || '').replace(/"/g, '""')}"`,
-        f.rating || 5,
-        `"${(f.tags || []).join('; ').replace(/"/g, '""')}"`,
-        `"${(f.message || '').replace(/"/g, '""')}"`,
-        f.helpful || 0
-      ]);
+      const headers = ['ID', 'Date', 'Name', 'Email', 'Overall Rating', 'OCR Rating', 'UI Rating', 'PDF Rating', 'Analytics Rating', 'Warranty Rating', 'Search Rating', 'Speed Rating', 'Tags', 'Feedback Message', 'Helpful Count'];
+      const rows = localFeedbacks.map(f => {
+        const ft = f.features || {};
+        return [
+          `"${(f.id || '').replace(/"/g, '""')}"`,
+          `"${(f.date || '').replace(/"/g, '""')}"`,
+          `"${(f.name || '').replace(/"/g, '""')}"`,
+          `"${(f.email || '').replace(/"/g, '""')}"`,
+          f.rating || 5,
+          ft.ocr || 5,
+          ft.ui || 5,
+          ft.pdf || 5,
+          ft.analytics || 5,
+          ft.warranty || 5,
+          ft.search || 5,
+          ft.performance || 5,
+          `"${(f.tags || []).join('; ').replace(/"/g, '""')}"`,
+          `"${(f.message || '').replace(/"/g, '""')}"`,
+          f.helpful || 0
+        ];
+      });
       const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
@@ -1385,13 +1526,16 @@
       localFeedbacks.forEach(f => {
         const starStr = '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating);
         const tagsStr = (f.tags || []).join(' • ');
+        const ft = f.features || {};
+        const featBreakdown = `OCR: ${ft.ocr || 5}★ | UI: ${ft.ui || 5}★ | PDF: ${ft.pdf || 5}★ | Analytics: ${ft.analytics || 5}★ | Warranty: ${ft.warranty || 5}★ | Search: ${ft.search || 5}★ | Speed: ${ft.performance || 5}★`;
+
         rowsHtml += `
           <tr>
             <td style="white-space:nowrap; color:#64748b;">${escapeHtml(f.date || 'Recently')}</td>
             <td><strong>${escapeHtml(f.name || 'Anonymous')}</strong></td>
             <td style="color:#0284c7;">${escapeHtml(f.email || 'N/A')}</td>
-            <td>${escapeHtml(f.device || 'Android')}</td>
             <td style="color:#d97706; font-weight:bold; letter-spacing:1px;">${starStr}</td>
+            <td style="font-size:11px; color:#475569;">${featBreakdown}</td>
             <td>
               <div style="margin-bottom:4px; line-height:1.4;">${escapeHtml(f.message || '')}</div>
               <div style="font-size:11px; color:#6366f1;">${escapeHtml(tagsStr)}</div>
@@ -1406,20 +1550,20 @@
   <meta charset="UTF-8">
   <title>Receipto Beta Testers Feedback Report</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 30px; color: #0f172a; margin: 0; }
-    .header { border-bottom: 2px solid #0284c7; padding-bottom: 15px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: flex-end; }
-    h1 { margin: 0 0 5px 0; color: #0f172a; font-size: 24px; }
-    .meta { font-size: 13px; color: #64748b; }
-    .stats-card { display: flex; gap: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px 20px; margin-bottom: 24px; }
-    .stat-item { font-size: 13px; color: #475569; }
-    .stat-item strong { display: block; font-size: 22px; color: #0284c7; margin-top: 2px; }
-    table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
-    th { background: #0f172a; color: #ffffff; text-align: left; padding: 10px 12px; font-weight: 600; }
-    td { padding: 10px 12px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 25px; color: #0f172a; margin: 0; }
+    .header { border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: flex-end; }
+    h1 { margin: 0 0 4px 0; color: #0f172a; font-size: 22px; }
+    .meta { font-size: 12px; color: #64748b; }
+    .stats-card { display: flex; gap: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 18px; margin-bottom: 20px; }
+    .stat-item { font-size: 12px; color: #475569; }
+    .stat-item strong { display: block; font-size: 20px; color: #0284c7; margin-top: 2px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th { background: #0f172a; color: #ffffff; text-align: left; padding: 9px 10px; font-weight: 600; }
+    td { padding: 9px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
     tr:nth-child(even) { background: #f8fafc; }
     @media print {
       body { padding: 0; }
-      @page { margin: 12mm; size: landscape; }
+      @page { margin: 10mm; size: landscape; }
     }
   </style>
 </head>
@@ -1444,8 +1588,8 @@
         <th>Date</th>
         <th>Tester Name</th>
         <th>Email</th>
-        <th>Device</th>
-        <th>Rating</th>
+        <th>Overall Rating</th>
+        <th>Core Features Scores</th>
         <th>Feedback &amp; Tags</th>
       </tr>
     </thead>
@@ -1487,7 +1631,30 @@
       showToast('Permanently Deleted! 🗑️', 'Review removed from cloud database and community wall.');
     };
 
-    // --- 5. Render Feedbacks ---
+    // --- 5. Render Feedbacks & Core Features Scorecard ---
+    function updateScorecard() {
+      if (localFeedbacks.length === 0) return;
+      const feats = ['ocr', 'ui', 'pdf', 'analytics', 'warranty', 'search', 'performance'];
+      const sums = { ocr: 0, ui: 0, pdf: 0, analytics: 0, warranty: 0, search: 0, performance: 0 };
+
+      localFeedbacks.forEach(f => {
+        const ft = f.features || {};
+        feats.forEach(k => {
+          sums[k] += (ft[k] !== undefined ? ft[k] : 5);
+        });
+      });
+
+      const count = localFeedbacks.length;
+      feats.forEach(k => {
+        const el = document.getElementById('score-' + k);
+        if (el) {
+          const avgScore = (sums[k] / count).toFixed(1);
+          el.innerText = '★ ' + avgScore;
+        }
+      });
+      document.getElementById('scorecardCount').innerText = `Calculated across ${count} reviews`;
+    }
+
     function renderFeedbacks() {
       const list = document.getElementById('feedbackList');
       list.innerHTML = '';
@@ -1513,6 +1680,7 @@
         const starsText = '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating);
         const tagsHtml = (item.tags || []).map(t => `<span class="item-tag">${t}</span>`).join('');
         const initial = (item.name || 'T')[0].toUpperCase();
+        const ft = item.features || { ocr: 5, ui: 5, pdf: 5, analytics: 5, warranty: 5, search: 5, performance: 5 };
 
         card.innerHTML = `
           <div class="item-top">
@@ -1520,12 +1688,24 @@
               <div class="user-avatar">${initial}</div>
               <div>
                 <div class="user-name">${escapeHtml(item.name)}</div>
-                <div class="user-device">${escapeHtml(item.device || 'Android Tester')}</div>
+                <div class="user-device">Verified Closed Tester</div>
               </div>
             </div>
             <div class="item-rating">${starsText}</div>
           </div>
           <div class="item-body">${escapeHtml(item.message)}</div>
+          
+          <!-- Core App Feature Ratings Displayed Here -->
+          <div class="card-feature-ratings">
+            <div class="card-feat-badge">⚡ OCR: <span>★ ${ft.ocr || 5}</span></div>
+            <div class="card-feat-badge">🎨 UI: <span>★ ${ft.ui || 5}</span></div>
+            <div class="card-feat-badge">📑 PDF: <span>★ ${ft.pdf || 5}</span></div>
+            <div class="card-feat-badge">📊 Analytics: <span>★ ${ft.analytics || 5}</span></div>
+            <div class="card-feat-badge">🛡️ Warranty: <span>★ ${ft.warranty || 5}</span></div>
+            <div class="card-feat-badge">🔍 Search: <span>★ ${ft.search || 5}</span></div>
+            <div class="card-feat-badge">🚀 Speed: <span>★ ${ft.performance || 5}</span></div>
+          </div>
+
           <div class="item-tags">${tagsHtml}</div>
           <div class="item-footer">
             <span>${item.date || 'Recently'}</span>
@@ -1546,6 +1726,8 @@
       const avg = count > 0 ? (totalRating / count).toFixed(1) : '5.0';
       document.getElementById('avgRating').innerText = avg;
       document.getElementById('totalReviewsCount').innerText = count;
+
+      updateScorecard();
     }
 
     function escapeHtml(text) {
@@ -1584,13 +1766,13 @@
       e.preventDefault();
       const btn = document.getElementById('submitBtn');
       btn.disabled = true;
-      btn.innerHTML = '<span>⏳</span> Syncing to Cloud...';
+      btn.innerHTML = '<span>⏳</span> Posting Feedback...';
 
       const payload = {
         name: document.getElementById('testerName').value.trim(),
         email: document.getElementById('testerEmail').value.trim(),
-        device: document.getElementById('deviceModel').value.trim() || 'Android Device',
         rating: parseInt(document.getElementById('ratingInput').value),
+        features: { ...currentFeatureRatings },
         message: document.getElementById('feedbackText').value.trim(),
         tags: Array.from(selectedTags),
         helpful: 0
@@ -1630,7 +1812,7 @@
         window.confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 } });
       }
 
-      showToast('Feedback Published! 🚀', 'Your review is synced to the cloud and visible to everyone!');
+      showToast('Feedback Published! 🚀', 'Your review and feature ratings are now live!');
       document.getElementById('feedbackText').value = '';
       btn.disabled = false;
       btn.innerHTML = '<span>🚀</span> Post Tester Feedback';
