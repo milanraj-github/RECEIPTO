@@ -1432,6 +1432,163 @@
     .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
     .modal-title { font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
     .modal-close { background: transparent; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
+  
+    /* Mobile Header Layout */
+    @media (max-width: 640px) {
+      header {
+        padding: 10px 14px !important;
+      }
+      .brand-title {
+        font-size: 18px !important;
+      }
+      .logo-img {
+        width: 32px !important;
+        height: 32px !important;
+      }
+      .beta-badge, .desktop-only {
+        display: none !important;
+      }
+      .admin-toggle-btn {
+        padding: 6px 12px !important;
+        font-size: 12px !important;
+      }
+    }
+
+  
+    /* Bulletproof SVG Star Rating Styling */
+    * {
+      -webkit-tap-highlight-color: transparent !important;
+    }
+    *::selection {
+      background: transparent !important;
+      color: inherit !important;
+    }
+    .star-row, .feature-stars, .star-btn, .feat-star, .star-rating-box {
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
+      -webkit-tap-highlight-color: transparent !important;
+      -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+      outline: none !important;
+    }
+    button.star-btn {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background: transparent !important;
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
+      -webkit-tap-highlight-color: transparent !important;
+      -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+      cursor: pointer;
+      padding: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+    button.star-btn:focus, button.star-btn:active, button.star-btn:focus-visible {
+      outline: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+    .star-svg {
+      width: 36px;
+      height: 36px;
+      fill: rgba(255, 255, 255, 0.16);
+      transition: fill 0.15s ease, filter 0.15s ease, transform 0.15s ease;
+      pointer-events: none;
+    }
+    button.star-btn.active .star-svg {
+      fill: var(--accent-gold);
+      filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.55));
+      transform: scale(1.08);
+    }
+    button.feat-star {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background: transparent !important;
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
+      -webkit-tap-highlight-color: transparent !important;
+      cursor: pointer;
+      padding: 2px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+    button.feat-star:focus, button.feat-star:active, button.feat-star:focus-visible {
+      outline: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+    .feat-star-svg {
+      width: 20px;
+      height: 20px;
+      fill: rgba(255, 255, 255, 0.16);
+      transition: fill 0.15s ease;
+      pointer-events: none;
+    }
+    button.feat-star.active .feat-star-svg {
+      fill: var(--accent-gold);
+    }
+
+  
+    /* Core App Feature Rating Tags in Response Feed */
+    .core-feature-tags-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 10px 0 12px 0;
+    }
+    .core-feed-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(0, 217, 255, 0.06);
+      border: 1px solid rgba(0, 217, 255, 0.18);
+      color: #e2e8f0;
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+    .core-feed-tag .core-tag-star {
+      color: var(--accent-gold);
+      font-weight: 700;
+    }
+
+  
+    /* Mobile Smoothness & GPU Optimizations */
+    @media (max-width: 768px) {
+      .glow-blob {
+        animation: none !important;
+        opacity: 0.15 !important;
+        filter: blur(80px) !important;
+        transform: translate3d(0, 0, 0) !important;
+        will-change: auto !important;
+      }
+      #neuralCanvas {
+        transform: translate3d(0, 0, 0);
+        backface-visibility: hidden;
+        will-change: transform;
+        pointer-events: none;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -1450,10 +1607,10 @@
         <div class="brand-title">Receipto</div>
       </a>
       <div class="header-actions">
-        <div class="beta-badge">Official Beta Testing Program</div>
-        <button type="button" class="admin-toggle-btn" id="adminBtn" onclick="toggleAdmin()">
+        <div class="beta-badge desktop-only">Official Closed Beta</div>
+        <a href="admin.html" class="admin-toggle-btn">
           <span>🔒</span> Admin Portal
-        </button>
+        </a>
       </div>
     </header>
 
@@ -1770,11 +1927,11 @@
           <div class="star-rating-box">
             <div class="star-box-title">How would you rate your overall experience with Receipto?<span class="req-star">*</span></div>
             <div class="star-row" id="overallStarsGroup">
-              <span class="star-btn active" data-val="1">★</span>
-              <span class="star-btn active" data-val="2">★</span>
-              <span class="star-btn active" data-val="3">★</span>
-              <span class="star-btn active" data-val="4">★</span>
-              <span class="star-btn active" data-val="5">★</span>
+              <button type="button" class="star-btn active" data-val="1" aria-label="1 stars"><svg class="star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+              <button type="button" class="star-btn active" data-val="2" aria-label="2 stars"><svg class="star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+              <button type="button" class="star-btn active" data-val="3" aria-label="3 stars"><svg class="star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+              <button type="button" class="star-btn active" data-val="4" aria-label="4 stars"><svg class="star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+              <button type="button" class="star-btn active" data-val="5" aria-label="5 stars"><svg class="star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
             </div>
             <div class="star-desc-text" id="overallStarsDesc">5/5 – Excellent 🔥</div>
             <input type="hidden" id="overallRating" value="5">
@@ -1810,11 +1967,11 @@
               <label class="field-label">How accurate was the receipt information extracted by Receipto?<span class="req-star">*</span></label>
               <div class="feature-rate-row">
                 <div class="feature-stars" data-feature="nlp_ocr" id="nlpStars">
-                  <span class="feat-star active" data-val="1">★</span>
-                  <span class="feat-star active" data-val="2">★</span>
-                  <span class="feat-star active" data-val="3">★</span>
-                  <span class="feat-star active" data-val="4">★</span>
-                  <span class="feat-star active" data-val="5">★</span>
+                  <button type="button" class="feat-star active" data-val="1" aria-label="1 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                  <button type="button" class="feat-star active" data-val="2" aria-label="2 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                  <button type="button" class="feat-star active" data-val="3" aria-label="3 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                  <button type="button" class="feat-star active" data-val="4" aria-label="4 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                  <button type="button" class="feat-star active" data-val="5" aria-label="5 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
                 </div>
                 <span id="nlpStarsLabel" style="font-size: 12.5px; font-weight: 700; color: var(--accent-cyan);">5.0 / 5.0</span>
                 <label class="not-tested-toggle">
@@ -1835,7 +1992,7 @@
               <input type="hidden" id="manualCorrectionInput" value="Rarely">
             </div>
 
-            <textarea class="feature-comment-input" id="comment_nlp_ocr" placeholder="Optional comments on OCR text recognition, parsing speed, or edge-case bills..."></textarea>
+            
           </div>
 
           <div class="form-btn-bar">
@@ -1863,18 +2020,18 @@
             <p class="feature-card-desc">Evaluate receipt history, category filtering, search speed, duplicate receipt detection, sorting, and invoice details view.</p>
             <div class="feature-rate-row">
               <div class="feature-stars" data-feature="receipts" id="stars_receipts">
-                <span class="feat-star active" data-val="1">★</span>
-                <span class="feat-star active" data-val="2">★</span>
-                <span class="feat-star active" data-val="3">★</span>
-                <span class="feat-star active" data-val="4">★</span>
-                <span class="feat-star active" data-val="5">★</span>
+                <button type="button" class="feat-star active" data-val="1" aria-label="1 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="2" aria-label="2 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="3" aria-label="3 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="4" aria-label="4 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="5" aria-label="5 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
               </div>
               <span id="label_receipts" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
               <label class="not-tested-toggle">
                 <input type="checkbox" onchange="toggleNotTested('receipts', this)"> Not Tested
               </label>
             </div>
-            <textarea class="feature-comment-input" id="comment_receipts" placeholder="Optional comments on search, filtering, or duplicate detection..."></textarea>
+            
           </div>
 
           <!-- FEATURE 3: WARRANTY TRACKING -->
@@ -1885,18 +2042,18 @@
             <p class="feature-card-desc">Evaluate automated warranty detection, expiration date calculations, manual warranty entry, active vs. expired lists, and brand customer support information.</p>
             <div class="feature-rate-row">
               <div class="feature-stars" data-feature="warranty" id="stars_warranty">
-                <span class="feat-star active" data-val="1">★</span>
-                <span class="feat-star active" data-val="2">★</span>
-                <span class="feat-star active" data-val="3">★</span>
-                <span class="feat-star active" data-val="4">★</span>
-                <span class="feat-star active" data-val="5">★</span>
+                <button type="button" class="feat-star active" data-val="1" aria-label="1 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="2" aria-label="2 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="3" aria-label="3 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="4" aria-label="4 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="5" aria-label="5 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
               </div>
               <span id="label_warranty" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
               <label class="not-tested-toggle">
                 <input type="checkbox" onchange="toggleNotTested('warranty', this)"> Not Tested
               </label>
             </div>
-            <textarea class="feature-comment-input" id="comment_warranty" placeholder="Optional comments on warranty duration detection or claim tools..."></textarea>
+            
           </div>
 
           <!-- FEATURE 4: WARRANTY REMINDERS -->
@@ -1907,18 +2064,18 @@
             <p class="feature-card-desc">Evaluate on-device local notifications, transactional email alerts, notification timing (T-30, T-7, T-1 days), and delivery reliability.</p>
             <div class="feature-rate-row">
               <div class="feature-stars" data-feature="reminders" id="stars_reminders">
-                <span class="feat-star active" data-val="1">★</span>
-                <span class="feat-star active" data-val="2">★</span>
-                <span class="feat-star active" data-val="3">★</span>
-                <span class="feat-star active" data-val="4">★</span>
-                <span class="feat-star active" data-val="5">★</span>
+                <button type="button" class="feat-star active" data-val="1" aria-label="1 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="2" aria-label="2 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="3" aria-label="3 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="4" aria-label="4 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="5" aria-label="5 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
               </div>
               <span id="label_reminders" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
               <label class="not-tested-toggle">
                 <input type="checkbox" onchange="toggleNotTested('reminders', this)"> Not Tested
               </label>
             </div>
-            <textarea class="feature-comment-input" id="comment_reminders" placeholder="Did you receive local tray notifications or email reminders as expected?"></textarea>
+            
           </div>
 
           <!-- FEATURE 5: AI FINANCIAL ASSISTANT -->
@@ -1929,18 +2086,18 @@
             <p class="feature-card-desc">Evaluate the interactive in-app conversational assistant for answering questions about your past receipts, itemized line items, warranties, and category spending.</p>
             <div class="feature-rate-row">
               <div class="feature-stars" data-feature="ai_assistant" id="stars_ai_assistant">
-                <span class="feat-star active" data-val="1">★</span>
-                <span class="feat-star active" data-val="2">★</span>
-                <span class="feat-star active" data-val="3">★</span>
-                <span class="feat-star active" data-val="4">★</span>
-                <span class="feat-star active" data-val="5">★</span>
+                <button type="button" class="feat-star active" data-val="1" aria-label="1 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="2" aria-label="2 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="3" aria-label="3 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="4" aria-label="4 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="5" aria-label="5 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
               </div>
               <span id="label_ai_assistant" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
               <label class="not-tested-toggle">
                 <input type="checkbox" onchange="toggleNotTested('ai_assistant', this)"> Not Tested
               </label>
             </div>
-            <textarea class="feature-comment-input" id="comment_ai_assistant" placeholder="Optional comments on assistant accuracy, speed, or answer relevance..."></textarea>
+            
           </div>
 
           <!-- FEATURE 6: EXPENSE ANALYTICS & BUDGETING -->
@@ -1951,18 +2108,18 @@
             <p class="feature-card-desc">Evaluate monthly expenditure overviews, category breakdown charts, spending velocity, budget tracking thresholds, and financial insights.</p>
             <div class="feature-rate-row">
               <div class="feature-stars" data-feature="analytics" id="stars_analytics">
-                <span class="feat-star active" data-val="1">★</span>
-                <span class="feat-star active" data-val="2">★</span>
-                <span class="feat-star active" data-val="3">★</span>
-                <span class="feat-star active" data-val="4">★</span>
-                <span class="feat-star active" data-val="5">★</span>
+                <button type="button" class="feat-star active" data-val="1" aria-label="1 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="2" aria-label="2 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="3" aria-label="3 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="4" aria-label="4 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="5" aria-label="5 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
               </div>
               <span id="label_analytics" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
               <label class="not-tested-toggle">
                 <input type="checkbox" onchange="toggleNotTested('analytics', this)"> Not Tested
               </label>
             </div>
-            <textarea class="feature-comment-input" id="comment_analytics" placeholder="Optional comments on spending visualizations or budget limits..."></textarea>
+            
           </div>
 
           <!-- FEATURE 7: PDF GENERATION & EXPORT -->
@@ -1973,18 +2130,18 @@
             <p class="feature-card-desc">Evaluate vector PDF invoice generation, document layout, tax and line-item clarity, built-in PDF viewer, and export/sharing experience.</p>
             <div class="feature-rate-row">
               <div class="feature-stars" data-feature="pdf" id="stars_pdf">
-                <span class="feat-star active" data-val="1">★</span>
-                <span class="feat-star active" data-val="2">★</span>
-                <span class="feat-star active" data-val="3">★</span>
-                <span class="feat-star active" data-val="4">★</span>
-                <span class="feat-star active" data-val="5">★</span>
+                <button type="button" class="feat-star active" data-val="1" aria-label="1 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="2" aria-label="2 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="3" aria-label="3 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="4" aria-label="4 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="5" aria-label="5 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
               </div>
               <span id="label_pdf" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
               <label class="not-tested-toggle">
                 <input type="checkbox" onchange="toggleNotTested('pdf', this)"> Not Tested
               </label>
             </div>
-            <textarea class="feature-comment-input" id="comment_pdf" placeholder="Optional comments on generated PDF quality or sharing speed..."></textarea>
+            
           </div>
 
           <!-- FEATURE 8: WHATSAPP INTEGRATION -->
@@ -1995,18 +2152,18 @@
             <p class="feature-card-desc">Evaluate forwarding bill photos and PDF receipts over WhatsApp, automated message recognition, and synchronization to your mobile dashboard.</p>
             <div class="feature-rate-row">
               <div class="feature-stars" data-feature="whatsapp" id="stars_whatsapp">
-                <span class="feat-star active" data-val="1">★</span>
-                <span class="feat-star active" data-val="2">★</span>
-                <span class="feat-star active" data-val="3">★</span>
-                <span class="feat-star active" data-val="4">★</span>
-                <span class="feat-star active" data-val="5">★</span>
+                <button type="button" class="feat-star active" data-val="1" aria-label="1 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="2" aria-label="2 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="3" aria-label="3 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="4" aria-label="4 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="5" aria-label="5 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
               </div>
               <span id="label_whatsapp" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
               <label class="not-tested-toggle">
                 <input type="checkbox" id="check_whatsapp_not_tested" onchange="toggleNotTested('whatsapp', this)"> Not Tested
               </label>
             </div>
-            <textarea class="feature-comment-input" id="comment_whatsapp" placeholder="Optional comments on WhatsApp receipt sync..."></textarea>
+            
           </div>
 
           <div class="form-btn-bar">
@@ -2031,11 +2188,11 @@
             <label class="field-label">Interface &amp; Visual Design (1–5 Stars)<span class="req-star">*</span></label>
             <div class="feature-rate-row">
               <div class="feature-stars" data-feature="ui_design" id="stars_ui_design">
-                <span class="feat-star active" data-val="1">★</span>
-                <span class="feat-star active" data-val="2">★</span>
-                <span class="feat-star active" data-val="3">★</span>
-                <span class="feat-star active" data-val="4">★</span>
-                <span class="feat-star active" data-val="5">★</span>
+                <button type="button" class="feat-star active" data-val="1" aria-label="1 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="2" aria-label="2 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="3" aria-label="3 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="4" aria-label="4 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="5" aria-label="5 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
               </div>
               <span id="label_ui_design" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
             </div>
@@ -2045,11 +2202,11 @@
             <label class="field-label">Navigation &amp; Flow (1–5 Stars)<span class="req-star">*</span></label>
             <div class="feature-rate-row">
               <div class="feature-stars" data-feature="ui_nav" id="stars_ui_nav">
-                <span class="feat-star active" data-val="1">★</span>
-                <span class="feat-star active" data-val="2">★</span>
-                <span class="feat-star active" data-val="3">★</span>
-                <span class="feat-star active" data-val="4">★</span>
-                <span class="feat-star active" data-val="5">★</span>
+                <button type="button" class="feat-star active" data-val="1" aria-label="1 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="2" aria-label="2 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="3" aria-label="3 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="4" aria-label="4 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="5" aria-label="5 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
               </div>
               <span id="label_ui_nav" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
             </div>
@@ -2059,11 +2216,11 @@
             <label class="field-label">Application Responsiveness &amp; Speed (1–5 Stars)<span class="req-star">*</span></label>
             <div class="feature-rate-row">
               <div class="feature-stars" data-feature="ui_speed" id="stars_ui_speed">
-                <span class="feat-star active" data-val="1">★</span>
-                <span class="feat-star active" data-val="2">★</span>
-                <span class="feat-star active" data-val="3">★</span>
-                <span class="feat-star active" data-val="4">★</span>
-                <span class="feat-star active" data-val="5">★</span>
+                <button type="button" class="feat-star active" data-val="1" aria-label="1 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="2" aria-label="2 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="3" aria-label="3 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="4" aria-label="4 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="feat-star active" data-val="5" aria-label="5 stars"><svg class="feat-star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
               </div>
               <span id="label_ui_speed" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
             </div>
@@ -2205,11 +2362,11 @@
             <div class="star-rating-box" style="margin-bottom: 16px;">
               <div class="star-box-title">Overall Satisfaction with Receipto (1–5 Stars)</div>
               <div class="star-row" id="finalSatStarsGroup">
-                <span class="star-btn active" data-val="1">★</span>
-                <span class="star-btn active" data-val="2">★</span>
-                <span class="star-btn active" data-val="3">★</span>
-                <span class="star-btn active" data-val="4">★</span>
-                <span class="star-btn active" data-val="5">★</span>
+                <button type="button" class="star-btn active" data-val="1" aria-label="1 stars"><svg class="star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="star-btn active" data-val="2" aria-label="2 stars"><svg class="star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="star-btn active" data-val="3" aria-label="3 stars"><svg class="star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="star-btn active" data-val="4" aria-label="4 stars"><svg class="star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
+                <button type="button" class="star-btn active" data-val="5" aria-label="5 stars"><svg class="star-svg" viewBox="0 0 24 24"><path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/></svg></button>
               </div>
               <div class="star-desc-text" id="finalSatDesc">5 Stars – Very Satisfied 🔥</div>
               <input type="hidden" id="finalSatRating" value="5">
@@ -2298,7 +2455,10 @@
     const PARTICLE_COUNT = 45;
     const CONNECT_DIST = 120;
 
+    let lastCanvasWidth = window.innerWidth;
     function resizeCanvas() {
+      if (Math.abs(window.innerWidth - lastCanvasWidth) < 50 && width > 0) return;
+      lastCanvasWidth = window.innerWidth;
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
     }
@@ -2641,16 +2801,7 @@
         testingDuration: document.getElementById('testingDuration').value,
         features: { ...featureScores },
         manualCorrection: document.getElementById('manualCorrectionInput').value,
-        comments: {
-          nlp_ocr: document.getElementById('comment_nlp_ocr').value.trim(),
-          receipts: document.getElementById('comment_receipts').value.trim(),
-          warranty: document.getElementById('comment_warranty').value.trim(),
-          reminders: document.getElementById('comment_reminders').value.trim(),
-          ai_assistant: document.getElementById('comment_ai_assistant').value.trim(),
-          analytics: document.getElementById('comment_analytics').value.trim(),
-          pdf: document.getElementById('comment_pdf').value.trim(),
-          whatsapp: document.getElementById('comment_whatsapp').value.trim()
-        },
+        comments: {},
         uiUx: {
           design: featureScores.ui_design || 5,
           nav: featureScores.ui_nav || 5,
@@ -2816,7 +2967,7 @@
         const ft = item.features || {};
         const chipsHtml = Object.entries(ft)
           .filter(([k, v]) => v !== null && featureDisplayNames[k])
-          .map(([k, v]) => `<span class="feed-feature-chip">${featureDisplayNames[k]}: ${v}★</span>`)
+          .map(([k, v]) => `<span class="core-feed-tag"><span>${featureIcons[k] || '⚡'}</span> <span>${featureDisplayNames[k]}</span>: <span class="core-tag-star">${v}★</span></span>`)
           .join('');
 
         card.innerHTML = `
@@ -2834,12 +2985,8 @@
             </div>
           </div>
 
-          <!-- Metadata Badges -->
-          <div class="feed-meta-chips-row">
-            <span class="feed-badge-pill">⏱️ Tested: ${escapeHtml(dur)}</span>
-            <span class="feed-badge-pill">⚡ Ease: ${escapeHtml(ease)}</span>
-            ${hasBug ? `<span class="feed-badge-pill" style="border-color: rgba(239,68,68,0.4); color: #f87171;">⚠️ Bug Logged</span>` : `<span class="feed-badge-pill" style="color: #34d399;">✅ Zero Crashes</span>`}
-          </div>
+          <!-- Core App Feature Ratings as Tags (Response Part) -->
+          <div class="core-feature-tags-grid">${chipsHtml}</div>
 
           <!-- Key Feedback Insights (Full User Details) -->
           <div class="feed-insights-list">
@@ -2871,8 +3018,7 @@
             ` : ''}
           </div>
 
-          <!-- Evaluated Feature Chips -->
-          <div class="feed-meta-chips-row">${chipsHtml}</div>
+          
 
           <!-- Expandable Diagnostics Accordion -->
           <div class="feed-details-accordion" id="detailsAccordion_${item.id}">
@@ -2971,7 +3117,7 @@
         const ft = item.features || {};
         const featPills = Object.entries(ft)
           .filter(([k, v]) => v !== null && featureDisplayNames[k])
-          .map(([k, v]) => `<span class="feed-feature-chip">${featureDisplayNames[k]}: ${v}★</span>`)
+          .map(([k, v]) => `<span class="core-feed-tag"><span>${featureIcons[k] || '⚡'}</span> <span>${featureDisplayNames[k]}</span>: <span class="core-tag-star">${v}★</span></span>`)
           .join('');
 
         card.innerHTML = `
@@ -3319,7 +3465,164 @@
         td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
         tr:nth-child(even) { background: #f8fafc; }
         @media print { @page { size: landscape; margin: 10mm; } }
-      </style></head><body>
+      
+    /* Mobile Header Layout */
+    @media (max-width: 640px) {
+      header {
+        padding: 10px 14px !important;
+      }
+      .brand-title {
+        font-size: 18px !important;
+      }
+      .logo-img {
+        width: 32px !important;
+        height: 32px !important;
+      }
+      .beta-badge, .desktop-only {
+        display: none !important;
+      }
+      .admin-toggle-btn {
+        padding: 6px 12px !important;
+        font-size: 12px !important;
+      }
+    }
+
+  
+    /* Bulletproof SVG Star Rating Styling */
+    * {
+      -webkit-tap-highlight-color: transparent !important;
+    }
+    *::selection {
+      background: transparent !important;
+      color: inherit !important;
+    }
+    .star-row, .feature-stars, .star-btn, .feat-star, .star-rating-box {
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
+      -webkit-tap-highlight-color: transparent !important;
+      -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+      outline: none !important;
+    }
+    button.star-btn {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background: transparent !important;
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
+      -webkit-tap-highlight-color: transparent !important;
+      -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+      cursor: pointer;
+      padding: 4px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+    button.star-btn:focus, button.star-btn:active, button.star-btn:focus-visible {
+      outline: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+    .star-svg {
+      width: 36px;
+      height: 36px;
+      fill: rgba(255, 255, 255, 0.16);
+      transition: fill 0.15s ease, filter 0.15s ease, transform 0.15s ease;
+      pointer-events: none;
+    }
+    button.star-btn.active .star-svg {
+      fill: var(--accent-gold);
+      filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.55));
+      transform: scale(1.08);
+    }
+    button.feat-star {
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+      background: transparent !important;
+      border: none !important;
+      outline: none !important;
+      box-shadow: none !important;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
+      -webkit-tap-highlight-color: transparent !important;
+      cursor: pointer;
+      padding: 2px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: manipulation;
+    }
+    button.feat-star:focus, button.feat-star:active, button.feat-star:focus-visible {
+      outline: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      border: none !important;
+    }
+    .feat-star-svg {
+      width: 20px;
+      height: 20px;
+      fill: rgba(255, 255, 255, 0.16);
+      transition: fill 0.15s ease;
+      pointer-events: none;
+    }
+    button.feat-star.active .feat-star-svg {
+      fill: var(--accent-gold);
+    }
+
+  
+    /* Core App Feature Rating Tags in Response Feed */
+    .core-feature-tags-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin: 10px 0 12px 0;
+    }
+    .core-feed-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      background: rgba(0, 217, 255, 0.06);
+      border: 1px solid rgba(0, 217, 255, 0.18);
+      color: #e2e8f0;
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+    }
+    .core-feed-tag .core-tag-star {
+      color: var(--accent-gold);
+      font-weight: 700;
+    }
+
+  
+    /* Mobile Smoothness & GPU Optimizations */
+    @media (max-width: 768px) {
+      .glow-blob {
+        animation: none !important;
+        opacity: 0.15 !important;
+        filter: blur(80px) !important;
+        transform: translate3d(0, 0, 0) !important;
+        will-change: auto !important;
+      }
+      #neuralCanvas {
+        transform: translate3d(0, 0, 0);
+        backface-visibility: hidden;
+        will-change: transform;
+        pointer-events: none;
+      }
+    }
+
+  </style></head><body>
         <div class="header">
           <div>
             <h1>📄 RECEIPTO – BETA TESTING EVALUATION REPORT</h1>
