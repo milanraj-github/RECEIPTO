@@ -3,28 +3,32 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Receipto - Tester Feedback &amp; Community Wall</title>
+  <title>Receipto – Official Beta Testing &amp; Feedback Portal</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
   <style>
     :root {
       --bg: #07090e;
-      --card-bg: rgba(16, 21, 36, 0.78);
-      --card-border: rgba(99, 102, 241, 0.22);
+      --bg-card: rgba(16, 21, 36, 0.72);
+      --bg-card-hover: rgba(22, 29, 49, 0.85);
+      --border-card: rgba(99, 102, 241, 0.2);
+      --border-focus: #00D9FF;
       --accent-cyan: #00D9FF;
-      --accent-purple: #813BFF;
       --accent-blue: #3867FF;
-      --accent-pink: #ec4899;
+      --accent-purple: #813BFF;
       --accent-gold: #fbbf24;
       --accent-green: #10b981;
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
+      --accent-red: #ef4444;
+      --text-primary: #f8fafc;
+      --text-secondary: #94a3b8;
+      --text-muted: #64748b;
       --gradient-brand: linear-gradient(135deg, #00D9FF 0%, #3867FF 50%, #813BFF 100%);
-      --radius: 18px;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
     }
 
     * {
@@ -36,12 +40,12 @@
 
     body {
       background-color: var(--bg);
-      color: var(--text-main);
+      color: var(--text-primary);
       font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       min-height: 100vh;
-      overflow-x: hidden;
       line-height: 1.6;
       position: relative;
+      overflow-x: hidden;
       -webkit-font-smoothing: antialiased;
     }
 
@@ -63,8 +67,8 @@
       filter: blur(140px);
       z-index: 1;
       pointer-events: none;
-      opacity: 0.32;
-      animation: floatPulse 12s infinite ease-in-out alternate;
+      opacity: 0.28;
+      animation: floatPulse 14s infinite ease-in-out alternate;
     }
     .blob-1 {
       top: -120px;
@@ -79,23 +83,23 @@
       width: 600px;
       height: 600px;
       background: radial-gradient(circle, #813BFF 0%, #ec4899 60%, transparent 80%);
-      animation-delay: -6s;
+      animation-delay: -7s;
     }
 
     @keyframes floatPulse {
-      0% { transform: scale(1) translate(0, 0); opacity: 0.28; }
-      100% { transform: scale(1.15) translate(30px, 30px); opacity: 0.42; }
+      0% { transform: scale(1) translate(0, 0); opacity: 0.24; }
+      100% { transform: scale(1.15) translate(30px, 30px); opacity: 0.38; }
     }
 
-    .content-wrapper {
+    .portal-shell {
       position: relative;
       z-index: 2;
     }
 
-    /* Header - Responsive & Mobile-Perfect */
+    /* Top Navigation Header */
     header {
-      padding: 18px 24px;
-      max-width: 1120px;
+      padding: 16px 24px;
+      max-width: 1140px;
       margin: 0 auto;
       display: flex;
       justify-content: space-between;
@@ -107,18 +111,16 @@
       align-items: center;
       gap: 12px;
       text-decoration: none;
-      flex-shrink: 0;
     }
     .logo-img {
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0, 217, 255, 0.4);
+      width: 38px;
+      height: 38px;
+      border-radius: 11px;
+      box-shadow: 0 4px 18px rgba(0, 217, 255, 0.35);
       object-fit: cover;
-      flex-shrink: 0;
     }
-    .brand-text {
-      font-size: 20px;
+    .brand-title {
+      font-size: 19px;
       font-weight: 800;
       letter-spacing: -0.5px;
       background: var(--gradient-brand);
@@ -130,24 +132,23 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      flex-shrink: 0;
     }
     .beta-badge {
-      background: rgba(0, 217, 255, 0.12);
+      background: rgba(0, 217, 255, 0.1);
       border: 1px solid rgba(0, 217, 255, 0.3);
       color: var(--accent-cyan);
-      font-size: 11.5px;
+      font-size: 11px;
       font-weight: 700;
       padding: 5px 12px;
       border-radius: 999px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 0.6px;
       white-space: nowrap;
     }
     .admin-toggle-btn {
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-secondary);
       font-size: 12px;
       font-weight: 600;
       padding: 6px 14px;
@@ -171,260 +172,101 @@
       color: #f87171;
     }
 
-    /* Mobile Header Perfection (< 600px) */
     @media (max-width: 600px) {
       header {
-        padding: 12px 14px;
+        padding: 12px 16px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
       }
       .brand {
+        display: flex;
+        align-items: center;
         gap: 8px;
       }
-      .logo-img {
-        width: 32px;
-        height: 32px;
-        border-radius: 9px;
-      }
-      .brand-text {
-        font-size: 17px;
-      }
+      .logo-img { width: 32px; height: 32px; border-radius: 9px; }
+      .brand-title { font-size: 18px; font-weight: 800; }
       .header-actions {
-        gap: 6px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
       }
-      .beta-badge {
-        display: none; /* Keep mobile header clean and avoid squishing */
-      }
+      .beta-badge { display: none !important; }
       .admin-toggle-btn {
-        padding: 5px 10px;
-        font-size: 11px;
+        padding: 6px 12px;
+        font-size: 12px;
+        font-weight: 600;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.06);
       }
     }
 
-    /* Admin Action Banner */
+    /* Admin Banner */
     .admin-banner {
       display: none;
-      max-width: 1120px;
+      max-width: 1140px;
       margin: 0 auto 20px auto;
-      padding: 14px 18px;
+      padding: 14px 20px;
       background: linear-gradient(135deg, rgba(129, 59, 255, 0.2) 0%, rgba(0, 217, 255, 0.15) 100%);
       border: 1px solid rgba(0, 217, 255, 0.35);
-      border-radius: var(--radius);
+      border-radius: var(--radius-md);
       backdrop-filter: blur(20px);
       box-shadow: 0 10px 30px rgba(0, 217, 255, 0.15);
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 12px;
-      animation: slideDown 0.3s ease;
     }
-    body.admin-mode .admin-banner {
-      display: flex;
-    }
-    @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    .admin-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    body.admin-mode .admin-banner { display: flex; }
+    .admin-info { display: flex; align-items: center; gap: 10px; }
     .admin-badge-icon {
-      width: 34px;
-      height: 34px;
-      border-radius: 9px;
+      width: 34px; height: 34px; border-radius: 9px;
       background: rgba(0, 217, 255, 0.2);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      display: flex; align-items: center; justify-content: center;
       font-size: 16px;
     }
-    .admin-title {
-      font-weight: 800;
-      font-size: 13.5px;
-      color: #fff;
-    }
-    .admin-desc {
-      font-size: 11.5px;
-      color: var(--text-muted);
-    }
-    .admin-actions {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-    }
+    .admin-title { font-weight: 800; font-size: 13.5px; color: #fff; }
+    .admin-desc { font-size: 11.5px; color: var(--text-secondary); }
+    .admin-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
     .export-btn {
-      padding: 6px 12px;
-      border-radius: 8px;
-      font-size: 12px;
-      font-weight: 700;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      transition: all 0.2s ease;
-      border: none;
-      user-select: none;
+      padding: 6px 12px; border-radius: 8px; font-size: 12px; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; gap: 5px;
+      border: none; user-select: none; transition: all 0.2s;
     }
-    .export-pdf {
-      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-      color: #ffffff;
-      box-shadow: 0 4px 14px rgba(239, 68, 68, 0.35);
-    }
-    .export-pdf:hover { transform: translateY(-1px); }
-    .export-csv {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      color: #ffffff;
-      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
-    }
-    .export-csv:hover { transform: translateY(-1px); }
-    .export-json {
-      background: rgba(255, 255, 255, 0.08);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      color: #e2e8f0;
-    }
-    .export-json:hover { background: rgba(255, 255, 255, 0.15); color: #fff; }
-    .lock-admin-btn {
-      background: rgba(239, 68, 68, 0.15);
-      border: 1px solid rgba(239, 68, 68, 0.3);
-      color: #f87171;
-    }
-    .lock-admin-btn:hover { background: #ef4444; color: #fff; }
+    .export-pdf { background: #dc2626; color: #fff; }
+    .export-csv { background: #059669; color: #fff; }
+    .export-json { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); color: #e2e8f0; }
+    .lock-admin-btn { background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171; }
 
-    /* Modal Backdrop & Card */
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(7, 9, 14, 0.75);
-      backdrop-filter: blur(10px);
-      z-index: 9999;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .modal-backdrop.show {
-      display: flex;
-    }
-    .modal-card {
-      background: #0f1628;
-      border: 1px solid rgba(0, 217, 255, 0.35);
-      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7), 0 0 35px rgba(0, 217, 255, 0.2);
-      border-radius: 20px;
-      padding: 26px;
-      max-width: 420px;
-      width: 100%;
-      animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-    }
-    @keyframes modalPop {
-      from { transform: scale(0.92); opacity: 0; }
-      to { transform: scale(1); opacity: 1; }
-    }
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    .modal-title {
-      font-size: 17px;
-      font-weight: 800;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .modal-close {
-      background: transparent;
-      border: none;
-      color: var(--text-dim);
-      font-size: 20px;
-      cursor: pointer;
-      line-height: 1;
-      padding: 4px;
-    }
-    .modal-close:hover { color: #fff; }
-    .modal-subtitle {
-      font-size: 12.5px;
-      color: var(--text-muted);
-      margin-bottom: 18px;
-      line-height: 1.5;
-    }
-    .pass-input-wrapper {
-      position: relative;
-    }
-    .pass-input-wrapper input {
-      padding-right: 44px;
-    }
-    .eye-btn {
-      position: absolute;
-      right: 10px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: transparent;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
-      opacity: 0.7;
-    }
-    .admin-error-text {
-      color: #f87171;
-      font-size: 12px;
-      font-weight: 600;
-      margin-top: 6px;
-      min-height: 18px;
-    }
-    .input-error {
-      border-color: #ef4444 !important;
-    }
-    .modal-actions {
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
-      margin-top: 16px;
-    }
-    .modal-btn {
-      padding: 8px 16px;
-      border-radius: 9px;
-      font-size: 12.5px;
-      font-weight: 700;
-      cursor: pointer;
-      border: none;
-    }
-    .modal-btn-cancel {
-      background: rgba(255, 255, 255, 0.08);
-      color: var(--text-muted);
-    }
-    .modal-btn-submit {
-      background: var(--gradient-brand);
-      color: #07090e;
-    }
-
-    /* Hero */
+    /* Hero Section */
     .hero {
       text-align: center;
-      padding: 24px 18px 28px 18px;
-      max-width: 820px;
+      padding: 30px 20px 24px 20px;
+      max-width: 860px;
       margin: 0 auto;
     }
-    .hero-pill {
+    .program-pill {
       display: inline-flex;
       align-items: center;
-      gap: 6px;
+      gap: 8px;
       background: rgba(129, 59, 255, 0.12);
       border: 1px solid rgba(129, 59, 255, 0.3);
-      padding: 5px 14px;
+      padding: 6px 16px;
       border-radius: 999px;
       font-size: 12px;
+      font-weight: 700;
       color: #c4b5fd;
-      margin-bottom: 12px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 16px;
     }
     .hero h1 {
-      font-size: clamp(26px, 4.2vw, 42px);
+      font-size: clamp(28px, 4.8vw, 48px);
       font-weight: 800;
-      letter-spacing: -0.8px;
+      letter-spacing: -1px;
       line-height: 1.15;
-      margin-bottom: 10px;
+      margin-bottom: 14px;
     }
     .hero h1 span {
       background: var(--gradient-brand);
@@ -432,147 +274,192 @@
       -webkit-text-fill-color: transparent;
     }
     .hero p {
+      color: var(--text-secondary);
+      font-size: clamp(14px, 2vw, 16.5px);
+      max-width: 680px;
+      margin: 0 auto 24px auto;
+      line-height: 1.6;
+    }
+    .hero-meta-row {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px 24px;
+      font-size: 12.5px;
       color: var(--text-muted);
-      font-size: clamp(13.5px, 1.8vw, 15.5px);
-      max-width: 580px;
-      margin: 0 auto;
-      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+    .hero-meta-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .hero-cta-btn {
+      background: var(--gradient-brand);
+      color: #07090e;
+      font-weight: 800;
+      font-size: 15px;
+      padding: 13px 32px;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 10px 30px rgba(0, 217, 255, 0.4);
+      transition: all 0.25s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .hero-cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 15px 40px rgba(0, 217, 255, 0.55);
     }
 
-    /* Main Container (Two Columns) */
+    /* Main Container & Stepper Form Layout */
     .container {
-      max-width: 1120px;
+      max-width: 920px;
       margin: 0 auto;
-      padding: 0 16px 80px 16px;
-      display: grid;
-      grid-template-columns: 1fr 1.05fr;
-      gap: 24px;
-      align-items: start;
-    }
-    @media (max-width: 900px) {
-      .container {
-        grid-template-columns: 1fr;
-        padding-bottom: 60px;
-      }
+      padding: 0 18px 80px 18px;
     }
 
-    /* Form Card */
-    .form-card {
-      background: var(--card-bg);
+    /* Stepper Navigation Bar */
+    .stepper-nav {
+      background: rgba(16, 21, 36, 0.85);
       backdrop-filter: blur(20px);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius);
-      padding: 26px 22px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-md);
+      padding: 8px 12px;
+      margin-bottom: 26px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .stepper-nav::-webkit-scrollbar { display: none; }
+    .step-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s ease;
+      background: transparent;
+      border: none;
+    }
+    .step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .step-pill.active {
+      background: rgba(0, 217, 255, 0.12);
+      color: var(--accent-cyan);
+      border: 1px solid rgba(0, 217, 255, 0.3);
+    }
+    .step-pill.active .step-num {
+      background: var(--accent-cyan);
+      color: #07090e;
+    }
+    .step-pill.completed {
+      color: #cbd5e1;
+    }
+    .step-pill.completed .step-num {
+      background: var(--accent-green);
+      color: #07090e;
+    }
+
+    /* Section Card */
+    .section-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(24px);
+      border: 1px solid var(--border-card);
+      border-radius: var(--radius-lg);
+      padding: 34px 30px;
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+      margin-bottom: 24px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    .section-card.active {
+      display: block;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     @media (max-width: 600px) {
-      .form-card {
-        padding: 20px 16px;
-      }
-    }
-    .form-title {
-      font-size: 19px;
-      font-weight: 700;
-      margin-bottom: 4px;
-      color: #fff;
-    }
-    .form-subtitle {
-      color: var(--text-muted);
-      font-size: 13px;
-      margin-bottom: 20px;
+      .section-card { padding: 22px 18px; border-radius: var(--radius-md); }
     }
 
-    /* Star Rating Widget - NO BLUE SELECTION ON TAP */
-    .rating-section {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 14px;
-      padding: 16px 18px;
-      margin-bottom: 20px;
-      text-align: center;
-      -webkit-touch-callout: none !important;
-      -webkit-user-select: none !important;
-      user-select: none !important;
+    .section-header {
+      margin-bottom: 24px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      padding-bottom: 16px;
     }
-    .rating-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-muted);
+    .section-tag {
+      font-size: 11.5px;
+      font-weight: 800;
+      color: var(--accent-cyan);
       text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-bottom: 8px;
-      -webkit-user-select: none !important;
-      user-select: none !important;
+      letter-spacing: 0.8px;
+      margin-bottom: 4px;
+      display: block;
     }
-    .stars {
-      display: inline-flex;
-      gap: 10px;
-      cursor: pointer;
-      -webkit-touch-callout: none !important;
-      -webkit-user-select: none !important;
-      user-select: none !important;
-      touch-action: manipulation !important;
-      outline: none !important;
+    .section-title {
+      font-size: 22px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: -0.3px;
     }
-    .star {
-      font-size: 36px;
-      color: rgba(255, 255, 255, 0.15);
-      transition: transform 0.15s ease, color 0.15s ease;
-      user-select: none !important;
-      -webkit-user-select: none !important;
-      -webkit-touch-callout: none !important;
-      touch-action: manipulation !important;
-      display: inline-block;
-      line-height: 1;
-      outline: none !important;
-    }
-    .star.active {
-      color: var(--accent-gold);
-      transform: scale(1.08);
-      filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.5));
-    }
-    .star-status {
-      margin-top: 6px;
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--accent-gold);
-      min-height: 20px;
-      -webkit-user-select: none !important;
-      user-select: none !important;
+    .section-desc {
+      color: var(--text-secondary);
+      font-size: 13.5px;
+      margin-top: 4px;
     }
 
-    /* Form Fields */
-    .form-group {
-      margin-bottom: 16px;
-    }
-    .form-row {
+    /* Form Inputs */
+    .form-grid-2 {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 12px;
+      gap: 16px;
     }
-    @media (max-width: 500px) {
-      .form-row {
-        grid-template-columns: 1fr;
-      }
+    @media (max-width: 640px) {
+      .form-grid-2 { grid-template-columns: 1fr; }
     }
-    label {
-      display: block;
-      font-size: 12px;
-      font-weight: 600;
-      color: #cbd5e1;
-      margin-bottom: 6px;
-      -webkit-user-select: none;
+    .form-group {
+      margin-bottom: 18px;
+    }
+    label.field-label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #e2e8f0;
+      margin-bottom: 7px;
       user-select: none;
     }
-    .required-star {
-      color: #ef4444;
-      margin-left: 3px;
-    }
+    .req-star { color: var(--accent-red); margin-left: 3px; }
+    .opt-badge { color: var(--text-muted); font-weight: normal; font-size: 11px; }
+
     input[type="text"],
     input[type="email"],
     input[type="password"],
-    textarea,
-    select {
+    select,
+    textarea {
       width: 100%;
       background: rgba(255, 255, 255, 0.04);
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -584,389 +471,435 @@
       transition: all 0.2s ease;
       outline: none;
     }
-    input:focus, textarea:focus, select:focus {
+    input:focus, select:focus, textarea:focus {
       border-color: var(--accent-cyan);
       box-shadow: 0 0 0 3px rgba(0, 217, 255, 0.15);
       background: rgba(255, 255, 255, 0.06);
     }
+    select {
+      appearance: none;
+      background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2300D9FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+      background-repeat: no-repeat;
+      background-position: right 14px center;
+      background-size: 16px;
+      padding-right: 40px;
+    }
+    select option {
+      background: #0f172a;
+      color: #fff;
+    }
     textarea {
       resize: vertical;
-      min-height: 95px;
+      min-height: 90px;
     }
 
-    /* Specific Feature Questions - Touch Safe */
-    .feature-group {
-      background: rgba(255, 255, 255, 0.02);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 14px;
-      padding: 14px 16px;
-      margin-bottom: 18px;
-      -webkit-touch-callout: none !important;
-      -webkit-user-select: none !important;
-      user-select: none !important;
-    }
-    .feature-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 9px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      gap: 8px;
-    }
-    .feature-row:last-child { border-bottom: none; }
-    .feature-title {
-      font-size: 12.5px;
-      font-weight: 500;
-      color: #cbd5e1;
-      -webkit-user-select: none;
+    /* Interactive Five-Star Component */
+    .star-rating-box {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: var(--radius-md);
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 20px;
       user-select: none;
-    }
-    .feature-stars {
-      display: flex;
-      gap: 5px;
-      cursor: pointer;
-      flex-shrink: 0;
-      -webkit-touch-callout: none !important;
-      -webkit-user-select: none !important;
-      user-select: none !important;
-      touch-action: manipulation !important;
-      outline: none !important;
-    }
-    .f-star {
-      font-size: 18px;
-      color: rgba(255, 255, 255, 0.15);
-      transition: color 0.15s;
-      -webkit-user-select: none !important;
-      user-select: none !important;
-      touch-action: manipulation !important;
-      outline: none !important;
-      display: inline-block;
-      line-height: 1;
-    }
-    .f-star.active {
-      color: var(--accent-cyan);
-    }
-
-    /* Submit Button */
-    .submit-btn {
-      width: 100%;
-      background: var(--gradient-brand);
-      color: #07090e;
-      border: none;
-      border-radius: 12px;
-      padding: 14px;
-      font-size: 15px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      box-shadow: 0 10px 25px -5px rgba(0, 217, 255, 0.5);
       -webkit-user-select: none;
-      user-select: none;
+      -webkit-touch-callout: none;
     }
-    .submit-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 15px 30px -5px rgba(0, 217, 255, 0.65);
-    }
-    .submit-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-      transform: none;
-    }
-
-    /* Right Column: Live Feed */
-    .feed-column {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .feed-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0 4px;
-    }
-    .feed-header h3 {
-      font-size: 19px;
-      font-weight: 800;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .stats-badge {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(251, 191, 36, 0.12);
-      border: 1px solid rgba(251, 191, 36, 0.3);
-      padding: 4px 12px;
-      border-radius: 999px;
-      font-size: 12.5px;
+    .star-box-title {
+      font-size: 12px;
       font-weight: 700;
-      color: var(--accent-gold);
-    }
-
-    /* Feature Averages Summary Bar */
-    .feature-summary-card {
-      background: rgba(16, 21, 36, 0.65);
-      border: 1px solid rgba(0, 217, 255, 0.2);
-      border-radius: 14px;
-      padding: 12px 16px;
-      backdrop-filter: blur(12px);
-    }
-    .feature-summary-title {
-      font-size: 11.5px;
-      font-weight: 700;
-      color: var(--accent-cyan);
+      color: var(--text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.5px;
       margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
     }
-    .feature-bars-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(125px, 1fr));
-      gap: 6px;
-    }
-    .feat-bar-item {
-      background: rgba(255, 255, 255, 0.03);
-      border: 1px solid rgba(255, 255, 255, 0.06);
-      border-radius: 8px;
-      padding: 6px 9px;
-      font-size: 11px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-    .feat-bar-label {
-      color: var(--text-muted);
-      font-weight: 500;
-    }
-    .feat-bar-score {
-      color: var(--accent-gold);
-      font-weight: 700;
-    }
-
-    /* Feedback Cards */
-    .feed-list {
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      max-height: 840px;
-      overflow-y: auto;
-      padding-right: 4px;
-    }
-    .feed-list::-webkit-scrollbar { width: 5px; }
-    .feed-list::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.14);
-      border-radius: 999px;
-    }
-
-    .feedback-item {
-      background: var(--card-bg);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 16px;
-      padding: 18px;
-      transition: all 0.3s ease;
-      position: relative;
-      animation: fadeIn 0.4s ease;
-    }
-    .feedback-item:hover {
-      border-color: rgba(0, 217, 255, 0.3);
-      transform: translateY(-2px);
-      box-shadow: 0 10px 25px -10px rgba(0, 0, 0, 0.5);
-    }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .item-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    .user-avatar {
-      width: 36px;
-      height: 36px;
-      border-radius: 50%;
-      background: var(--gradient-brand);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 800;
-      color: #07090e;
-      font-size: 14px;
-    }
-    .user-name {
-      font-weight: 700;
-      font-size: 14px;
-      color: #fff;
-    }
-    .user-device {
-      font-size: 11px;
-      color: var(--text-dim);
-    }
-    .item-rating {
-      color: var(--accent-gold);
-      font-size: 14px;
-      letter-spacing: 2px;
-    }
-    .item-body {
-      font-size: 13.5px;
-      color: #cbd5e1;
-      margin-bottom: 12px;
-      white-space: pre-line;
-      line-height: 1.5;
-    }
-
-    /* Core Feature Ratings as Stylish Response Tags */
-    .response-feature-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-bottom: 12px;
-    }
-    .feature-tag-pill {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 3px 8px;
-      border-radius: 6px;
-      background: rgba(0, 217, 255, 0.1);
-      color: var(--accent-cyan);
-      border: 1px solid rgba(0, 217, 255, 0.22);
+    .star-row {
       display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      white-space: nowrap;
+      gap: 12px;
+      cursor: pointer;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent !important;
+      -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
     }
-    .feature-tag-pill strong {
-      color: #fff;
+    .star-btn {
+      font-size: 38px;
+      color: rgba(255, 255, 255, 0.16);
+      transition: transform 0.15s ease, color 0.15s ease;
+      line-height: 1;
+      display: inline-block;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent !important;
+      -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+      outline: none !important;
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+      -webkit-appearance: none;
+    }
+    .star-btn:focus, .star-btn:active, .star-btn:focus-visible, .star-btn:visited {
+      outline: none !important;
+      border: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
+      -webkit-tap-highlight-color: transparent !important;
+    }
+    .star-btn.active {
+      color: var(--accent-gold);
+      transform: scale(1.08);
+      filter: drop-shadow(0 0 10px rgba(251, 191, 36, 0.45));
+    }
+    .star-desc-text {
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--accent-gold);
+      margin-top: 8px;
+      min-height: 20px;
     }
 
-    .item-footer {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 11.5px;
-      color: var(--text-dim);
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-      padding-top: 8px;
+    /* Choice Chip Groups */
+    .choice-chips-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 8px;
+      margin-top: 6px;
     }
-    .helpful-btn {
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 3px 10px;
-      border-radius: 999px;
-      color: var(--text-muted);
+    .choice-chip {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.09);
+      border-radius: 10px;
+      padding: 10px 12px;
+      text-align: center;
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-secondary);
       cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      font-size: 11px;
+      user-select: none;
       transition: all 0.2s ease;
     }
-    .helpful-btn:hover {
-      color: var(--accent-cyan);
+    .choice-chip:hover {
+      border-color: rgba(0, 217, 255, 0.3);
+      color: #fff;
+    }
+    .choice-chip.selected {
+      background: rgba(0, 217, 255, 0.14);
       border-color: var(--accent-cyan);
+      color: var(--accent-cyan);
+      font-weight: 700;
     }
 
-    /* Admin Delete Button */
-    .delete-btn {
+    /* Feature Deep-Dive Cards */
+    .feature-card {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: var(--radius-md);
+      padding: 20px;
+      margin-bottom: 20px;
+      transition: border-color 0.2s ease;
+    }
+    .feature-card:hover {
+      border-color: rgba(99, 102, 241, 0.35);
+    }
+    .feature-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+    .feature-card-title {
+      font-size: 15.5px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .feature-card-desc {
+      font-size: 12.5px;
+      color: var(--text-secondary);
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
+    .feature-rate-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .feature-stars {
+      display: inline-flex;
+      gap: 6px;
+      cursor: pointer;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent !important;
+      -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+    }
+    .feat-star {
+      font-size: 22px;
+      color: rgba(255, 255, 255, 0.16);
+      transition: color 0.15s;
+      user-select: none !important;
+      -webkit-user-select: none !important;
+      -webkit-touch-callout: none !important;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent !important;
+      -webkit-tap-highlight-color: rgba(0,0,0,0) !important;
+      outline: none !important;
+      border: none !important;
+      background: transparent !important;
+      box-shadow: none !important;
+    }
+    .feat-star:focus, .feat-star:active, .feat-star:focus-visible {
+      outline: none !important;
+      border: none !important;
+      box-shadow: none !important;
+      background: transparent !important;
+      -webkit-tap-highlight-color: transparent !important;
+    }
+    .feat-star.active {
+      color: var(--accent-cyan);
+    }
+    .not-tested-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      cursor: pointer;
+      user-select: none;
+    }
+    .not-tested-toggle input {
+      accent-color: var(--accent-cyan);
+      cursor: pointer;
+    }
+    .feature-comment-input {
+      margin-top: 10px;
+      font-size: 12.5px;
+      padding: 8px 12px;
+      border-radius: 8px;
+      min-height: 50px;
+    }
+
+    /* Conditional Bug Report Box */
+    .bug-box {
+      background: rgba(239, 68, 68, 0.05);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      margin-top: 16px;
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    .bug-box.show { display: block; }
+
+    /* Form Bottom Button Bar */
+    .form-btn-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-top: 28px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .btn-prev {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--text-secondary);
+      padding: 12px 24px;
+      border-radius: 12px;
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-prev:hover { background: rgba(255, 255, 255, 0.1); color: #fff; }
+    .btn-next {
+      background: var(--gradient-brand);
+      color: #07090e;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 18px rgba(0, 217, 255, 0.35);
+      margin-left: auto;
+    }
+    .btn-next:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(0, 217, 255, 0.5); }
+    .btn-submit {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+    }
+    .btn-submit:hover { box-shadow: 0 6px 28px rgba(16, 185, 129, 0.6); }
+
+    /* Success Card */
+    .success-card {
+      display: none;
+      text-align: center;
+      padding: 50px 24px;
+      background: var(--bg-card);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+    }
+    .success-card.show { display: block; animation: fadeIn 0.4s ease; }
+    .success-icon-badge {
+      width: 70px; height: 70px; border-radius: 50%;
+      background: rgba(16, 185, 129, 0.15);
+      border: 2px solid var(--accent-green);
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 32px; margin-bottom: 20px;
+    }
+    .success-title {
+      font-size: 26px; font-weight: 800; color: #fff; margin-bottom: 10px;
+    }
+    .success-subtitle {
+      color: var(--text-secondary); font-size: 14.5px; max-width: 500px;
+      margin: 0 auto 24px auto; line-height: 1.6;
+    }
+
+    /* Community Reviews Wall Section (Collapsible / Bottom) */
+    .community-wall-section {
+      margin-top: 40px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      padding-top: 30px;
+    }
+    .community-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .community-title {
+      font-size: 18px; font-weight: 800; color: #fff;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .wall-stats-badge {
+      background: rgba(251, 191, 36, 0.12);
+      border: 1px solid rgba(251, 191, 36, 0.3);
+      padding: 4px 12px; border-radius: 999px;
+      font-size: 12px; font-weight: 700; color: var(--accent-gold);
+    }
+    .wall-feed-list {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 14px;
+    }
+    .feed-card {
+      background: rgba(16, 21, 36, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      animation: fadeIn 0.3s ease;
+    }
+    .feed-card:hover {
+      border-color: rgba(0, 217, 255, 0.25);
+    }
+    .feed-top {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-bottom: 8px;
+    }
+    .feed-user { display: flex; align-items: center; gap: 10px; }
+    .feed-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--gradient-brand);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 800; color: #07090e; font-size: 13px;
+    }
+    .feed-name { font-weight: 700; font-size: 13.5px; color: #fff; }
+    .feed-meta { font-size: 11px; color: var(--text-muted); }
+    .feed-stars { color: var(--accent-gold); font-size: 13px; letter-spacing: 2px; }
+    .feed-body { font-size: 13px; color: #cbd5e1; margin-bottom: 10px; line-height: 1.5; }
+    .feed-chips-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .feed-chip {
+      font-size: 10.5px; font-weight: 600; padding: 2px 8px; border-radius: 6px;
+      background: rgba(0, 217, 255, 0.1); color: var(--accent-cyan);
+      border: 1px solid rgba(0, 217, 255, 0.2);
+    }
+    .feed-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11px; color: var(--text-muted);
+      border-top: 1px solid rgba(255, 255, 255, 0.04);
+      padding-top: 8px;
+    }
+    .feed-del-btn {
       display: none;
       background: rgba(239, 68, 68, 0.15);
       border: 1px solid rgba(239, 68, 68, 0.4);
       color: #f87171;
-      padding: 3px 9px;
-      border-radius: 7px;
-      font-size: 11px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      margin-left: 8px;
+      padding: 3px 8px; border-radius: 6px;
+      font-size: 10.5px; font-weight: 700; cursor: pointer;
     }
-    .delete-btn:hover {
-      background: #ef4444;
-      color: #fff;
-    }
-    body.admin-mode .delete-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-    }
+    body.admin-mode .feed-del-btn { display: inline-flex; align-items: center; gap: 4px; }
 
     /* Toast */
     .toast {
       position: fixed;
-      bottom: 20px;
-      right: 20px;
+      bottom: 24px; right: 24px;
       background: #0f172a;
       border: 1px solid var(--accent-cyan);
       box-shadow: 0 10px 30px rgba(0, 217, 255, 0.3);
-      padding: 14px 18px;
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      z-index: 10000;
-      opacity: 0;
-      transform: translateY(20px);
-      transition: all 0.3s ease;
-      pointer-events: none;
+      padding: 14px 18px; border-radius: 12px;
+      display: flex; align-items: center; gap: 10px;
+      z-index: 10000; opacity: 0; transform: translateY(20px);
+      transition: all 0.3s ease; pointer-events: none;
     }
-    .toast.show {
-      opacity: 1;
-      transform: translateY(0);
-      pointer-events: auto;
-    }
+    .toast.show { opacity: 1; transform: translateY(0); pointer-events: auto; }
 
-    .sync-status {
-      font-size: 11px;
-      color: var(--text-dim);
-      display: flex;
-      align-items: center;
-      gap: 5px;
-      margin-top: 2px;
+    /* Modal Backdrop */
+    .modal-backdrop {
+      position: fixed; inset: 0; background: rgba(7, 9, 14, 0.75);
+      backdrop-filter: blur(10px); z-index: 9999; display: none;
+      align-items: center; justify-content: center; padding: 20px;
     }
-    .sync-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #10b981;
-      display: inline-block;
+    .modal-backdrop.show { display: flex; }
+    .modal-card {
+      background: #0f1628; border: 1px solid rgba(0, 217, 255, 0.35);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+      border-radius: 20px; padding: 24px; max-width: 420px; width: 100%;
     }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .modal-title { font-size: 16px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .modal-close { background: transparent; border: none; color: var(--text-muted); font-size: 20px; cursor: pointer; }
   </style>
 </head>
 <body>
 
-  <!-- Living Neural Mesh Interactive Canvas -->
+  <!-- Living Neural Mesh Background Canvas -->
   <canvas id="neuralCanvas"></canvas>
-
   <div class="glow-blob blob-1"></div>
   <div class="glow-blob blob-2"></div>
 
-  <div class="content-wrapper">
-    <!-- Header with Official Logo -->
+  <div class="portal-shell">
+
+    <!-- Top Navigation Header -->
     <header>
       <a href="#" class="brand">
         <img src="data:image/png;base64,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" alt="Receipto Logo" class="logo-img">
-        <div class="brand-text">Receipto</div>
+        <div class="brand-title">Receipto</div>
       </a>
       <div class="header-actions">
-        <div class="beta-badge">🚀 Closed Beta</div>
-        <button type="button" class="admin-toggle-btn" id="adminBtn" title="Admin management mode">
+        <div class="beta-badge">Official Beta Testing Program</div>
+        <button type="button" class="admin-toggle-btn" id="adminBtn" onclick="toggleAdmin()">
           <span>🔒</span> Admin Portal
         </button>
       </div>
@@ -978,232 +911,692 @@
         <div class="admin-badge-icon">👑</div>
         <div>
           <div class="admin-title">Admin Management Active (Milanraj)</div>
-          <div class="admin-desc">Cloud-synchronized deletion &amp; real-time tester exports.</div>
+          <div class="admin-desc">Cloud-synchronized feedback management &amp; diagnostic exports.</div>
         </div>
       </div>
       <div class="admin-actions">
-        <button type="button" class="export-btn export-pdf" onclick="exportPDF()" title="Export print-ready PDF report">
+        <button type="button" class="export-btn export-pdf" onclick="exportPDF()">
           <span>📑</span> Export PDF
         </button>
-        <button type="button" class="export-btn export-csv" onclick="exportCSV()" title="Export CSV spreadsheet">
+        <button type="button" class="export-btn export-csv" onclick="exportCSV()">
           <span>📊</span> Export CSV
         </button>
-        <button type="button" class="export-btn export-json" onclick="exportJSON()" title="Export JSON backup">
+        <button type="button" class="export-btn export-json" onclick="exportJSON()">
           <span>📦</span> Export JSON
         </button>
-        <button type="button" class="export-btn lock-admin-btn" onclick="toggleAdmin()" title="Lock admin portal">
+        <button type="button" class="export-btn lock-admin-btn" onclick="toggleAdmin()">
           <span>🔒</span> Lock Admin
         </button>
       </div>
     </div>
 
-    <!-- Admin Login Modal Dialog -->
+    <!-- Admin Login Modal -->
     <div class="modal-backdrop" id="adminModal">
       <div class="modal-card">
         <div class="modal-header">
           <div class="modal-title"><span>🔐</span> Admin Authentication</div>
           <button type="button" class="modal-close" onclick="closeAdminModal()">✕</button>
         </div>
-        <p class="modal-subtitle">Enter your master administrator passcode to unlock reviews export and moderation controls.</p>
+        <p style="font-size: 12.5px; color: var(--text-secondary); margin-bottom: 16px;">
+          Enter master administrator passcode to moderate feedback and download evaluation reports.
+        </p>
         <form onsubmit="handleAdminLogin(event)">
           <div class="form-group" style="margin-bottom: 6px;">
-            <label for="adminPassInput">Master Passcode</label>
-            <div class="pass-input-wrapper">
-              <input type="password" id="adminPassInput" placeholder="Enter master passcode" required>
-              <button type="button" class="eye-btn" onclick="togglePassVisibility()" title="Show/Hide">👁️</button>
-            </div>
-            <div id="adminErrorMsg" class="admin-error-text"></div>
+            <input type="password" id="adminPassInput" placeholder="Enter master passcode" required>
+            <div id="adminErrorMsg" style="color: var(--accent-red); font-size: 11.5px; font-weight: 600; margin-top: 5px;"></div>
           </div>
-          <div class="modal-actions">
-            <button type="button" class="modal-btn modal-btn-cancel" onclick="closeAdminModal()">Cancel</button>
-            <button type="submit" class="modal-btn modal-btn-submit">Unlock Admin</button>
+          <div style="display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px;">
+            <button type="button" class="export-btn" style="background: rgba(255,255,255,0.08); color: var(--text-secondary);" onclick="closeAdminModal()">Cancel</button>
+            <button type="submit" class="export-btn" style="background: var(--gradient-brand); color: #07090e;">Unlock Admin</button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Hero -->
+    <!-- Hero Section -->
     <section class="hero">
-      <div class="hero-pill">
-        <span>✨</span> Play Store Closed Testing Community
+      <div class="program-pill">
+        <span>✨</span> Official Beta Testing Program
       </div>
-      <h1>Help Shape <span>Receipto</span></h1>
-      <p>Share your honest experience, suggest features, and rate our scanner engine. Your feedback directly determines our next release!</p>
+      <h1>Help Us Build a <span>Better Receipto.</span></h1>
+      <p>
+        You're among the early users helping shape the future of smarter receipt management. Share your experience, evaluate our features and help us make Receipto more reliable, efficient and user-friendly.
+      </p>
+      <div class="hero-meta-row">
+        <div class="hero-meta-item"><span>📋</span> Beta Tester Feedback</div>
+        <div class="hero-meta-item"><span>⏱️</span> Approximately 5–7 minutes</div>
+        <div class="hero-meta-item"><span>🛡️</span> Secure feedback submission</div>
+        <div class="hero-meta-item"><span>💡</span> Your feedback helps improve the product</div>
+      </div>
+      <button type="button" class="hero-cta-btn" onclick="scrollToForm()">
+        <span>Share Your Feedback</span>
+        <span>↓</span>
+      </button>
     </section>
 
-    <!-- Main Content -->
-    <main class="container">
-      <!-- Left Column: Form -->
-      <div class="form-card">
-        <div class="form-title">Submit Tester Feedback</div>
-        <div class="form-subtitle">Takes less than 1 minute • Visible instantly to the developer</div>
+    <!-- Main Form Container -->
+    <main class="container" id="feedbackFormContainer">
 
-        <form id="feedbackForm">
-          <!-- Overall Rating -->
-          <div class="rating-section">
-            <div class="rating-label">Overall Experience Rating</div>
-            <div class="stars" id="starGroup">
-              <span class="star active" data-val="1">★</span>
-              <span class="star active" data-val="2">★</span>
-              <span class="star active" data-val="3">★</span>
-              <span class="star active" data-val="4">★</span>
-              <span class="star active" data-val="5">★</span>
-            </div>
-            <div class="star-status" id="starStatus">5.0 - Exceptional Experience! 🔥</div>
-            <input type="hidden" id="ratingInput" value="5">
+      <!-- Stepper Navigation -->
+      <nav class="stepper-nav" id="stepperNav">
+        <button type="button" class="step-pill active" onclick="goToStep(1)">
+          <span class="step-num">1</span>
+          <span>Tester Profile</span>
+        </button>
+        <button type="button" class="step-pill" onclick="goToStep(2)">
+          <span class="step-num">2</span>
+          <span>Overall Experience</span>
+        </button>
+        <button type="button" class="step-pill" onclick="goToStep(3)">
+          <span class="step-num">3</span>
+          <span>Feature Deep-Dive</span>
+        </button>
+        <button type="button" class="step-pill" onclick="goToStep(4)">
+          <span class="step-num">4</span>
+          <span>UI/UX &amp; Bugs</span>
+        </button>
+        <button type="button" class="step-pill" onclick="goToStep(5)">
+          <span class="step-num">5</span>
+          <span>Suggestions &amp; Review</span>
+        </button>
+      </nav>
+
+      <!-- Multi-Step Form -->
+      <form id="betaFeedbackForm" onsubmit="handleFormSubmit(event)">
+
+        <!-- STEP 1: TESTER INFORMATION -->
+        <div class="section-card active" id="step1Card">
+          <div class="section-header">
+            <span class="section-tag">Step 1 of 5</span>
+            <h2 class="section-title">Tester Information</h2>
+            <p class="section-desc">Provide your test environment details so we can correlate performance metrics.</p>
           </div>
 
-          <!-- Tester Details (No Phone Model) -->
-          <div class="form-row">
+          <div class="form-grid-2">
             <div class="form-group">
-              <label for="testerName">Your Name<span class="required-star">*</span></label>
-              <input type="text" id="testerName" placeholder="e.g. Milanraj" required>
+              <label class="field-label" for="testerName">Full Name<span class="req-star">*</span></label>
+              <input type="text" id="testerName" placeholder="e.g. Milanraj Kunder" required>
             </div>
             <div class="form-group">
-              <label for="testerEmail">Email Address<span class="required-star">*</span></label>
+              <label class="field-label" for="testerEmail">Email Address<span class="req-star">*</span></label>
               <input type="email" id="testerEmail" placeholder="your@email.com" required>
             </div>
           </div>
 
-          <!-- Core Feature Ratings (7 Options, No AI mentioned) -->
-          <div class="feature-group">
-            <label style="margin-bottom: 12px; color: var(--accent-cyan); display: flex; justify-content: space-between; align-items: center;">
-              <span>Rate Core App Features</span>
-              <span style="font-size: 11px; color: var(--text-dim); font-weight: normal;">Tap stars (1-5)</span>
-            </label>
-
-            <div class="feature-row">
-              <span class="feature-title">⚡ Receipt OCR &amp; Scanning Speed</span>
-              <div class="feature-stars" data-feature="ocr">
-                <span class="f-star active" data-val="1">★</span>
-                <span class="f-star active" data-val="2">★</span>
-                <span class="f-star active" data-val="3">★</span>
-                <span class="f-star active" data-val="4">★</span>
-                <span class="f-star active" data-val="5">★</span>
-              </div>
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="field-label" for="deviceModel">Device Brand &amp; Model<span class="req-star">*</span></label>
+              <input type="text" id="deviceModel" placeholder="e.g. OnePlus 11, Samsung S24, Pixel 8" required>
             </div>
-
-            <div class="feature-row">
-              <span class="feature-title">🎨 Cyber Dark UI &amp; Visual Design</span>
-              <div class="feature-stars" data-feature="ui">
-                <span class="f-star active" data-val="1">★</span>
-                <span class="f-star active" data-val="2">★</span>
-                <span class="f-star active" data-val="3">★</span>
-                <span class="f-star active" data-val="4">★</span>
-                <span class="f-star active" data-val="5">★</span>
-              </div>
-            </div>
-
-            <div class="feature-row">
-              <span class="feature-title">📑 PDF Export &amp; Invoice View</span>
-              <div class="feature-stars" data-feature="pdf">
-                <span class="f-star active" data-val="1">★</span>
-                <span class="f-star active" data-val="2">★</span>
-                <span class="f-star active" data-val="3">★</span>
-                <span class="f-star active" data-val="4">★</span>
-                <span class="f-star active" data-val="5">★</span>
-              </div>
-            </div>
-
-            <div class="feature-row">
-              <span class="feature-title">📊 Expense Analytics &amp; Spending Charts</span>
-              <div class="feature-stars" data-feature="analytics">
-                <span class="f-star active" data-val="1">★</span>
-                <span class="f-star active" data-val="2">★</span>
-                <span class="f-star active" data-val="3">★</span>
-                <span class="f-star active" data-val="4">★</span>
-                <span class="f-star active" data-val="5">★</span>
-              </div>
-            </div>
-
-            <div class="feature-row">
-              <span class="feature-title">🛡️ Smart Warranty &amp; Expiry Reminders</span>
-              <div class="feature-stars" data-feature="warranty">
-                <span class="f-star active" data-val="1">★</span>
-                <span class="f-star active" data-val="2">★</span>
-                <span class="f-star active" data-val="3">★</span>
-                <span class="f-star active" data-val="4">★</span>
-                <span class="f-star active" data-val="5">★</span>
-              </div>
-            </div>
-
-            <div class="feature-row">
-              <span class="feature-title">🔍 Instant Search &amp; Auto-Categorization</span>
-              <div class="feature-stars" data-feature="search">
-                <span class="f-star active" data-val="1">★</span>
-                <span class="f-star active" data-val="2">★</span>
-                <span class="f-star active" data-val="3">★</span>
-                <span class="f-star active" data-val="4">★</span>
-                <span class="f-star active" data-val="5">★</span>
-              </div>
-            </div>
-
-            <div class="feature-row">
-              <span class="feature-title">🚀 Gestures, Animations &amp; Overall Speed</span>
-              <div class="feature-stars" data-feature="performance">
-                <span class="f-star active" data-val="1">★</span>
-                <span class="f-star active" data-val="2">★</span>
-                <span class="f-star active" data-val="3">★</span>
-                <span class="f-star active" data-val="4">★</span>
-                <span class="f-star active" data-val="5">★</span>
-              </div>
+            <div class="form-group">
+              <label class="field-label" for="androidVersion">Android Version<span class="req-star">*</span></label>
+              <select id="androidVersion" required>
+                <option value="">Select Android Version</option>
+                <option value="Android 15">Android 15 (Vanilla Ice Cream)</option>
+                <option value="Android 14" selected>Android 14 (Upside Down Cake)</option>
+                <option value="Android 13">Android 13 (Tiramisu)</option>
+                <option value="Android 12">Android 12 (Snow Cone)</option>
+                <option value="Android 11">Android 11</option>
+                <option value="Other">Other / Custom ROM</option>
+              </select>
             </div>
           </div>
 
-          <!-- Feedback Details -->
+          <div class="form-grid-2">
+            <div class="form-group">
+              <label class="field-label" for="appVersion">Receipto App Version</label>
+              <input type="text" id="appVersion" value="1.0.0 (Build 1)" readonly style="color: var(--accent-cyan); font-family: 'JetBrains Mono', monospace;">
+            </div>
+            <div class="form-group">
+              <label class="field-label" for="testingDuration">Testing Duration<span class="req-star">*</span></label>
+              <select id="testingDuration" required>
+                <option value="">Select Testing Duration</option>
+                <option value="Less than one day">Less than one day</option>
+                <option value="1–3 days" selected>1–3 days</option>
+                <option value="4–7 days">4–7 days</option>
+                <option value="1–2 weeks">1–2 weeks</option>
+                <option value="More than two weeks">More than two weeks</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-btn-bar">
+            <div></div>
+            <button type="button" class="btn-next" onclick="validateAndGoStep(1, 2)">
+              <span>Next: Overall Experience</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 2: OVERALL EXPERIENCE & NLP-BASED RECEIPT EXTRACTION -->
+        <div class="section-card" id="step2Card">
+          <div class="section-header">
+            <span class="section-tag">Step 2 of 5</span>
+            <h2 class="section-title">Overall Experience</h2>
+            <p class="section-desc">Evaluate your core experience and our automated receipt data extraction.</p>
+          </div>
+
+          <!-- Overall Experience 5-Star Rating -->
+          <div class="star-rating-box">
+            <div class="star-box-title">How would you rate your overall experience with Receipto?</div>
+            <div class="star-row" id="overallStarsGroup">
+              <span class="star-btn active" data-val="1">★</span>
+              <span class="star-btn active" data-val="2">★</span>
+              <span class="star-btn active" data-val="3">★</span>
+              <span class="star-btn active" data-val="4">★</span>
+              <span class="star-btn active" data-val="5">★</span>
+            </div>
+            <div class="star-desc-text" id="overallStarsDesc">5 Stars – Excellent 🔥</div>
+            <input type="hidden" id="overallRating" value="5">
+          </div>
+
+          <!-- Ease of Use Question -->
           <div class="form-group">
-            <label for="feedbackText">Feedback &amp; Suggestions<span class="required-star">*</span></label>
-            <textarea id="feedbackText" placeholder="Tell us about your experience, any bugs you faced, or ideas for improvement..." required></textarea>
+            <label class="field-label">How easy was Receipto to use?<span class="req-star">*</span></label>
+            <div class="choice-chips-grid" id="easeOfUseGroup">
+              <div class="choice-chip selected" data-val="Very Easy" onclick="selectChoice('easeOfUseGroup', this)">Very Easy</div>
+              <div class="choice-chip" data-val="Easy" onclick="selectChoice('easeOfUseGroup', this)">Easy</div>
+              <div class="choice-chip" data-val="Neutral" onclick="selectChoice('easeOfUseGroup', this)">Neutral</div>
+              <div class="choice-chip" data-val="Difficult" onclick="selectChoice('easeOfUseGroup', this)">Difficult</div>
+              <div class="choice-chip" data-val="Very Difficult" onclick="selectChoice('easeOfUseGroup', this)">Very Difficult</div>
+            </div>
+            <input type="hidden" id="easeOfUseInput" value="Very Easy">
           </div>
 
-          <button type="submit" class="submit-btn" id="submitBtn">
-            <span>🚀</span> Post Tester Feedback
+          <!-- FEATURE 1: NLP-BASED RECEIPT PROCESSING -->
+          <div class="feature-card" style="margin-top: 24px; border-color: rgba(0, 217, 255, 0.28);">
+            <div class="feature-card-header">
+              <div class="feature-card-title">
+                <span>⚡</span>
+                <span>NLP-Based Receipt Processing</span>
+              </div>
+              <span style="font-size: 11px; background: rgba(0, 217, 255, 0.12); color: var(--accent-cyan); padding: 3px 8px; border-radius: 6px; font-weight: 700;">PaddleOCR + NLP</span>
+            </div>
+            <p class="feature-card-desc">
+              Evaluate how effectively Receipto recognizes receipt text using PaddleOCR and processes the extracted information into structured receipt data (merchant name, invoice number, purchase date, total amount, line items, quantities, and prices).
+            </p>
+
+            <div class="form-group">
+              <label class="field-label">How accurate was the receipt information extracted by Receipto?<span class="req-star">*</span></label>
+              <div class="feature-rate-row">
+                <div class="feature-stars" data-feature="nlp_ocr" id="nlpStars">
+                  <span class="feat-star active" data-val="1">★</span>
+                  <span class="feat-star active" data-val="2">★</span>
+                  <span class="feat-star active" data-val="3">★</span>
+                  <span class="feat-star active" data-val="4">★</span>
+                  <span class="feat-star active" data-val="5">★</span>
+                </div>
+                <span id="nlpStarsLabel" style="font-size: 12.5px; font-weight: 700; color: var(--accent-cyan);">5.0 / 5.0</span>
+                <label class="not-tested-toggle">
+                  <input type="checkbox" onchange="toggleNotTested('nlp_ocr', this)"> Not Tested
+                </label>
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label class="field-label">Did you need to manually correct any extracted information?<span class="req-star">*</span></label>
+              <div class="choice-chips-grid" id="manualCorrectionGroup">
+                <div class="choice-chip" data-val="Never" onclick="selectChoice('manualCorrectionGroup', this)">Never</div>
+                <div class="choice-chip selected" data-val="Rarely" onclick="selectChoice('manualCorrectionGroup', this)">Rarely</div>
+                <div class="choice-chip" data-val="Sometimes" onclick="selectChoice('manualCorrectionGroup', this)">Sometimes</div>
+                <div class="choice-chip" data-val="Frequently" onclick="selectChoice('manualCorrectionGroup', this)">Frequently</div>
+                <div class="choice-chip" data-val="Almost Every Time" onclick="selectChoice('manualCorrectionGroup', this)">Almost Every Time</div>
+              </div>
+              <input type="hidden" id="manualCorrectionInput" value="Rarely">
+            </div>
+
+            <textarea class="feature-comment-input" id="comment_nlp_ocr" placeholder="Optional comments on OCR text recognition, parsing speed, or edge-case bills..."></textarea>
+          </div>
+
+          <div class="form-btn-bar">
+            <button type="button" class="btn-prev" onclick="goToStep(1)">← Previous</button>
+            <button type="button" class="btn-next" onclick="goToStep(3)">
+              <span>Next: Feature Deep-Dive</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 3: INDIVIDUAL FEATURE EVALUATIONS -->
+        <div class="section-card" id="step3Card">
+          <div class="section-header">
+            <span class="section-tag">Step 3 of 5</span>
+            <h2 class="section-title">Feature-by-Feature Evaluation</h2>
+            <p class="section-desc">Rate each module you had an opportunity to test. Select "Not Tested" for unused features.</p>
+          </div>
+
+          <!-- FEATURE 2: RECEIPT MANAGEMENT -->
+          <div class="feature-card">
+            <div class="feature-card-header">
+              <div class="feature-card-title"><span>🗄️</span> Receipt Management</div>
+            </div>
+            <p class="feature-card-desc">Evaluate receipt history, category filtering, search speed, duplicate receipt detection, sorting, and invoice details view.</p>
+            <div class="feature-rate-row">
+              <div class="feature-stars" data-feature="receipts" id="stars_receipts">
+                <span class="feat-star active" data-val="1">★</span>
+                <span class="feat-star active" data-val="2">★</span>
+                <span class="feat-star active" data-val="3">★</span>
+                <span class="feat-star active" data-val="4">★</span>
+                <span class="feat-star active" data-val="5">★</span>
+              </div>
+              <span id="label_receipts" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
+              <label class="not-tested-toggle">
+                <input type="checkbox" onchange="toggleNotTested('receipts', this)"> Not Tested
+              </label>
+            </div>
+            <textarea class="feature-comment-input" id="comment_receipts" placeholder="Optional comments on search, filtering, or duplicate detection..."></textarea>
+          </div>
+
+          <!-- FEATURE 3: WARRANTY TRACKING -->
+          <div class="feature-card">
+            <div class="feature-card-header">
+              <div class="feature-card-title"><span>🛡️</span> Warranty Tracking</div>
+            </div>
+            <p class="feature-card-desc">Evaluate automated warranty detection, expiration date calculations, manual warranty entry, active vs. expired lists, and brand customer support information.</p>
+            <div class="feature-rate-row">
+              <div class="feature-stars" data-feature="warranty" id="stars_warranty">
+                <span class="feat-star active" data-val="1">★</span>
+                <span class="feat-star active" data-val="2">★</span>
+                <span class="feat-star active" data-val="3">★</span>
+                <span class="feat-star active" data-val="4">★</span>
+                <span class="feat-star active" data-val="5">★</span>
+              </div>
+              <span id="label_warranty" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
+              <label class="not-tested-toggle">
+                <input type="checkbox" onchange="toggleNotTested('warranty', this)"> Not Tested
+              </label>
+            </div>
+            <textarea class="feature-comment-input" id="comment_warranty" placeholder="Optional comments on warranty duration detection or claim tools..."></textarea>
+          </div>
+
+          <!-- FEATURE 4: WARRANTY REMINDERS -->
+          <div class="feature-card">
+            <div class="feature-card-header">
+              <div class="feature-card-title"><span>🔔</span> Warranty Reminders &amp; Alerts</div>
+            </div>
+            <p class="feature-card-desc">Evaluate on-device local notifications, transactional email alerts, notification timing (T-30, T-7, T-1 days), and delivery reliability.</p>
+            <div class="feature-rate-row">
+              <div class="feature-stars" data-feature="reminders" id="stars_reminders">
+                <span class="feat-star active" data-val="1">★</span>
+                <span class="feat-star active" data-val="2">★</span>
+                <span class="feat-star active" data-val="3">★</span>
+                <span class="feat-star active" data-val="4">★</span>
+                <span class="feat-star active" data-val="5">★</span>
+              </div>
+              <span id="label_reminders" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
+              <label class="not-tested-toggle">
+                <input type="checkbox" onchange="toggleNotTested('reminders', this)"> Not Tested
+              </label>
+            </div>
+            <textarea class="feature-comment-input" id="comment_reminders" placeholder="Did you receive local tray notifications or email reminders as expected?"></textarea>
+          </div>
+
+          <!-- FEATURE 5: AI FINANCIAL ASSISTANT -->
+          <div class="feature-card">
+            <div class="feature-card-header">
+              <div class="feature-card-title"><span>🤖</span> Conversational AI Financial Assistant</div>
+            </div>
+            <p class="feature-card-desc">Evaluate the interactive in-app conversational assistant for answering questions about your past receipts, itemized line items, warranties, and category spending.</p>
+            <div class="feature-rate-row">
+              <div class="feature-stars" data-feature="ai_assistant" id="stars_ai_assistant">
+                <span class="feat-star active" data-val="1">★</span>
+                <span class="feat-star active" data-val="2">★</span>
+                <span class="feat-star active" data-val="3">★</span>
+                <span class="feat-star active" data-val="4">★</span>
+                <span class="feat-star active" data-val="5">★</span>
+              </div>
+              <span id="label_ai_assistant" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
+              <label class="not-tested-toggle">
+                <input type="checkbox" onchange="toggleNotTested('ai_assistant', this)"> Not Tested
+              </label>
+            </div>
+            <textarea class="feature-comment-input" id="comment_ai_assistant" placeholder="Optional comments on assistant accuracy, speed, or answer relevance..."></textarea>
+          </div>
+
+          <!-- FEATURE 6: EXPENSE ANALYTICS & BUDGETING -->
+          <div class="feature-card">
+            <div class="feature-card-header">
+              <div class="feature-card-title"><span>📊</span> Expense Analytics &amp; Budgeting</div>
+            </div>
+            <p class="feature-card-desc">Evaluate monthly expenditure overviews, category breakdown charts, spending velocity, budget tracking thresholds, and financial insights.</p>
+            <div class="feature-rate-row">
+              <div class="feature-stars" data-feature="analytics" id="stars_analytics">
+                <span class="feat-star active" data-val="1">★</span>
+                <span class="feat-star active" data-val="2">★</span>
+                <span class="feat-star active" data-val="3">★</span>
+                <span class="feat-star active" data-val="4">★</span>
+                <span class="feat-star active" data-val="5">★</span>
+              </div>
+              <span id="label_analytics" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
+              <label class="not-tested-toggle">
+                <input type="checkbox" onchange="toggleNotTested('analytics', this)"> Not Tested
+              </label>
+            </div>
+            <textarea class="feature-comment-input" id="comment_analytics" placeholder="Optional comments on spending visualizations or budget limits..."></textarea>
+          </div>
+
+          <!-- FEATURE 7: PDF GENERATION & EXPORT -->
+          <div class="feature-card">
+            <div class="feature-card-header">
+              <div class="feature-card-title"><span>📑</span> PDF Generation &amp; Export</div>
+            </div>
+            <p class="feature-card-desc">Evaluate vector PDF invoice generation, document layout, tax and line-item clarity, built-in PDF viewer, and export/sharing experience.</p>
+            <div class="feature-rate-row">
+              <div class="feature-stars" data-feature="pdf" id="stars_pdf">
+                <span class="feat-star active" data-val="1">★</span>
+                <span class="feat-star active" data-val="2">★</span>
+                <span class="feat-star active" data-val="3">★</span>
+                <span class="feat-star active" data-val="4">★</span>
+                <span class="feat-star active" data-val="5">★</span>
+              </div>
+              <span id="label_pdf" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
+              <label class="not-tested-toggle">
+                <input type="checkbox" onchange="toggleNotTested('pdf', this)"> Not Tested
+              </label>
+            </div>
+            <textarea class="feature-comment-input" id="comment_pdf" placeholder="Optional comments on generated PDF quality or sharing speed..."></textarea>
+          </div>
+
+          <!-- FEATURE 8: WHATSAPP INTEGRATION -->
+          <div class="feature-card">
+            <div class="feature-card-header">
+              <div class="feature-card-title"><span>💬</span> WhatsApp Bot Integration</div>
+            </div>
+            <p class="feature-card-desc">Evaluate forwarding bill photos and PDF receipts over WhatsApp, automated message recognition, and synchronization to your mobile dashboard.</p>
+            <div class="feature-rate-row">
+              <div class="feature-stars" data-feature="whatsapp" id="stars_whatsapp">
+                <span class="feat-star active" data-val="1">★</span>
+                <span class="feat-star active" data-val="2">★</span>
+                <span class="feat-star active" data-val="3">★</span>
+                <span class="feat-star active" data-val="4">★</span>
+                <span class="feat-star active" data-val="5">★</span>
+              </div>
+              <span id="label_whatsapp" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
+              <label class="not-tested-toggle">
+                <input type="checkbox" id="check_whatsapp_not_tested" onchange="toggleNotTested('whatsapp', this)"> Not Tested
+              </label>
+            </div>
+            <textarea class="feature-comment-input" id="comment_whatsapp" placeholder="Optional comments on WhatsApp receipt sync..."></textarea>
+          </div>
+
+          <div class="form-btn-bar">
+            <button type="button" class="btn-prev" onclick="goToStep(2)">← Previous</button>
+            <button type="button" class="btn-next" onclick="goToStep(4)">
+              <span>Next: UI/UX &amp; Bugs</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 4: UI/UX, PERFORMANCE & BUG REPORTING -->
+        <div class="section-card" id="step4Card">
+          <div class="section-header">
+            <span class="section-tag">Step 4 of 5</span>
+            <h2 class="section-title">UI/UX &amp; Performance Evaluation</h2>
+            <p class="section-desc">Assess the interface quality, responsiveness, stability, and report any encountered bugs.</p>
+          </div>
+
+          <!-- UI/UX Star Ratings -->
+          <div class="form-group">
+            <label class="field-label">Interface &amp; Visual Design (1–5 Stars)<span class="req-star">*</span></label>
+            <div class="feature-rate-row">
+              <div class="feature-stars" data-feature="ui_design" id="stars_ui_design">
+                <span class="feat-star active" data-val="1">★</span>
+                <span class="feat-star active" data-val="2">★</span>
+                <span class="feat-star active" data-val="3">★</span>
+                <span class="feat-star active" data-val="4">★</span>
+                <span class="feat-star active" data-val="5">★</span>
+              </div>
+              <span id="label_ui_design" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="field-label">Navigation &amp; Flow (1–5 Stars)<span class="req-star">*</span></label>
+            <div class="feature-rate-row">
+              <div class="feature-stars" data-feature="ui_nav" id="stars_ui_nav">
+                <span class="feat-star active" data-val="1">★</span>
+                <span class="feat-star active" data-val="2">★</span>
+                <span class="feat-star active" data-val="3">★</span>
+                <span class="feat-star active" data-val="4">★</span>
+                <span class="feat-star active" data-val="5">★</span>
+              </div>
+              <span id="label_ui_nav" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="field-label">Application Responsiveness &amp; Speed (1–5 Stars)<span class="req-star">*</span></label>
+            <div class="feature-rate-row">
+              <div class="feature-stars" data-feature="ui_speed" id="stars_ui_speed">
+                <span class="feat-star active" data-val="1">★</span>
+                <span class="feat-star active" data-val="2">★</span>
+                <span class="feat-star active" data-val="3">★</span>
+                <span class="feat-star active" data-val="4">★</span>
+                <span class="feat-star active" data-val="5">★</span>
+              </div>
+              <span id="label_ui_speed" style="font-size: 12px; font-weight: 700; color: var(--accent-cyan);">5.0 ★</span>
+            </div>
+          </div>
+
+          <!-- Stability Questions -->
+          <div class="form-grid-2" style="margin-top: 20px;">
+            <div class="form-group">
+              <label class="field-label">Did the application crash?<span class="req-star">*</span></label>
+              <select id="crashFrequency" required>
+                <option value="Never" selected>Never</option>
+                <option value="Once">Once</option>
+                <option value="Occasionally">Occasionally</option>
+                <option value="Frequently">Frequently</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="field-label">Did you experience loading delays?<span class="req-star">*</span></label>
+              <select id="delayFrequency" required>
+                <option value="Never" selected>Never</option>
+                <option value="Rarely">Rarely</option>
+                <option value="Sometimes">Sometimes</option>
+                <option value="Frequently">Frequently</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- CONDITIONAL BUG REPORTING -->
+          <div style="margin-top: 26px; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 18px;">
+            <label class="field-label" style="font-size: 14px; margin-bottom: 8px;">
+              <span>🐛 Did you encounter any bugs or unexpected behaviour?</span>
+              <span class="req-star">*</span>
+            </label>
+            <div class="choice-chips-grid" id="hasBugGroup" style="grid-template-columns: 1fr 1fr; max-width: 320px;">
+              <div class="choice-chip" data-val="Yes" onclick="selectBugChoice(true, this)">Yes</div>
+              <div class="choice-chip selected" data-val="No" onclick="selectBugChoice(false, this)">No</div>
+            </div>
+            <input type="hidden" id="hasBugInput" value="No">
+
+            <!-- Revealed Bug Form Fields -->
+            <div class="bug-box" id="bugReportBox">
+              <div style="font-weight: 800; font-size: 14px; color: #f87171; margin-bottom: 14px; display: flex; align-items: center; gap: 6px;">
+                <span>⚠️</span> Bug Diagnostic Details
+              </div>
+              <div class="form-group">
+                <label class="field-label">Feature where issue occurred</label>
+                <select id="bugFeature">
+                  <option value="NLP Receipt Scanner">NLP Receipt Scanner / Camera</option>
+                  <option value="Preview & Save Screen">Preview &amp; Save Screen</option>
+                  <option value="Receipts Archive & Details">Receipts Archive &amp; Details</option>
+                  <option value="Warranty Tracker & Calendar">Warranty Tracker &amp; Calendar</option>
+                  <option value="Warranty Reminders">Warranty Reminders / Notifications</option>
+                  <option value="AI Financial Assistant">AI Financial Assistant</option>
+                  <option value="Analytics & Budgets">Analytics &amp; Budgets</option>
+                  <option value="PDF Generation">PDF Generation / Sharing</option>
+                  <option value="App Lock / Security">App Lock / Biometrics</option>
+                  <option value="Other">Other UI Glitch</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="field-label">Describe the problem</label>
+                <textarea id="bugDescription" placeholder="What happened?"></textarea>
+              </div>
+              <div class="form-group">
+                <label class="field-label">Steps to reproduce</label>
+                <textarea id="bugSteps" placeholder="1. Tap scan button&#10;2. Upload receipt&#10;3. Observe crash"></textarea>
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="field-label">Expected behaviour</label>
+                  <input type="text" id="bugExpected" placeholder="e.g. Save successfully">
+                </div>
+                <div class="form-group">
+                  <label class="field-label">Actual behaviour</label>
+                  <input type="text" id="bugActual" placeholder="e.g. Blank screen">
+                </div>
+              </div>
+              <div class="form-grid-2">
+                <div class="form-group">
+                  <label class="field-label">Frequency</label>
+                  <select id="bugOccurs">
+                    <option value="Every Time">Every Time</option>
+                    <option value="Often">Often</option>
+                    <option value="Rarely / Once">Rarely / Once</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label class="field-label">Severity Level</label>
+                  <select id="bugSeverity">
+                    <option value="Low">Low (Visual cosmetic issue)</option>
+                    <option value="Medium" selected>Medium (Feature partially broken)</option>
+                    <option value="High">High (Core feature unusable)</option>
+                    <option value="Critical">Critical (App crash / Data loss)</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-btn-bar">
+            <button type="button" class="btn-prev" onclick="goToStep(3)">← Previous</button>
+            <button type="button" class="btn-next" onclick="goToStep(5)">
+              <span>Next: Suggestions &amp; Review</span>
+              <span>→</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 5: SUGGESTIONS, FINAL SATISFACTION & SUBMISSION -->
+        <div class="section-card" id="step5Card">
+          <div class="section-header">
+            <span class="section-tag">Step 5 of 5</span>
+            <h2 class="section-title">Suggestions &amp; Final Evaluation</h2>
+            <p class="section-desc">Your candid insights help prioritize the roadmap before the Play Store launch.</p>
+          </div>
+
+          <div class="form-group">
+            <label class="field-label">What is your favourite feature in Receipto?<span class="req-star">*</span></label>
+            <input type="text" id="favFeature" placeholder="e.g. Instant warranty duration tracking, offline mode, clean cyber UI..." required>
+          </div>
+
+          <div class="form-group">
+            <label class="field-label">Which feature impressed you the most?<span class="opt-badge">(Optional)</span></label>
+            <input type="text" id="impressedFeature" placeholder="e.g. PaddleOCR speed, claim dispatcher with brand toll-free numbers...">
+          </div>
+
+          <div class="form-group">
+            <label class="field-label">What would you improve before the official launch?<span class="req-star">*</span></label>
+            <textarea id="improvements" placeholder="Any UI clunkiness, missing merchant categories, or notification adjustments..." required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="field-label">What additional functionality would you like to see in future updates?<span class="opt-badge">(Optional)</span></label>
+            <textarea id="futureWishes" placeholder="e.g. Multi-currency converter, family receipt sharing, automated bank SMS sync..."></textarea>
+          </div>
+
+          <!-- Final Ratings -->
+          <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(255,255,255,0.06);">
+            <div class="star-rating-box" style="margin-bottom: 16px;">
+              <div class="star-box-title">Overall Satisfaction with Receipto (1–5 Stars)</div>
+              <div class="star-row" id="finalSatStarsGroup">
+                <span class="star-btn active" data-val="1">★</span>
+                <span class="star-btn active" data-val="2">★</span>
+                <span class="star-btn active" data-val="3">★</span>
+                <span class="star-btn active" data-val="4">★</span>
+                <span class="star-btn active" data-val="5">★</span>
+              </div>
+              <div class="star-desc-text" id="finalSatDesc">5 Stars – Very Satisfied 🔥</div>
+              <input type="hidden" id="finalSatRating" value="5">
+            </div>
+
+            <div class="form-group">
+              <label class="field-label">Will you continue using Receipto after its official launch?<span class="req-star">*</span></label>
+              <select id="continueUsing" required>
+                <option value="Definitely Yes" selected>Definitely Yes</option>
+                <option value="Probably Yes">Probably Yes</option>
+                <option value="Not Sure">Not Sure</option>
+                <option value="Probably Not">Probably Not</option>
+                <option value="Definitely Not">Definitely Not</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="field-label">Any additional message for the Receipto development team?<span class="opt-badge">(Optional)</span></label>
+              <textarea id="devMessage" placeholder="Notes, cheers, or feedback for Milanraj and the team..."></textarea>
+            </div>
+          </div>
+
+          <div class="form-btn-bar">
+            <button type="button" class="btn-prev" onclick="goToStep(4)">← Previous</button>
+            <button type="submit" class="btn-next btn-submit" id="submitBtn">
+              <span>SUBMIT FEEDBACK</span>
+              <span>🚀</span>
+            </button>
+          </div>
+        </div>
+
+      </form>
+
+      <!-- SUCCESS EXPERIENCE CARD -->
+      <div class="success-card" id="successCard">
+        <div class="success-icon-badge">🎉</div>
+        <h2 class="success-title">THANK YOU FOR BEING PART OF RECEIPTO!</h2>
+        <p class="success-subtitle">
+          Your feedback has been successfully submitted.<br>
+          Every suggestion and rating helps us improve Receipto before the official Google Play Store release.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 12px; flex-wrap: wrap;">
+          <button type="button" class="hero-cta-btn" onclick="resetFormToStart()">
+            <span>Submit Another Feedback</span>
           </button>
-        </form>
-      </div>
-
-      <!-- Right Column: Live Feed -->
-      <div class="feed-column">
-        <div class="feed-header">
-          <div>
-            <h3><span>🌟</span> Community Reviews</h3>
-            <div class="sync-status"><span class="sync-dot"></span> Cloud Live Sync Active</div>
-          </div>
-          <div class="stats-badge" id="statsBadge">
-            <span>★</span> <span id="avgRating">5.0</span> (<span id="totalReviewsCount">0</span> Reviews)
-          </div>
-        </div>
-
-        <!-- Live Core Features Scorecard -->
-        <div class="feature-summary-card">
-          <div class="feature-summary-title">
-            <span>Core Features Community Scorecard</span>
-            <span id="scorecardCount" style="color: var(--text-dim); font-weight: normal; font-size: 11px;">Calculated across ratings</span>
-          </div>
-          <div class="feature-bars-grid" id="featureScorecardGrid">
-            <div class="feat-bar-item"><span class="feat-bar-label">⚡ OCR</span><span class="feat-bar-score" id="score-ocr">★ 5.0</span></div>
-            <div class="feat-bar-item"><span class="feat-bar-label">🎨 UI &amp; Design</span><span class="feat-bar-score" id="score-ui">★ 5.0</span></div>
-            <div class="feat-bar-item"><span class="feat-bar-label">📑 PDF Export</span><span class="feat-bar-score" id="score-pdf">★ 5.0</span></div>
-            <div class="feat-bar-item"><span class="feat-bar-label">📊 Analytics</span><span class="feat-bar-score" id="score-analytics">★ 5.0</span></div>
-            <div class="feat-bar-item"><span class="feat-bar-label">🛡️ Warranty</span><span class="feat-bar-score" id="score-warranty">★ 5.0</span></div>
-            <div class="feat-bar-item"><span class="feat-bar-label">🔍 Search</span><span class="feat-bar-score" id="score-search">★ 5.0</span></div>
-            <div class="feat-bar-item"><span class="feat-bar-label">🚀 Speed</span><span class="feat-bar-score" id="score-performance">★ 5.0</span></div>
-          </div>
-        </div>
-
-        <div class="feed-list" id="feedbackList">
-          <!-- Feedback cards rendered dynamically -->
+          <button type="button" class="btn-prev" onclick="scrollToCommunity()">
+            <span>View Community Wall</span>
+          </button>
         </div>
       </div>
+
+      <!-- COMMUNITY FEEDBACK WALL -->
+      <section class="community-wall-section" id="communityWall">
+        <div class="community-header">
+          <div class="community-title">
+            <span>🌟</span>
+            <span>Beta Testers Community Wall</span>
+          </div>
+          <div class="wall-stats-badge" id="wallStatsBadge">
+            ★ <span id="wallAvgRating">5.0</span> (<span id="wallCount">0</span> Reviews)
+          </div>
+        </div>
+        <div class="wall-feed-list" id="communityFeedList">
+          <!-- Rendered live via JS -->
+        </div>
+      </section>
+
     </main>
   </div>
 
   <!-- Toast Notification -->
   <div class="toast" id="toast">
-    <span style="font-size: 20px;">🎉</span>
+    <span style="font-size: 20px;" id="toastIcon">🎉</span>
     <div>
       <div id="toastTitle" style="font-weight: 700; color: #fff;">Success</div>
-      <div style="font-size: 12.5px; color: var(--text-muted);">Operation completed</div>
+      <div id="toastDesc" style="font-size: 12px; color: var(--text-secondary);">Operation completed</div>
     </div>
   </div>
 
@@ -1257,16 +1650,13 @@
 
     function animateNeuralMesh() {
       ctx.clearRect(0, 0, width, height);
-
       for (let i = 0; i < particles.length; i++) {
         particles[i].update();
         particles[i].draw();
-
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x;
           const dy = particles[i].y - particles[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-
           if (dist < CONNECT_DIST) {
             const alpha = (1 - dist / CONNECT_DIST) * 0.22;
             ctx.beginPath();
@@ -1282,564 +1672,578 @@
     }
     animateNeuralMesh();
 
-    // --- 2. Live Supabase Cloud Database Client ---
+    // --- 2. Supabase Cloud Connection & Local Storage Fallback ---
     const SUPABASE_URL = 'https://ykqzefulvpqfiwsddnqt.supabase.co';
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrcXplZnVsdnBxZml3c2RkbnF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NTI2NTcsImV4cCI6MjA5ODMyODY1N30.NFm5dT7vVeHtziEkYWN-qk8ZEogpktPZ7NTmXDLO1Qs';
-    
     let supabaseClient = null;
     try {
       supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
-    } catch (e) {
-      console.log('Supabase init note:', e);
+    } catch(e) {
+      console.log('Supabase offline fallback:', e);
     }
 
-    // Local Feedbacks State
-    let localFeedbacks = [];
+    // Local Feedbacks In-Memory & LocalStorage Cache
+    let feedbackRecords = [];
+    const savedLocal = localStorage.getItem('receipto_feedbacks');
+    if (savedLocal) {
+      try { feedbackRecords = JSON.parse(savedLocal); } catch(e) {}
+    }
 
-    // Feature key-to-label mapping for stylish response tags
-    const featureLabels = {
-      ocr: '⚡ OCR',
-      ui: '🎨 UI & Design',
-      pdf: '📑 PDF Export',
-      analytics: '📊 Analytics',
-      warranty: '🛡️ Warranty',
-      search: '🔍 Search',
-      performance: '🚀 Speed'
-    };
+    // --- 3. Stepper Navigation Controller ---
+    let currentStep = 1;
+    function goToStep(step) {
+      currentStep = step;
+      document.querySelectorAll('.section-card').forEach((card, idx) => {
+        card.classList.toggle('active', (idx + 1) === step);
+      });
+      document.querySelectorAll('.step-pill').forEach((pill, idx) => {
+        pill.classList.toggle('active', (idx + 1) === step);
+        pill.classList.toggle('completed', (idx + 1) < step);
+      });
+      const container = document.getElementById('feedbackFormContainer');
+      container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
-    // Fetch live feedbacks from cloud database
-    async function loadFeedbacksFromCloud() {
-      if (supabaseClient) {
-        try {
-          const { data, error } = await supabaseClient
-            .from('feedbacks')
-            .select('*')
-            .order('created_at', { ascending: false });
+    function validateAndGoStep(fromStep, toStep) {
+      if (fromStep === 1) {
+        const name = document.getElementById('testerName').value.trim();
+        const email = document.getElementById('testerEmail').value.trim();
+        const device = document.getElementById('deviceModel').value.trim();
+        const android = document.getElementById('androidVersion').value;
+        const duration = document.getElementById('testingDuration').value;
 
-          if (!error && data && data.length > 0) {
-            localFeedbacks = data.map(row => ({
-              id: row.id,
-              name: row.name,
-              email: row.email,
-              rating: row.rating,
-              features: row.features || { ocr: 5, ui: 5, pdf: 5, analytics: 5, warranty: 5, search: 5, performance: 5 },
-              message: row.message,
-              date: row.created_at ? new Date(row.created_at).toLocaleDateString() : 'Recently',
-              helpful: row.helpful || 0
-            }));
-            localStorage.setItem('receipto_feedbacks', JSON.stringify(localFeedbacks));
-            renderFeedbacks();
-            return;
-          }
-        } catch (err) {
-          console.log('Cloud fetch notice:', err);
+        if (!name || !email || !device || !android || !duration) {
+          showToast('Incomplete Fields', 'Please complete all required tester details.', '⚠️');
+          return;
         }
       }
-
-      // Fallback to local storage if cloud table not populated yet
-      const saved = localStorage.getItem('receipto_feedbacks');
-      if (saved) {
-        try {
-          localFeedbacks = JSON.parse(saved);
-        } catch(e) {}
-      }
-      renderFeedbacks();
+      goToStep(toStep);
     }
 
-    // --- 3. Interactive Star Ratings (With Touch Prevention of Blue Highlight) ---
-    const stars = document.querySelectorAll('#starGroup .star');
-    const starStatus = document.getElementById('starStatus');
-    const ratingInput = document.getElementById('ratingInput');
-    const statusLabels = {
-      1: '1.0 - Needs Fixes ⚠️',
-      2: '2.0 - Below Expectations 😐',
-      3: '3.0 - Good, Has Potential 👍',
-      4: '4.0 - Great App, Love It! 🚀',
-      5: '5.0 - Exceptional Experience! 🔥'
+    function scrollToForm() {
+      document.getElementById('feedbackFormContainer').scrollIntoView({ behavior: 'smooth' });
+    }
+    function scrollToCommunity() {
+      document.getElementById('communityWall').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Choice Chips Selection Helper
+    function selectChoice(groupId, element) {
+      const group = document.getElementById(groupId);
+      group.querySelectorAll('.choice-chip').forEach(c => c.classList.remove('selected'));
+      element.classList.add('selected');
+      const val = element.getAttribute('data-val');
+      if (groupId === 'easeOfUseGroup') {
+        document.getElementById('easeOfUseInput').value = val;
+      } else if (groupId === 'manualCorrectionGroup') {
+        document.getElementById('manualCorrectionInput').value = val;
+      }
+    }
+
+    function selectBugChoice(hasBug, element) {
+      document.querySelectorAll('#hasBugGroup .choice-chip').forEach(c => c.classList.remove('selected'));
+      element.classList.add('selected');
+      document.getElementById('hasBugInput').value = hasBug ? 'Yes' : 'No';
+      const box = document.getElementById('bugReportBox');
+      if (hasBug) {
+        box.classList.add('show');
+      } else {
+        box.classList.remove('show');
+      }
+    }
+
+    // --- 4. Interactive Five-Star Rating Components ---
+    const starDescriptions = {
+      1: '1 Star – Poor ⚠️',
+      2: '2 Stars – Fair 😐',
+      3: '3 Stars – Good 👍',
+      4: '4 Stars – Very Good 🚀',
+      5: '5 Stars – Excellent 🔥'
     };
 
-    function setStarRating(val) {
-      ratingInput.value = val;
+    function setupStarRating(groupEl, descEl, inputEl) {
+      const stars = groupEl.querySelectorAll('.star-btn');
       stars.forEach(s => {
-        s.classList.toggle('active', parseInt(s.getAttribute('data-val')) <= val);
+        const handleTap = (e) => {
+          if (e.cancelable) e.preventDefault();
+          e.stopPropagation();
+          const val = parseInt(s.getAttribute('data-val'));
+          inputEl.value = val;
+          stars.forEach(st => st.classList.toggle('active', parseInt(st.getAttribute('data-val')) <= val));
+          if (descEl) descEl.innerText = starDescriptions[val] || `${val} Stars`;
+        };
+        s.addEventListener('pointerdown', handleTap, { passive: false });
+        s.addEventListener('touchstart', handleTap, { passive: false });
+        s.addEventListener('click', handleTap);
       });
-      starStatus.innerText = statusLabels[val];
     }
 
-    stars.forEach(star => {
-      const handleSelect = (e) => {
-        e.preventDefault();
-        setStarRating(parseInt(star.getAttribute('data-val')));
-      };
-      star.addEventListener('click', handleSelect);
-      star.addEventListener('touchstart', handleSelect, { passive: false });
-      
-      star.addEventListener('mouseenter', () => {
-        const val = parseInt(star.getAttribute('data-val'));
-        stars.forEach(s => {
-          s.classList.toggle('active', parseInt(s.getAttribute('data-val')) <= val);
-        });
-        starStatus.innerText = statusLabels[val];
-      });
-    });
+    setupStarRating(
+      document.getElementById('overallStarsGroup'),
+      document.getElementById('overallStarsDesc'),
+      document.getElementById('overallRating')
+    );
 
-    document.getElementById('starGroup').addEventListener('mouseleave', () => {
-      setStarRating(parseInt(ratingInput.value));
-    });
+    setupStarRating(
+      document.getElementById('finalSatStarsGroup'),
+      document.getElementById('finalSatDesc'),
+      document.getElementById('finalSatRating')
+    );
 
-    // Feature Stars Tracking
-    const currentFeatureRatings = {
-      ocr: 5,
-      ui: 5,
-      pdf: 5,
-      analytics: 5,
+    // Feature Ratings Map
+    const featureScores = {
+      nlp_ocr: 5,
+      receipts: 5,
       warranty: 5,
-      search: 5,
-      performance: 5
+      reminders: 5,
+      ai_assistant: 5,
+      analytics: 5,
+      pdf: 5,
+      whatsapp: 5,
+      ui_design: 5,
+      ui_nav: 5,
+      ui_speed: 5
     };
 
     document.querySelectorAll('.feature-stars').forEach(group => {
-      const feat = group.getAttribute('data-feature');
-      const fStars = group.querySelectorAll('.f-star');
-      fStars.forEach(fs => {
-        const handleFeatSelect = (e) => {
-          e.preventDefault();
-          const val = parseInt(fs.getAttribute('data-val'));
-          currentFeatureRatings[feat] = val;
-          fStars.forEach(item => {
-            item.classList.toggle('active', parseInt(item.getAttribute('data-val')) <= val);
-          });
+      const featKey = group.getAttribute('data-feature');
+      const stars = group.querySelectorAll('.feat-star');
+      const labelEl = document.getElementById('label_' + featKey) || document.getElementById('nlpStarsLabel');
+
+      stars.forEach(s => {
+        const handleTap = (e) => {
+          if (e.cancelable) e.preventDefault();
+          e.stopPropagation();
+          const val = parseInt(s.getAttribute('data-val'));
+          featureScores[featKey] = val;
+          stars.forEach(st => st.classList.toggle('active', parseInt(st.getAttribute('data-val')) <= val));
+          if (labelEl) labelEl.innerText = `${val.toFixed(1)} ★`;
         };
-        fs.addEventListener('click', handleFeatSelect);
-        fs.addEventListener('touchstart', handleFeatSelect, { passive: false });
+        s.addEventListener('pointerdown', handleTap, { passive: false });
+        s.addEventListener('touchstart', handleTap, { passive: false });
+        s.addEventListener('click', handleTap);
       });
     });
 
-    // --- 4. Admin Mode (Passcode: Milanrajjj@#12345) ---
+    function toggleNotTested(featKey, checkbox) {
+      const group = document.querySelector(`.feature-stars[data-feature="${featKey}"]`);
+      const labelEl = document.getElementById('label_' + featKey) || document.getElementById('nlpStarsLabel');
+      if (checkbox.checked) {
+        featureScores[featKey] = null;
+        if (group) group.querySelectorAll('.feat-star').forEach(s => s.classList.remove('active'));
+        if (labelEl) labelEl.innerText = 'Not Tested';
+      } else {
+        featureScores[featKey] = 5;
+        if (group) group.querySelectorAll('.feat-star').forEach(s => s.classList.add('active'));
+        if (labelEl) labelEl.innerText = '5.0 ★';
+      }
+    }
+
+    // --- 5. Form Submission Handler ---
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      const submitBtn = document.getElementById('submitBtn');
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>⏳ Submitting...</span>';
+
+      const hasBug = document.getElementById('hasBugInput').value === 'Yes';
+
+      const formData = {
+        id: 'rev-' + Date.now(),
+        name: document.getElementById('testerName').value.trim(),
+        email: document.getElementById('testerEmail').value.trim(),
+        device: `${document.getElementById('deviceModel').value.trim()} (${document.getElementById('androidVersion').value})`,
+        rating: parseInt(document.getElementById('overallRating').value) || 5,
+        easeOfUse: document.getElementById('easeOfUseInput').value,
+        appVersion: document.getElementById('appVersion').value,
+        testingDuration: document.getElementById('testingDuration').value,
+        features: { ...featureScores },
+        manualCorrection: document.getElementById('manualCorrectionInput').value,
+        comments: {
+          nlp_ocr: document.getElementById('comment_nlp_ocr').value.trim(),
+          receipts: document.getElementById('comment_receipts').value.trim(),
+          warranty: document.getElementById('comment_warranty').value.trim(),
+          reminders: document.getElementById('comment_reminders').value.trim(),
+          ai_assistant: document.getElementById('comment_ai_assistant').value.trim(),
+          analytics: document.getElementById('comment_analytics').value.trim(),
+          pdf: document.getElementById('comment_pdf').value.trim(),
+          whatsapp: document.getElementById('comment_whatsapp').value.trim()
+        },
+        uiUx: {
+          design: featureScores.ui_design || 5,
+          nav: featureScores.ui_nav || 5,
+          speed: featureScores.ui_speed || 5,
+          crashFrequency: document.getElementById('crashFrequency').value,
+          delayFrequency: document.getElementById('delayFrequency').value
+        },
+        hasBug: hasBug,
+        bugReport: hasBug ? {
+          feature: document.getElementById('bugFeature').value,
+          description: document.getElementById('bugDescription').value.trim(),
+          steps: document.getElementById('bugSteps').value.trim(),
+          expected: document.getElementById('bugExpected').value.trim(),
+          actual: document.getElementById('bugActual').value.trim(),
+          frequency: document.getElementById('bugOccurs').value,
+          severity: document.getElementById('bugSeverity').value
+        } : null,
+        suggestions: {
+          favFeature: document.getElementById('favFeature').value.trim(),
+          impressedFeature: document.getElementById('impressedFeature').value.trim(),
+          improvements: document.getElementById('improvements').value.trim(),
+          futureWishes: document.getElementById('futureWishes').value.trim()
+        },
+        finalEvaluation: {
+          overallSatisfaction: parseInt(document.getElementById('finalSatRating').value) || 5,
+          continueUsing: document.getElementById('continueUsing').value,
+          devMessage: document.getElementById('devMessage').value.trim()
+        },
+        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        helpful: 0
+      };
+
+      // Message summary for feed card
+      formData.message = formData.suggestions.favFeature
+        ? `★ Favourite: "${formData.suggestions.favFeature}". Improve: "${formData.suggestions.improvements}"`
+        : `Overall Experience: ${formData.rating}/5. Testing duration: ${formData.testingDuration}.`;
+
+      // 1. Submit to Supabase Cloud
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('feedbacks').insert([{
+            name: formData.name,
+            email: formData.email,
+            device: formData.device,
+            rating: formData.rating,
+            message: formData.message,
+            features: formData.features,
+            tags: [
+              `v${formData.appVersion.split(' ')[0]}`,
+              formData.testingDuration,
+              hasBug ? '⚠️ Bug Logged' : '✅ Smooth'
+            ]
+          }]);
+        } catch(err) {
+          console.log('Supabase sync note:', err);
+        }
+      }
+
+      // 2. Add to Local Storage and Cache
+      feedbackRecords.unshift(formData);
+      localStorage.setItem('receipto_feedbacks', JSON.stringify(feedbackRecords));
+      renderCommunityFeed();
+
+      // 3. Show Celebration & Success View
+      if (window.confetti) {
+        window.confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+      }
+
+      document.getElementById('betaFeedbackForm').style.display = 'none';
+      document.getElementById('stepperNav').style.display = 'none';
+      document.getElementById('successCard').classList.add('show');
+      document.getElementById('successCard').scrollIntoView({ behavior: 'smooth' });
+
+      showToast('Feedback Successfully Submitted!', 'Thank you for shaping Receipto.', '🎉');
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = '<span>SUBMIT FEEDBACK</span><span>🚀</span>';
+    }
+
+    function resetFormToStart() {
+      document.getElementById('betaFeedbackForm').reset();
+      document.getElementById('betaFeedbackForm').style.display = 'block';
+      document.getElementById('stepperNav').style.display = 'flex';
+      document.getElementById('successCard').classList.remove('show');
+      goToStep(1);
+    }
+
+    // --- 6. Render Community Wall Feed ---
+    const featureDisplayNames = {
+      nlp_ocr: '⚡ NLP OCR',
+      receipts: '🗄️ Receipts',
+      warranty: '🛡️ Warranty',
+      reminders: '🔔 Reminders',
+      ai_assistant: '🤖 Assistant',
+      analytics: '📊 Analytics',
+      pdf: '📑 PDF',
+      whatsapp: '💬 WhatsApp'
+    };
+
+    function renderCommunityFeed() {
+      const listEl = document.getElementById('communityFeedList');
+      listEl.innerHTML = '';
+
+      if (!feedbackRecords || feedbackRecords.length === 0) {
+        listEl.innerHTML = `
+          <div style="text-align: center; padding: 36px 20px; color: var(--text-muted);">
+            <div style="font-size: 32px; margin-bottom: 8px;">💬</div>
+            <div style="font-weight: 700; color: #fff;">No feedback entries yet</div>
+            <div style="font-size: 13px;">Be the first beta tester to submit your evaluation!</div>
+          </div>
+        `;
+        document.getElementById('wallAvgRating').innerText = '5.0';
+        document.getElementById('wallCount').innerText = '0';
+        return;
+      }
+
+      let sumRating = 0;
+      feedbackRecords.forEach(item => {
+        sumRating += (item.rating || 5);
+        const card = document.createElement('div');
+        card.className = 'feed-card';
+        const initial = (item.name || 'T')[0].toUpperCase();
+        const starsText = '★'.repeat(item.rating || 5) + '☆'.repeat(5 - (item.rating || 5));
+
+        // Format feature rating tags
+        const ft = item.features || {};
+        const chipsHtml = Object.entries(ft)
+          .filter(([k, v]) => v !== null && featureDisplayNames[k])
+          .slice(0, 6)
+          .map(([k, v]) => `<span class="feed-chip">${featureDisplayNames[k]}: ${v}★</span>`)
+          .join('');
+
+        card.innerHTML = `
+          <div class="feed-top">
+            <div class="feed-user">
+              <div class="feed-avatar">${initial}</div>
+              <div>
+                <div class="feed-name">${escapeHtml(item.name)}</div>
+                <div class="feed-meta">${escapeHtml(item.device || 'Android Tester')} • ${item.date || 'Recently'}</div>
+              </div>
+            </div>
+            <div class="feed-stars">${starsText}</div>
+          </div>
+          <div class="feed-body">${escapeHtml(item.message || '')}</div>
+          <div class="feed-chips-row">${chipsHtml}</div>
+          <div class="feed-footer">
+            <span>Verified Beta Tester</span>
+            <button class="feed-del-btn" onclick="deleteFeedback('${item.id}')">🗑️ Delete</button>
+          </div>
+        `;
+        listEl.appendChild(card);
+      });
+
+      const count = feedbackRecords.length;
+      document.getElementById('wallAvgRating').innerText = (sumRating / count).toFixed(1);
+      document.getElementById('wallCount').innerText = count;
+    }
+
+    function escapeHtml(t) {
+      const d = document.createElement('div');
+      d.innerText = t || '';
+      return d.innerHTML;
+    }
+
+    // --- 7. Admin Mode & Exports (Passcode: Milanrajjj@#12345) ---
     const ADMIN_PASSCODE = 'Milanrajjj@#12345';
     let isAdmin = localStorage.getItem('receipto_admin_mode') === 'true';
-    const adminBtn = document.getElementById('adminBtn');
-    const adminModal = document.getElementById('adminModal');
-    const adminPassInput = document.getElementById('adminPassInput');
-    const adminErrorMsg = document.getElementById('adminErrorMsg');
 
     function updateAdminUI() {
+      const btn = document.getElementById('adminBtn');
       if (isAdmin) {
         document.body.classList.add('admin-mode');
-        adminBtn.classList.add('active');
-        adminBtn.innerHTML = '<span>🔓</span> Admin Portal (Active)';
+        btn.classList.add('active');
+        btn.innerHTML = '<span>🔓</span> Admin Portal (Active)';
       } else {
         document.body.classList.remove('admin-mode');
-        adminBtn.classList.remove('active');
-        adminBtn.innerHTML = '<span>🔒</span> Admin Portal';
+        btn.classList.remove('active');
+        btn.innerHTML = '<span>🔒</span> Admin Portal';
       }
     }
     updateAdminUI();
-
-    function openAdminModal() {
-      adminErrorMsg.innerText = '';
-      adminPassInput.value = '';
-      adminModal.classList.add('show');
-      setTimeout(() => adminPassInput.focus(), 100);
-    }
-
-    function closeAdminModal() {
-      adminModal.classList.remove('show');
-    }
-
-    function togglePassVisibility() {
-      adminPassInput.type = adminPassInput.type === 'password' ? 'text' : 'password';
-    }
-
-    function handleAdminLogin(e) {
-      if (e) e.preventDefault();
-      const entered = (adminPassInput.value || '').trim();
-
-      if (entered === ADMIN_PASSCODE || 
-          entered.toLowerCase() === 'milanrajjj@#12345' || 
-          entered === 'milanraj' || 
-          entered === 'Milanraj@123' || 
-          entered === 'admin123') {
-        isAdmin = true;
-        localStorage.setItem('receipto_admin_mode', 'true');
-        updateAdminUI();
-        closeAdminModal();
-        showToast('Admin Unlocked! 👑', 'Export controls and review actions are now active.');
-      } else {
-        adminErrorMsg.innerText = 'Incorrect passcode. Please try again.';
-        adminPassInput.classList.add('input-error');
-        setTimeout(() => adminPassInput.classList.remove('input-error'), 800);
-      }
-    }
 
     function toggleAdmin() {
       if (isAdmin) {
         isAdmin = false;
         localStorage.setItem('receipto_admin_mode', 'false');
         updateAdminUI();
-        showToast('Admin Locked', 'Admin controls and delete buttons hidden.');
+        showToast('Admin Locked', 'Management controls hidden.', '🔒');
       } else {
-        openAdminModal();
+        document.getElementById('adminErrorMsg').innerText = '';
+        document.getElementById('adminPassInput').value = '';
+        document.getElementById('adminModal').classList.add('show');
       }
     }
-    adminBtn.addEventListener('click', toggleAdmin);
 
-    // Close modal on backdrop click
-    adminModal.addEventListener('click', (e) => {
-      if (e.target === adminModal) closeAdminModal();
-    });
+    function closeAdminModal() {
+      document.getElementById('adminModal').classList.remove('show');
+    }
 
-    // --- Admin Exports: PDF, CSV, JSON ---
-    window.exportCSV = function() {
-      if (!localFeedbacks || !localFeedbacks.length) {
-        alert('No feedbacks to export!');
-        return;
+    function handleAdminLogin(e) {
+      e.preventDefault();
+      const val = (document.getElementById('adminPassInput').value || '').trim();
+      if (val === ADMIN_PASSCODE || val.toLowerCase() === 'milanrajjj@#12345' || val === 'milanraj' || val === 'admin123') {
+        isAdmin = true;
+        localStorage.setItem('receipto_admin_mode', 'true');
+        updateAdminUI();
+        closeAdminModal();
+        showToast('Admin Unlocked! 👑', 'Full diagnostics and export tools active.', '🎉');
+      } else {
+        document.getElementById('adminErrorMsg').innerText = 'Incorrect passcode. Try again.';
       }
-      const headers = ['ID', 'Date', 'Name', 'Email', 'Overall Rating', 'OCR Rating', 'UI Rating', 'PDF Rating', 'Analytics Rating', 'Warranty Rating', 'Search Rating', 'Speed Rating', 'Feature Response Tags', 'Feedback Message', 'Helpful Count'];
-      const rows = localFeedbacks.map(f => {
+    }
+
+    window.deleteFeedback = async function(id) {
+      if (!confirm('Permanently delete this beta evaluation record?')) return;
+      if (supabaseClient) {
+        try { await supabaseClient.from('feedbacks').delete().eq('id', id); } catch(e) {}
+      }
+      feedbackRecords = feedbackRecords.filter(x => x.id !== id);
+      localStorage.setItem('receipto_feedbacks', JSON.stringify(feedbackRecords));
+      renderCommunityFeed();
+      showToast('Deleted', 'Evaluation removed from feed.', '🗑️');
+    };
+
+    // Admin Export CSV
+    window.exportCSV = function() {
+      if (!feedbackRecords.length) { alert('No records to export!'); return; }
+      const headers = ['ID', 'Date', 'Tester Name', 'Email', 'Device', 'Overall Rating', 'Ease of Use', 'NLP OCR Rating', 'Receipts Rating', 'Warranty Rating', 'Reminders Rating', 'AI Assistant Rating', 'Analytics Rating', 'PDF Rating', 'WhatsApp Rating', 'Bug Reported', 'Favourite Feature', 'Improvement Suggestion', 'Will Continue Using'];
+      const rows = feedbackRecords.map(f => {
         const ft = f.features || {};
-        const featureTagsString = Object.entries(ft).map(([k, v]) => `${featureLabels[k] || k}: ${v}★`).join('; ');
+        const sug = f.suggestions || {};
+        const fin = f.finalEvaluation || {};
         return [
-          `"${(f.id || '').replace(/"/g, '""')}"`,
-          `"${(f.date || '').replace(/"/g, '""')}"`,
+          `"${f.id || ''}"`,
+          `"${f.date || ''}"`,
           `"${(f.name || '').replace(/"/g, '""')}"`,
           `"${(f.email || '').replace(/"/g, '""')}"`,
+          `"${(f.device || '').replace(/"/g, '""')}"`,
           f.rating || 5,
-          ft.ocr || 5,
-          ft.ui || 5,
-          ft.pdf || 5,
-          ft.analytics || 5,
-          ft.warranty || 5,
-          ft.search || 5,
-          ft.performance || 5,
-          `"${featureTagsString.replace(/"/g, '""')}"`,
-          `"${(f.message || '').replace(/"/g, '""')}"`,
-          f.helpful || 0
+          `"${f.easeOfUse || ''}"`,
+          ft.nlp_ocr || 'N/A',
+          ft.receipts || 'N/A',
+          ft.warranty || 'N/A',
+          ft.reminders || 'N/A',
+          ft.ai_assistant || 'N/A',
+          ft.analytics || 'N/A',
+          ft.pdf || 'N/A',
+          ft.whatsapp || 'N/A',
+          f.hasBug ? 'YES' : 'NO',
+          `"${(sug.favFeature || '').replace(/"/g, '""')}"`,
+          `"${(sug.improvements || '').replace(/"/g, '""')}"`,
+          `"${fin.continueUsing || ''}"`
         ];
       });
       const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(r => r.join(','))].join('\r\n');
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `receipto_feedbacks_${new Date().toISOString().slice(0, 10)}.csv`;
+      link.download = `receipto_beta_evaluations_${new Date().toISOString().slice(0,10)}.csv`;
       link.click();
-      showToast('Exported CSV!', 'Feedback spreadsheet downloaded.');
+      showToast('Exported CSV!', 'Diagnostic spreadsheet downloaded.', '📊');
     };
 
     window.exportJSON = function() {
-      if (!localFeedbacks || !localFeedbacks.length) {
-        alert('No feedbacks to export!');
-        return;
-      }
-      const blob = new Blob([JSON.stringify(localFeedbacks, null, 2)], { type: 'application/json' });
+      if (!feedbackRecords.length) { alert('No records to export!'); return; }
+      const blob = new Blob([JSON.stringify(feedbackRecords, null, 2)], { type: 'application/json' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `receipto_feedbacks_${new Date().toISOString().slice(0, 10)}.json`;
+      link.download = `receipto_beta_evaluations_${new Date().toISOString().slice(0,10)}.json`;
       link.click();
-      showToast('Exported JSON!', 'JSON data file downloaded.');
+      showToast('Exported JSON!', 'Full evaluation backup downloaded.', '📦');
     };
 
     window.exportPDF = function() {
-      if (!localFeedbacks || !localFeedbacks.length) {
-        alert('No feedbacks to export!');
-        return;
-      }
-      const printWindow = window.open('', '_blank');
+      if (!feedbackRecords.length) { alert('No records to export!'); return; }
+      const printWin = window.open('', '_blank');
       const dateStr = new Date().toLocaleDateString();
-      const avg = (localFeedbacks.reduce((a, b) => a + b.rating, 0) / localFeedbacks.length).toFixed(1);
+      const avg = (feedbackRecords.reduce((a,b) => a + (b.rating || 5), 0) / feedbackRecords.length).toFixed(1);
 
-      let rowsHtml = '';
-      localFeedbacks.forEach(f => {
-        const starStr = '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating);
+      let tableRows = '';
+      feedbackRecords.forEach(f => {
         const ft = f.features || {};
-        const featureTagsPills = Object.entries(ft).map(([k, v]) => `<span style="display:inline-block; font-size:10px; background:#e0f2fe; color:#0369a1; border-radius:4px; padding:2px 6px; margin:2px;">${featureLabels[k] || k}: ${v}★</span>`).join(' ');
-
-        rowsHtml += `
+        const sug = f.suggestions || {};
+        tableRows += `
           <tr>
-            <td style="white-space:nowrap; color:#64748b;">${escapeHtml(f.date || 'Recently')}</td>
-            <td><strong>${escapeHtml(f.name || 'Anonymous')}</strong></td>
-            <td style="color:#0284c7;">${escapeHtml(f.email || 'N/A')}</td>
-            <td style="color:#d97706; font-weight:bold; letter-spacing:1px;">${starStr}</td>
+            <td><strong>${escapeHtml(f.name)}</strong><br><small style="color:#64748b;">${escapeHtml(f.email)}</small></td>
+            <td>${escapeHtml(f.device || 'Android')}</td>
+            <td style="color:#f59e0b; font-weight:bold;">${'★'.repeat(f.rating || 5)}</td>
+            <td style="font-size:11px; color:#475569;">
+              OCR: ${ft.nlp_ocr || '-'}★ | Mgt: ${ft.receipts || '-'}★ | War: ${ft.warranty || '-'}★ | Rem: ${ft.reminders || '-'}★ | AI: ${ft.ai_assistant || '-'}★ | PDF: ${ft.pdf || '-'}★
+            </td>
             <td>
-              <div style="margin-bottom:6px; line-height:1.4;">${escapeHtml(f.message || '')}</div>
-              <div style="margin-top:4px;">${featureTagsPills}</div>
+              <div><strong>Fav:</strong> ${escapeHtml(sug.favFeature || '-')}</div>
+              <div style="color:#dc2626; margin-top:2px;"><strong>Fix:</strong> ${escapeHtml(sug.improvements || '-')}</div>
             </td>
           </tr>
         `;
       });
 
-      const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <title>Receipto Beta Testers Feedback Report</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 25px; color: #0f172a; margin: 0; }
-    .header { border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: flex-end; }
-    h1 { margin: 0 0 4px 0; color: #0f172a; font-size: 22px; }
-    .meta { font-size: 12px; color: #64748b; }
-    .stats-card { display: flex; gap: 20px; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 18px; margin-bottom: 20px; }
-    .stat-item { font-size: 12px; color: #475569; }
-    .stat-item strong { display: block; font-size: 20px; color: #0284c7; margin-top: 2px; }
-    table { width: 100%; border-collapse: collapse; font-size: 12px; }
-    th { background: #0f172a; color: #ffffff; text-align: left; padding: 9px 10px; font-weight: 600; }
-    td { padding: 9px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
-    tr:nth-child(even) { background: #f8fafc; }
-    @media print {
-      body { padding: 0; }
-      @page { margin: 10mm; size: landscape; }
-    }
-  </style>
-</head>
-<body>
-  <div class="header">
-    <div>
-      <h1>📄 Receipto Beta Testers Feedback Report</h1>
-      <div class="meta">Confidential App Diagnostics &amp; User Experience Log</div>
-    </div>
-    <div class="meta" style="text-align: right;">Generated: ${dateStr}</div>
-  </div>
+      const html = `<!DOCTYPE html><html><head><title>Receipto Beta Testing Evaluation Report</title><style>
+        body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; padding: 24px; color: #0f172a; margin: 0; }
+        h1 { margin: 0 0 4px 0; font-size: 20px; }
+        .header { border-bottom: 2px solid #0284c7; padding-bottom: 12px; margin-bottom: 16px; display: flex; justify-content: space-between; }
+        .stats { display: flex; gap: 16px; background: #f8fafc; padding: 10px 16px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; }
+        table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
+        th { background: #0f172a; color: #fff; text-align: left; padding: 8px 10px; }
+        td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: top; }
+        tr:nth-child(even) { background: #f8fafc; }
+        @media print { @page { size: landscape; margin: 10mm; } }
+      </style></head><body>
+        <div class="header">
+          <div>
+            <h1>📄 RECEIPTO – BETA TESTING EVALUATION REPORT</h1>
+            <div style="font-size: 12px; color: #64748b;">Confidential Pre-Release Diagnostics &amp; QA Feedback Log</div>
+          </div>
+          <div style="text-align: right; font-size: 12px; color: #64748b;">Generated: ${dateStr}</div>
+        </div>
+        <div class="stats">
+          <div>Total Evaluations: <strong>${feedbackRecords.length}</strong></div>
+          <div>Average Rating: <strong>★ ${avg} / 5.0</strong></div>
+          <div>Developer: <strong>Milanraj D Kunder</strong></div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>Tester Name &amp; Email</th>
+              <th>Device &amp; OS</th>
+              <th>Rating</th>
+              <th>Feature Scores</th>
+              <th>Feedback &amp; Critical Fixes</th>
+            </tr>
+          </thead>
+          <tbody>${tableRows}</tbody>
+        </table>
+        <script>window.onload = function() { window.print(); };<\/script>
+      </body></html>`;
 
-  <div class="stats-card">
-    <div class="stat-item">Total Reviews Received<strong>${localFeedbacks.length}</strong></div>
-    <div class="stat-item">Average Rating<strong>★ ${avg} / 5.0</strong></div>
-    <div class="stat-item">Developer<strong>Milanraj D Kunder</strong></div>
-  </div>
-
-  <table>
-    <thead>
-      <tr>
-        <th>Date</th>
-        <th>Tester Name</th>
-        <th>Email</th>
-        <th>Overall Rating</th>
-        <th>Feedback Response &amp; Core Feature Tags</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${rowsHtml}
-    </tbody>
-  </table>
-  <script>
-    window.onload = function() {
-      window.print();
-    };
-  <\/script>
-</body>
-</html>`;
-
-      printWindow.document.write(html);
-      printWindow.document.close();
+      printWin.document.write(html);
+      printWin.document.close();
     };
 
-    // Delete feedback globally from Cloud and Locally
-    window.deleteFeedback = async function(id) {
-      if (!confirm('Are you sure you want to permanently delete this review?')) return;
-
-      // 1. Delete from Supabase Cloud
-      if (supabaseClient) {
-        try {
-          const { error } = await supabaseClient.from('feedbacks').delete().eq('id', id);
-          if (error) console.log('Supabase delete status:', error);
-        } catch (e) {
-          console.log('Cloud delete note:', e);
-        }
-      }
-
-      // 2. Delete from local cache
-      localFeedbacks = localFeedbacks.filter(x => x.id !== id);
-      localStorage.setItem('receipto_feedbacks', JSON.stringify(localFeedbacks));
-      renderFeedbacks();
-
-      showToast('Permanently Deleted! 🗑️', 'Review removed from cloud database and community wall.');
-    };
-
-    // --- 5. Render Feedbacks & Core Features Scorecard ---
-    function updateScorecard() {
-      if (localFeedbacks.length === 0) return;
-      const feats = ['ocr', 'ui', 'pdf', 'analytics', 'warranty', 'search', 'performance'];
-      const sums = { ocr: 0, ui: 0, pdf: 0, analytics: 0, warranty: 0, search: 0, performance: 0 };
-
-      localFeedbacks.forEach(f => {
-        const ft = f.features || {};
-        feats.forEach(k => {
-          sums[k] += (ft[k] !== undefined ? ft[k] : 5);
-        });
-      });
-
-      const count = localFeedbacks.length;
-      feats.forEach(k => {
-        const el = document.getElementById('score-' + k);
-        if (el) {
-          const avgScore = (sums[k] / count).toFixed(1);
-          el.innerText = '★ ' + avgScore;
-        }
-      });
-      document.getElementById('scorecardCount').innerText = `Calculated across ${count} reviews`;
-    }
-
-    function renderFeedbacks() {
-      const list = document.getElementById('feedbackList');
-      list.innerHTML = '';
-      let totalRating = 0;
-
-      if (localFeedbacks.length === 0) {
-        list.innerHTML = `
-          <div style="text-align:center; padding: 40px 20px; color: var(--text-dim);">
-            <div style="font-size: 32px; margin-bottom: 8px;">💬</div>
-            <div style="font-weight: 600; color: var(--text-muted);">No reviews posted yet</div>
-            <div style="font-size: 13px;">Be the first beta tester to submit feedback using the form!</div>
-          </div>
-        `;
-        document.getElementById('avgRating').innerText = '5.0';
-        document.getElementById('totalReviewsCount').innerText = '0';
-        return;
-      }
-
-      localFeedbacks.forEach(item => {
-        totalRating += item.rating;
-        const card = document.createElement('div');
-        card.className = 'feedback-item';
-        const starsText = '★'.repeat(item.rating) + '☆'.repeat(5 - item.rating);
-        const initial = (item.name || 'T')[0].toUpperCase();
-        const ft = item.features || { ocr: 5, ui: 5, pdf: 5, analytics: 5, warranty: 5, search: 5, performance: 5 };
-
-        // Render Core Feature Responses AS TAGS in the response part
-        const featureTagsHtml = Object.entries(ft).map(([k, val]) => {
-          const label = featureLabels[k] || k.toUpperCase();
-          return `<span class="feature-tag-pill">${label}: <strong>${val}★</strong></span>`;
-        }).join('');
-
-        card.innerHTML = `
-          <div class="item-top">
-            <div class="user-info">
-              <div class="user-avatar">${initial}</div>
-              <div>
-                <div class="user-name">${escapeHtml(item.name)}</div>
-                <div class="user-device">Verified Closed Tester</div>
-              </div>
-            </div>
-            <div class="item-rating">${starsText}</div>
-          </div>
-          <div class="item-body">${escapeHtml(item.message)}</div>
-          
-          <!-- Core App Feature Ratings AS TAGS in response part -->
-          <div class="response-feature-tags">
-            ${featureTagsHtml}
-          </div>
-
-          <div class="item-footer">
-            <span>${item.date || 'Recently'}</span>
-            <div>
-              <button class="helpful-btn" onclick="upvote('${item.id}', this)">
-                👍 Helpful (${item.helpful || 0})
-              </button>
-              <button class="delete-btn" onclick="deleteFeedback('${item.id}')">
-                🗑️ Delete
-              </button>
-            </div>
-          </div>
-        `;
-        list.appendChild(card);
-      });
-
-      const count = localFeedbacks.length;
-      const avg = count > 0 ? (totalRating / count).toFixed(1) : '5.0';
-      document.getElementById('avgRating').innerText = avg;
-      document.getElementById('totalReviewsCount').innerText = count;
-
-      updateScorecard();
-    }
-
-    function escapeHtml(text) {
-      const div = document.createElement('div');
-      div.innerText = text;
-      return div.innerHTML;
-    }
-
-    window.upvote = async function(id, btn) {
-      const item = localFeedbacks.find(x => x.id === id);
-      if (item) {
-        item.helpful = (item.helpful || 0) + 1;
-        localStorage.setItem('receipto_feedbacks', JSON.stringify(localFeedbacks));
-        btn.innerHTML = `👍 Helpful (${item.helpful})`;
-        btn.style.color = '#00D9FF';
-        btn.style.borderColor = '#00D9FF';
-
-        if (supabaseClient) {
-          try {
-            await supabaseClient.from('feedbacks').update({ helpful: item.helpful }).eq('id', id);
-          } catch(e) {}
-        }
-      }
-    };
-
-    function showToast(title, desc) {
-      const toast = document.getElementById('toast');
+    function showToast(title, desc, icon = '🎉') {
+      const t = document.getElementById('toast');
       document.getElementById('toastTitle').innerText = title;
-      toast.querySelector('div div:last-child').innerText = desc;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 3500);
+      document.getElementById('toastDesc').innerText = desc;
+      document.getElementById('toastIcon').innerText = icon;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3500);
     }
 
-    // --- 6. Form Submission ---
-    document.getElementById('feedbackForm').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const btn = document.getElementById('submitBtn');
-      btn.disabled = true;
-      btn.innerHTML = '<span>⏳</span> Posting Feedback...';
-
-      const payload = {
-        name: document.getElementById('testerName').value.trim(),
-        email: document.getElementById('testerEmail').value.trim(),
-        rating: parseInt(document.getElementById('ratingInput').value),
-        features: { ...currentFeatureRatings },
-        message: document.getElementById('feedbackText').value.trim(),
-        helpful: 0
-      };
-
-      let insertedId = 'fb-' + Date.now();
-
-      // Push to Supabase Cloud Database
+    // Initial Load: Fetch cloud records if connected
+    async function loadCloudFeedbacks() {
       if (supabaseClient) {
         try {
           const { data, error } = await supabaseClient
             .from('feedbacks')
-            .insert([payload])
-            .select();
-
+            .select('*')
+            .order('created_at', { ascending: false });
           if (!error && data && data.length > 0) {
-            insertedId = data[0].id;
-          } else if (error) {
-            console.log('Supabase insert note:', error);
+            feedbackRecords = data.map(row => ({
+              id: row.id,
+              name: row.name,
+              email: row.email,
+              device: row.device,
+              rating: row.rating,
+              message: row.message,
+              features: row.features || {},
+              date: row.created_at ? new Date(row.created_at).toLocaleDateString() : 'Recently'
+            }));
+            localStorage.setItem('receipto_feedbacks', JSON.stringify(feedbackRecords));
           }
-        } catch (err) {
-          console.log('Cloud insert note:', err);
-        }
+        } catch(e) {}
       }
-
-      // Prepend to local list
-      localFeedbacks.unshift({
-        ...payload,
-        id: insertedId,
-        date: 'Just now'
-      });
-      localStorage.setItem('receipto_feedbacks', JSON.stringify(localFeedbacks));
-      renderFeedbacks();
-
-      // Confetti celebration
-      if (window.confetti) {
-        window.confetti({ particleCount: 90, spread: 75, origin: { y: 0.6 } });
-      }
-
-      showToast('Feedback Published! 🚀', 'Your review and feature tags are live!');
-      document.getElementById('feedbackText').value = '';
-      btn.disabled = false;
-      btn.innerHTML = '<span>🚀</span> Post Tester Feedback';
-    });
-
-    // Initial Load
-    loadFeedbacksFromCloud();
+      renderCommunityFeed();
+    }
+    loadCloudFeedbacks();
   </script>
 </body>
 </html>
