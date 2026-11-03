@@ -1,9 +1,29 @@
 {
   "cleanUrls": true,
   "rewrites": [
-    { "source": "/", "destination": "/docs/feedback.html" },
-    { "source": "/feedback", "destination": "/docs/feedback.html" },
-    { "source": "/admin", "destination": "/docs/admin.html" },
-    { "source": "/privacy-policy", "destination": "/docs/privacy-policy.html" }
+    {
+      "source": "/",
+      "destination": "/docs/feedback.html"
+    },
+    {
+      "source": "/feedback",
+      "destination": "/docs/feedback.html"
+    },
+    {
+      "source": "/admin",
+      "destination": "/docs/admin.html"
+    },
+    {
+      "source": "/admin.html",
+      "destination": "/docs/admin.html"
+    },
+    {
+      "source": "/docs/admin.html",
+      "destination": "/docs/admin.html"
+    },
+    {
+      "source": "/privacy-policy",
+      "destination": "/docs/privacy-policy.html"
+    }
   ]
 }

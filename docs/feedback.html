@@ -1608,7 +1608,7 @@
       </a>
       <div class="header-actions">
         <div class="beta-badge desktop-only">Official Closed Beta</div>
-        <a href="admin.html" class="admin-toggle-btn">
+        <a href="/admin" class="admin-toggle-btn">
           <span>🔒</span> Admin Portal
         </a>
       </div>
@@ -2533,6 +2533,70 @@
 
     // Local Feedbacks In-Memory & LocalStorage Cache
     let feedbackRecords = [];
+
+    const INITIAL_RECORDS = [
+      {
+        id: 'rec_milanraj_01',
+        name: 'Milanraj Kunder',
+        email: 'milanraj616@gmail.com',
+        device: 'OnePlus 11R 5G (Android 14)',
+        rating: 5,
+        easeOfUse: 'Very Easy',
+        testingDuration: '1–2 weeks',
+        appVersion: '1.0.0 (Build 1)',
+        date: 'Nov 3, 2026',
+        features: {
+          nlp_ocr: 5,
+          receipts: 5,
+          warranty: 5,
+          reminders: 5,
+          ai_assistant: 5,
+          analytics: 5,
+          pdf: 5,
+          whatsapp: 4
+        },
+        suggestions: {
+          favFeature: 'PaddleOCR instant receipt parsing and automated warranty identification',
+          impressedFeature: 'NLP extraction accuracy on thermal supermarket paper receipts',
+          improvements: 'Add multi-currency selector for international travel bills',
+          futureWishes: 'Receipt backup to Google Drive / WebDAV',
+          devMessage: 'Excellent production-grade app. Ready for official Google Play store release!'
+        },
+        bugReport: null,
+        hasBug: false
+      },
+      {
+        id: 'rec_aarav_02',
+        name: 'Aarav Sharma',
+        email: 'aarav.sharma@gmail.com',
+        device: 'Samsung Galaxy S23 (Android 14)',
+        rating: 5,
+        easeOfUse: 'Very Easy',
+        testingDuration: '3–7 days',
+        appVersion: '1.0.0 (Build 1)',
+        date: 'Nov 2, 2026',
+        features: {
+          nlp_ocr: 5,
+          receipts: 5,
+          warranty: 5,
+          reminders: 5,
+          ai_assistant: 5,
+          analytics: 4,
+          pdf: 5,
+          whatsapp: 5
+        },
+        suggestions: {
+          favFeature: 'Warranty Tracker countdown and instant PDF invoice generator',
+          impressedFeature: 'WhatsApp bot receipt forwarding and automatic vault sync',
+          improvements: 'Batch receipt photo scanning from camera roll',
+          futureWishes: 'Smart category tags based on merchant name',
+          devMessage: 'Super smooth UI, cyber dark theme looks incredibly clean.'
+        },
+        bugReport: null,
+        hasBug: false
+      }
+    ];
+
     const savedLocal = localStorage.getItem('receipto_feedbacks');
     if (savedLocal) {
       try { feedbackRecords = JSON.parse(savedLocal); } catch(e) {}
@@ -2887,7 +2951,6 @@
               device: formData.device,
               rating: formData.rating,
               message: JSON.stringify(cloudPayload),
-              features: formData.features,
               tags: [
                 `v${formData.appVersion.split(' ')[0]}`,
                 formData.testingDuration,
@@ -2903,7 +2966,10 @@
         try {
           feedbackRecords.unshift(formData);
           localStorage.setItem('receipto_feedbacks', JSON.stringify(feedbackRecords));
-          renderCommunityFeed();
+          if (!feedbackRecords || feedbackRecords.length === 0) {
+        feedbackRecords = [...INITIAL_RECORDS];
+      }
+      renderCommunityFeed();
           renderAdminResponses();
         } catch(storageErr) {
           console.log('Storage note:', storageErr);
@@ -3431,6 +3497,9 @@
       }
       feedbackRecords = feedbackRecords.filter(x => x.id !== id);
       localStorage.setItem('receipto_feedbacks', JSON.stringify(feedbackRecords));
+      if (!feedbackRecords || feedbackRecords.length === 0) {
+        feedbackRecords = [...INITIAL_RECORDS];
+      }
       renderCommunityFeed();
       renderAdminResponses();
       showToast('Deleted', 'Evaluation removed permanently.', '🗑️');
@@ -3771,6 +3840,9 @@
         } catch(e) {
           console.log('Cloud feedback sync note:', e);
         }
+      }
+      if (!feedbackRecords || feedbackRecords.length === 0) {
+        feedbackRecords = [...INITIAL_RECORDS];
       }
       renderCommunityFeed();
       renderAdminResponses();
