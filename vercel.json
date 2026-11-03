@@ -24,6 +24,14 @@
     {
       "source": "/privacy-policy",
       "destination": "/docs/privacy-policy.html"
+    },
+    {
+      "source": "/privacy-policy.html",
+      "destination": "/docs/privacy-policy.html"
+    },
+    {
+      "source": "/privacy",
+      "destination": "/docs/privacy-policy.html"
     }
   ]
 }
