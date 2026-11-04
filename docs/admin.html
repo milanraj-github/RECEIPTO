@@ -24,10 +24,10 @@
           },
           colors: {
             cyber: {
-              bg: '#060919',
-              card: '#0c122b',
-              border: 'rgba(0, 210, 255, 0.18)',
-              hover: '#121b3e',
+              bg: '#050816',
+              card: '#0c132e',
+              border: 'rgba(0, 210, 255, 0.25)',
+              hover: '#131e48',
               cyan: '#00d2ff',
               magenta: '#e040fb',
               pink: '#ff2a85',
@@ -53,29 +53,30 @@
 
   <style>
     body {
-      background-color: #060919;
+      background-color: #050816;
       background-image: 
-        radial-gradient(circle at 12% 15%, rgba(0, 210, 255, 0.16) 0%, transparent 45%),
-        radial-gradient(circle at 88% 22%, rgba(224, 64, 251, 0.20) 0%, transparent 50%),
-        radial-gradient(circle at 50% 75%, rgba(121, 40, 202, 0.18) 0%, transparent 55%),
-        radial-gradient(circle at 85% 85%, rgba(255, 42, 133, 0.14) 0%, transparent 40%);
+        radial-gradient(circle at 10% 12%, rgba(0, 210, 255, 0.32) 0%, transparent 48%),
+        radial-gradient(circle at 90% 18%, rgba(224, 64, 251, 0.36) 0%, transparent 52%),
+        radial-gradient(circle at 50% 70%, rgba(121, 40, 202, 0.32) 0%, transparent 58%),
+        radial-gradient(circle at 85% 85%, rgba(255, 42, 133, 0.28) 0%, transparent 45%),
+        radial-gradient(circle at 15% 90%, rgba(0, 229, 155, 0.18) 0%, transparent 40%);
       background-attachment: fixed;
       color: #f1f5f9;
       overflow-x: hidden;
     }
     .cyber-glass {
-      background: rgba(12, 18, 43, 0.8);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border: 1px solid rgba(0, 210, 255, 0.18);
+      background: rgba(12, 19, 46, 0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(0, 210, 255, 0.22);
     }
     .brand-gradient {
-      background: linear-gradient(135deg, #00d2ff 0%, #9855f7 50%, #e040fb 100%);
+      background: linear-gradient(135deg, #00d2ff 0%, #a855f7 50%, #e040fb 100%);
     }
   </style>
 </head>
 <body class="min-h-screen relative font-sans antialiased">
-  <canvas id="adminCanvas" class="fixed inset-0 pointer-events-none z-0 opacity-30"></canvas>
+  <canvas id="adminCanvas" class="fixed inset-0 pointer-events-none z-0 opacity-55"></canvas>
   <div id="root" class="relative z-10"></div>
 
   <script type="text/babel">
@@ -110,6 +111,16 @@
       FileText: ({ className = "w-4 h-4" }) => (
         <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
           <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+      ),
+      CheckCircle: ({ className = "w-4 h-4" }) => (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+      ),
+      Printer: ({ className = "w-4 h-4" }) => (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/>
         </svg>
       )
     };
@@ -146,6 +157,7 @@
       const [ratingFilter, setRatingFilter] = useState('all');
       const [loading, setLoading] = useState(false);
       const [toast, setToast] = useState(null);
+      const [expandedAdminId, setExpandedAdminId] = useState(null);
 
       const showToast = (msg, type = 'info') => {
         setToast({ msg, type });
@@ -217,8 +229,11 @@
                   rating: parseInt(row.rating) || 5,
                   features: ft,
                   suggestions: sug,
+                  finalEvaluation: (parsed && parsed.finalEvaluation) || {},
                   hasBug: parsed ? (parsed.hasBug || false) : (row.tags && row.tags.some(t => t.includes('Bug'))),
                   bugReport: parsed ? parsed.bugReport : null,
+                  appVersion: (parsed && parsed.appVersion) || '1.0.0 (Build 3)',
+                  testingDuration: (parsed && parsed.testingDuration) || '1–3 days',
                   date: row.created_at ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'
                 };
               });
@@ -280,7 +295,6 @@
         setNewEmail('');
       };
 
-      // Vector Trash Delete for Whitelist item
       const handleRemoveEmail = (email) => {
         if (!confirm(`Revoke beta testing access for ${email}?`)) return;
         const updated = whitelist.filter(e => e !== email);
@@ -292,7 +306,6 @@
         saveWhitelistToCloud(DEFAULT_WHITELIST);
       };
 
-      // Vector Trash Delete for Feedback in Supabase
       const handleDeleteFeedback = async (id) => {
         if (!confirm('Permanently delete this evaluation from Supabase cloud?')) return;
         try {
@@ -316,7 +329,7 @@
 
           if (searchQuery.trim()) {
             const q = searchQuery.toLowerCase();
-            const text = `${f.name} ${f.email} ${f.device} ${JSON.stringify(f.suggestions || {})}`.toLowerCase();
+            const text = `${f.name} ${f.email} ${f.device} ${JSON.stringify(f.suggestions || {})} ${JSON.stringify(f.bugReport || {})}`.toLowerCase();
             return text.includes(q);
           }
           return true;
@@ -334,17 +347,136 @@
           'Email': item.email,
           'Device': item.device,
           'Rating': item.rating,
+          'App Version': item.appVersion,
+          'Testing Duration': item.testingDuration,
           'Favourite Feature': item.suggestions.favFeature || '',
           'Improvements': item.suggestions.improvements || '',
           'Future Wishlist': item.suggestions.futureWishes || '',
-          'Note to Dev': item.suggestions.devMessage || '',
-          'Bug Encountered': (item.hasBug || item.bugReport) ? 'YES' : 'NO'
+          'Note to Receipto Team': item.suggestions.devMessage || '',
+          'Bug Encountered': (item.hasBug || item.bugReport) ? 'YES' : 'NO',
+          'Bug Details': item.bugReport ? `${item.bugReport.feature} (${item.bugReport.severity}): ${item.bugReport.description}` : ''
         }));
 
         const ws = XLSX.utils.json_to_sheet(rows);
         const wb = XLSX.utils.book_new();
         XLSX.utils.book_append_sheet(wb, ws, 'Beta Feedbacks');
         XLSX.writeFile(wb, `Receipto_Beta_Feedback_${new Date().toISOString().split('T')[0]}.xlsx`);
+      };
+
+      // --- ITEM 2: EXPORT AS PDF ---
+      const handleExportPDF = () => {
+        if (!feedbacks.length) {
+          alert('No feedback evaluations available to export as PDF.');
+          return;
+        }
+
+        const printWin = window.open('', '_blank');
+        if (!printWin) {
+          alert('Please allow pop-ups to export as PDF.');
+          return;
+        }
+
+        const rowsHtml = feedbacks.map((f, idx) => `
+          <div style="border: 1px solid #e2e8f0; border-radius: 8px; padding: 14px; margin-bottom: 12px; page-break-inside: avoid;">
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 8px;">
+              <div>
+                <strong style="font-size: 15px; color: #0f172a;">${idx + 1}. ${f.name}</strong>
+                <span style="font-size: 12px; color: #64748b; margin-left: 8px;">&lt;${f.email}&gt;</span>
+              </div>
+              <div style="font-size: 14px; font-weight: bold; color: #0284c7;">
+                ★ ${f.rating}.0 / 5.0
+              </div>
+            </div>
+
+            <div style="font-size: 12px; color: #475569; margin-bottom: 8px;">
+              <strong>Device:</strong> ${f.device} &nbsp;|&nbsp; 
+              <strong>App Version:</strong> ${f.appVersion} &nbsp;|&nbsp; 
+              <strong>Duration:</strong> ${f.testingDuration} &nbsp;|&nbsp; 
+              <strong>Date:</strong> ${f.date}
+            </div>
+
+            ${f.features && Object.keys(f.features).length > 0 ? `
+              <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px;">
+                ${Object.entries(f.features).map(([k, v]) => `
+                  <span style="background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px 6px; font-size: 11px;">
+                    ${k.replace('_', ' ')}: <strong>${v}★</strong>
+                  </span>
+                `).join('')}
+              </div>
+            ` : ''}
+
+            ${f.suggestions.favFeature ? `
+              <div style="font-size: 12px; margin-bottom: 4px;">
+                <strong style="color: #0284c7;">Favourite Feature:</strong> "${f.suggestions.favFeature}"
+              </div>
+            ` : ''}
+
+            ${f.suggestions.improvements ? `
+              <div style="font-size: 12px; margin-bottom: 4px;">
+                <strong style="color: #d97706;">Suggested Improvement:</strong> "${f.suggestions.improvements}"
+              </div>
+            ` : ''}
+
+            ${f.suggestions.futureWishes ? `
+              <div style="font-size: 12px; margin-bottom: 4px;">
+                <strong style="color: #7c3aed;">Future Wishlist:</strong> "${f.suggestions.futureWishes}"
+              </div>
+            ` : ''}
+
+            ${f.suggestions.devMessage ? `
+              <div style="font-size: 12px; margin-bottom: 4px;">
+                <strong style="color: #059669;">Note to Receipto Team:</strong> "${f.suggestions.devMessage}"
+              </div>
+            ` : ''}
+
+            ${f.hasBug && f.bugReport ? `
+              <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 6px; padding: 8px; font-size: 11.5px; color: #991b1b; margin-top: 6px;">
+                <strong>⚠️ Bug Diagnostic (${f.bugReport.feature} - ${f.bugReport.severity}):</strong> ${f.bugReport.description}
+              </div>
+            ` : ''}
+          </div>
+        `).join('');
+
+        const docHtml = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>Receipto Beta Evaluation Report - ${new Date().toISOString().split('T')[0]}</title>
+            <style>
+              body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 24px; color: #0f172a; }
+              @media print {
+                body { padding: 0; }
+                button { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #0f172a; padding-bottom: 12px; margin-bottom: 20px;">
+              <div>
+                <h1 style="margin: 0; font-size: 24px; color: #0f172a;">RECEIPTO</h1>
+                <p style="margin: 2px 0 0; font-size: 13px; color: #64748b;">Official Beta Testing & Evaluation Cloud Report</p>
+              </div>
+              <div style="text-align: right; font-size: 12px; color: #64748b;">
+                <div><strong>Generated:</strong> ${new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>
+                <div><strong>Total Evaluations:</strong> ${feedbacks.length}</div>
+                <div><strong>Average Rating:</strong> ${avgRating} / 5.0</div>
+              </div>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+              <button onclick="window.print()" style="background: #0284c7; color: #fff; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer;">
+                Print / Save as PDF
+              </button>
+            </div>
+
+            ${rowsHtml}
+          </body>
+          </html>
+        `;
+
+        printWin.document.write(docHtml);
+        printWin.document.close();
+        setTimeout(() => printWin.print(), 400);
       };
 
       const avgRating = feedbacks.length
@@ -428,22 +560,22 @@
             
             {/* Top Metrics Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div className="cyber-glass rounded-2xl p-4 border-cyan-500/20">
+              <div className="cyber-glass rounded-2xl p-4 border-cyan-500/25">
                 <div className="text-xs text-slate-400 font-mono uppercase">Cloud Feedbacks</div>
                 <div className="text-3xl font-black text-white mt-1">{feedbacks.length}</div>
               </div>
-              <div className="cyber-glass rounded-2xl p-4 border-amber-500/20">
+              <div className="cyber-glass rounded-2xl p-4 border-amber-500/25">
                 <div className="text-xs text-slate-400 font-mono uppercase">Average Rating</div>
                 <div className="text-3xl font-black text-amber-400 mt-1 flex items-center gap-1">
                   <Icons.Star className="w-6 h-6 text-amber-400" />
                   <span>{avgRating}</span>
                 </div>
               </div>
-              <div className="cyber-glass rounded-2xl p-4 border-rose-500/20">
+              <div className="cyber-glass rounded-2xl p-4 border-rose-500/25">
                 <div className="text-xs text-slate-400 font-mono uppercase">Bugs Reported</div>
                 <div className="text-3xl font-black text-rose-400 mt-1">{bugCount}</div>
               </div>
-              <div className="cyber-glass rounded-2xl p-4 border-emerald-500/20">
+              <div className="cyber-glass rounded-2xl p-4 border-emerald-500/25">
                 <div className="text-xs text-slate-400 font-mono uppercase">Whitelisted Testers</div>
                 <div className="text-3xl font-black text-emerald-400 mt-1">{whitelist.length}</div>
               </div>
@@ -507,8 +639,8 @@
               </div>
             </div>
 
-            {/* FEEDBACK RESPONSES CONSOLE */}
-            <div className="cyber-glass rounded-2xl p-6 border-cyan-500/20">
+            {/* FEEDBACK RESPONSES CONSOLE (WITH EXPORT PDF AND FULL INFO) */}
+            <div className="cyber-glass rounded-2xl p-6 border-cyan-500/25">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
                 <div>
                   <h2 className="text-lg font-bold text-white flex items-center gap-2">
@@ -521,16 +653,28 @@
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
+                  {/* Export PDF Button */}
+                  <button
+                    onClick={handleExportPDF}
+                    className="text-xs px-3 py-1.5 rounded-lg bg-cyan-600/25 hover:bg-cyan-600/40 text-cyan-300 border border-cyan-500/40 transition flex items-center gap-1.5 font-medium"
+                    title="Print or save all evaluations as PDF report"
+                  >
+                    <Icons.Printer className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Export PDF (.pdf)</span>
+                  </button>
+
+                  {/* Export Excel Button */}
                   <button
                     onClick={handleExportExcel}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 transition flex items-center gap-1.5 font-medium"
+                    className="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/25 hover:bg-emerald-600/40 text-emerald-300 border border-emerald-500/40 transition flex items-center gap-1.5 font-medium"
                   >
                     <Icons.FileText className="w-3.5 h-3.5" />
                     <span>Export Excel (.xlsx)</span>
                   </button>
+
                   <button
                     onClick={fetchAdminData}
-                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
+                    className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
                     title="Refresh from cloud"
                   >
                     <Icons.Refresh className="w-3.5 h-3.5" />
@@ -560,7 +704,7 @@
                 </select>
               </div>
 
-              {/* Records Feed with REAL VECTOR TRASH CAN */}
+              {/* Records Feed with FULL INFO AS COMMUNITY WALL */}
               {loading ? (
                 <div className="py-12 text-center text-xs text-slate-400">Loading cloud evaluations...</div>
               ) : filteredFeedbacks.length === 0 ? (
@@ -568,52 +712,108 @@
                   No evaluations found matching your filters.
                 </div>
               ) : (
-                <div className="space-y-3 max-h-[700px] overflow-y-auto pr-1">
+                <div className="space-y-4 max-h-[800px] overflow-y-auto pr-1">
                   {filteredFeedbacks.map(f => (
                     <div
                       key={f.id}
-                      className="p-4 rounded-xl bg-slate-900/60 border border-slate-800 hover:border-cyan-500/30 transition text-xs space-y-2"
+                      className="p-5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/35 transition text-xs space-y-3 shadow-lg"
                     >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold text-white text-sm">{f.name}</span>
-                          <span className="text-cyan-400 font-mono text-[11px]">&lt;{f.email}&gt;</span>
-                          <span className="text-slate-500 text-[11px] font-mono">• {f.device} • {f.date}</span>
+                      {/* Top Row */}
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500/30 to-purple-500/30 border border-cyan-500/40 flex items-center justify-center font-bold text-cyan-300 text-base">
+                            {(f.name || 'T')[0].toUpperCase()}
+                          </div>
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-white text-sm">{f.name}</span>
+                              <span className="text-cyan-400 font-mono text-xs">&lt;{f.email}&gt;</span>
+                              <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 font-mono flex items-center gap-1">
+                                <Icons.CheckCircle className="w-2.5 h-2.5" />
+                                <span>Verified Tester</span>
+                              </span>
+                            </div>
+                            <div className="text-slate-400 font-mono text-[11px] mt-0.5">
+                              {f.device} • {f.testingDuration} • {f.appVersion} • {f.date}
+                            </div>
+                          </div>
                         </div>
+
                         <div className="flex items-center gap-2">
-                          <span className="text-amber-400 font-bold font-mono flex items-center gap-1">
+                          <span className="text-amber-400 font-bold font-mono px-2 py-1 rounded bg-amber-400/10 border border-amber-400/30 flex items-center gap-1">
                             <Icons.Star className="w-3.5 h-3.5" />
                             <span>{f.rating}.0</span>
                           </span>
                           <button
                             onClick={() => handleDeleteFeedback(f.id)}
-                            className="text-rose-400 hover:text-rose-300 p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition flex items-center gap-1"
+                            className="text-rose-400 hover:text-rose-300 px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition flex items-center gap-1 text-[11px] font-medium"
                             title="Delete from Supabase"
                           >
                             <Icons.Trash className="w-3.5 h-3.5" />
-                            <span className="text-[11px]">Delete</span>
+                            <span>Delete</span>
                           </button>
                         </div>
                       </div>
 
-                      {f.suggestions.favFeature && (
-                        <div className="text-slate-300">
-                          <span className="text-cyan-400 font-semibold">Fav:</span> "{f.suggestions.favFeature}"
+                      {/* Rated Core Feature Tags Grid */}
+                      {f.features && Object.keys(f.features).length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 pt-1">
+                          {Object.entries(f.features).map(([k, val]) => (
+                            <span
+                              key={k}
+                              className="text-[11px] font-mono px-2 py-0.5 rounded-md bg-slate-950 border border-slate-800 text-slate-300 flex items-center gap-1"
+                            >
+                              <span className="text-slate-500">{k.replace('_', ' ')}:</span>
+                              <span className="text-amber-400 font-bold">{val}★</span>
+                            </span>
+                          ))}
                         </div>
                       )}
-                      {f.suggestions.improvements && (
-                        <div className="text-slate-300">
-                          <span className="text-amber-400 font-semibold">Improve:</span> "{f.suggestions.improvements}"
-                        </div>
-                      )}
-                      {f.suggestions.devMessage && (
-                        <div className="text-emerald-300">
-                          <span className="font-semibold">Note to Dev:</span> "{f.suggestions.devMessage}"
-                        </div>
-                      )}
+
+                      {/* Insight Quotes */}
+                      <div className="space-y-2 text-xs pt-1">
+                        {f.suggestions.favFeature && (
+                          <div className="p-2.5 rounded-xl bg-cyan-950/20 border-l-2 border-cyan-400 text-slate-300">
+                            <span className="font-bold text-cyan-300 text-[11px] uppercase tracking-wider block mb-0.5">
+                              Favourite Feature
+                            </span>
+                            "{f.suggestions.favFeature}"
+                          </div>
+                        )}
+                        {f.suggestions.improvements && (
+                          <div className="p-2.5 rounded-xl bg-amber-950/20 border-l-2 border-amber-400 text-slate-300">
+                            <span className="font-bold text-amber-300 text-[11px] uppercase tracking-wider block mb-0.5">
+                              Suggested Improvement
+                            </span>
+                            "{f.suggestions.improvements}"
+                          </div>
+                        )}
+                        {f.suggestions.futureWishes && (
+                          <div className="p-2.5 rounded-xl bg-purple-950/20 border-l-2 border-purple-400 text-slate-300">
+                            <span className="font-bold text-purple-300 text-[11px] uppercase tracking-wider block mb-0.5">
+                              Future Wishlist
+                            </span>
+                            "{f.suggestions.futureWishes}"
+                          </div>
+                        )}
+                        {f.suggestions.devMessage && (
+                          <div className="p-2.5 rounded-xl bg-emerald-950/20 border-l-2 border-emerald-400 text-slate-300">
+                            <span className="font-bold text-emerald-300 text-[11px] uppercase tracking-wider block mb-0.5">
+                              Note to Receipto Team
+                            </span>
+                            "{f.suggestions.devMessage}"
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Bug Alert */}
                       {f.hasBug && f.bugReport && (
-                        <div className="p-2 rounded bg-rose-950/20 border border-rose-500/30 text-rose-300 text-[11px]">
-                          <strong>Bug:</strong> {f.bugReport.feature} ({f.bugReport.severity}) — {f.bugReport.description}
+                        <div className="p-3 rounded-xl bg-rose-950/30 border border-rose-500/40 text-rose-300 text-xs">
+                          <div className="font-bold mb-1 flex items-center gap-1">
+                            <Icons.Trash className="w-3.5 h-3.5 text-rose-400" />
+                            <span>⚠️ Bug Diagnostic ({f.bugReport.feature} - Severity: {f.bugReport.severity})</span>
+                          </div>
+                          <div>{f.bugReport.description}</div>
                         </div>
                       )}
                     </div>
@@ -634,7 +834,7 @@
             </div>
           )}
 
-          <footer className="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500 bg-[#050713]">
+          <footer className="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500 bg-[#050816]">
             Receipto Admin Console • Connected to Supabase
           </footer>
         </div>
@@ -651,14 +851,14 @@
       function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
       window.addEventListener('resize', resize);
       resize();
-      for (let i = 0; i < 30; i++) {
+      for (let i = 0; i < 35; i++) {
         particles.push({
           x: Math.random() * canvas.width,
           y: Math.random() * canvas.height,
-          vx: (Math.random() - 0.5) * 0.3,
-          vy: (Math.random() - 0.5) * 0.3,
-          radius: Math.random() * 1.5 + 0.8,
-          color: i % 2 === 0 ? 'rgba(0, 210, 255, 0.35)' : 'rgba(224, 64, 251, 0.35)'
+          vx: (Math.random() - 0.5) * 0.35,
+          vy: (Math.random() - 0.5) * 0.35,
+          radius: Math.random() * 1.8 + 0.9,
+          color: i % 2 === 0 ? 'rgba(0, 210, 255, 0.60)' : 'rgba(224, 64, 251, 0.60)'
         });
       }
       function animate() {
