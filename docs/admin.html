@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Receipto — Beta Admin & Whitelist Command Console</title>
-  <link rel="icon" type="image/png" href="https://raw.githubusercontent.com/milanraj-github/RECEIPTO/main/assets/icons/app_icon.png">
+  <link rel="icon" type="image/png" href="/logo.png">
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,16 +24,17 @@
           },
           colors: {
             cyber: {
-              bg: '#050713',
-              card: '#0a0f26',
-              border: '#1a224a',
-              hover: '#131c44',
-              cyan: '#00f2fe',
+              bg: '#060919',
+              card: '#0c122b',
+              border: 'rgba(0, 210, 255, 0.18)',
+              hover: '#121b3e',
+              cyan: '#00d2ff',
+              magenta: '#e040fb',
+              pink: '#ff2a85',
               purple: '#7928ca',
               green: '#00e59b',
-              pink: '#ff007a',
-              amber: '#ffaa00',
-              red: '#ff4d4d',
+              amber: '#ffb300',
+              red: '#ff4d6d'
             }
           }
         }
@@ -52,26 +53,66 @@
 
   <style>
     body {
-      background-color: #050713;
+      background-color: #060919;
+      background-image: 
+        radial-gradient(circle at 12% 15%, rgba(0, 210, 255, 0.16) 0%, transparent 45%),
+        radial-gradient(circle at 88% 22%, rgba(224, 64, 251, 0.20) 0%, transparent 50%),
+        radial-gradient(circle at 50% 75%, rgba(121, 40, 202, 0.18) 0%, transparent 55%),
+        radial-gradient(circle at 85% 85%, rgba(255, 42, 133, 0.14) 0%, transparent 40%);
+      background-attachment: fixed;
       color: #f1f5f9;
       overflow-x: hidden;
     }
     .cyber-glass {
-      background: rgba(10, 15, 38, 0.8);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      border: 1px solid rgba(0, 242, 254, 0.15);
+      background: rgba(12, 18, 43, 0.8);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(0, 210, 255, 0.18);
+    }
+    .brand-gradient {
+      background: linear-gradient(135deg, #00d2ff 0%, #9855f7 50%, #e040fb 100%);
     }
   </style>
 </head>
 <body class="min-h-screen relative font-sans antialiased">
-  <!-- Living Canvas Background -->
   <canvas id="adminCanvas" class="fixed inset-0 pointer-events-none z-0 opacity-30"></canvas>
-
   <div id="root" class="relative z-10"></div>
 
   <script type="text/babel">
     const { useState, useEffect, useMemo } = React;
+
+    const Icons = {
+      Trash: ({ className = "w-4 h-4" }) => (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 6h18m-2 0v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6m3 0V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2m-6 5v6m4-6v6"/>
+        </svg>
+      ),
+      Lock: ({ className = "w-4 h-4" }) => (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+        </svg>
+      ),
+      ShieldCheck: ({ className = "w-4 h-4" }) => (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>
+        </svg>
+      ),
+      Star: ({ className = "w-4 h-4", filled = true }) => (
+        <svg className={className} viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+          <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+        </svg>
+      ),
+      Refresh: ({ className = "w-4 h-4" }) => (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>
+        </svg>
+      ),
+      FileText: ({ className = "w-4 h-4" }) => (
+        <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+        </svg>
+      )
+    };
 
     const SUPABASE_URL = 'https://ykqzefulvpqfiwsddnqt.supabase.co';
     const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InlrcXplZnVsdnBxZml3c2RkbnF0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI3NTI2NTcsImV4cCI6MjA5ODMyODY1N30.NFm5dT7vVeHtziEkYWN-qk8ZEogpktPZ7NTmXDLO1Qs';
@@ -100,7 +141,6 @@
       const [whitelist, setWhitelist] = useState(DEFAULT_WHITELIST);
       const [whitelistRowId, setWhitelistRowId] = useState(null);
       const [newEmail, setNewEmail] = useState('');
-      const [whitelistSearch, setWhitelistSearch] = useState('');
 
       const [searchQuery, setSearchQuery] = useState('');
       const [ratingFilter, setRatingFilter] = useState('all');
@@ -128,7 +168,7 @@
         setIsAuthenticated(false);
       };
 
-      // Fetch cloud data from Supabase
+      // 100% Online fetch from Supabase
       const fetchAdminData = async () => {
         if (!supabase) return;
         setLoading(true);
@@ -139,7 +179,6 @@
             .order('created_at', { ascending: false });
 
           if (!error && data) {
-            // 1. Whitelist row
             const cfg = data.find(r => r.name === '__SYSTEM_CONFIG_WHITELIST__' || r.email === 'system@receipto.whitelist');
             if (cfg) {
               setWhitelistRowId(cfg.id);
@@ -151,7 +190,6 @@
               } catch (e) {}
             }
 
-            // 2. Real user feedbacks only
             const realList = data
               .filter(r => r.name !== '__SYSTEM_CONFIG_WHITELIST__' && r.email !== 'system@receipto.whitelist')
               .map(row => {
@@ -181,8 +219,7 @@
                   suggestions: sug,
                   hasBug: parsed ? (parsed.hasBug || false) : (row.tags && row.tags.some(t => t.includes('Bug'))),
                   bugReport: parsed ? parsed.bugReport : null,
-                  date: row.created_at ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently',
-                  rawCreated: row.created_at
+                  date: row.created_at ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'
                 };
               });
 
@@ -202,7 +239,6 @@
         }
       }, [isAuthenticated]);
 
-      // Save Whitelist to Supabase
       const saveWhitelistToCloud = async (updatedList) => {
         setWhitelist(updatedList);
         if (!supabase) return;
@@ -244,6 +280,7 @@
         setNewEmail('');
       };
 
+      // Vector Trash Delete for Whitelist item
       const handleRemoveEmail = (email) => {
         if (!confirm(`Revoke beta testing access for ${email}?`)) return;
         const updated = whitelist.filter(e => e !== email);
@@ -255,7 +292,7 @@
         saveWhitelistToCloud(DEFAULT_WHITELIST);
       };
 
-      // Delete feedback online from Supabase
+      // Vector Trash Delete for Feedback in Supabase
       const handleDeleteFeedback = async (id) => {
         if (!confirm('Permanently delete this evaluation from Supabase cloud?')) return;
         try {
@@ -270,7 +307,6 @@
         }
       };
 
-      // Filtered Feedbacks
       const filteredFeedbacks = useMemo(() => {
         return feedbacks.filter(f => {
           if (ratingFilter === '5' && f.rating !== 5) return false;
@@ -287,7 +323,6 @@
         });
       }, [feedbacks, ratingFilter, searchQuery]);
 
-      // Excel Export
       const handleExportExcel = () => {
         if (!feedbacks.length) {
           alert('No feedback responses available to export.');
@@ -312,31 +347,20 @@
         XLSX.writeFile(wb, `Receipto_Beta_Feedback_${new Date().toISOString().split('T')[0]}.xlsx`);
       };
 
-      // JSON Export
-      const handleExportJSON = () => {
-        if (!feedbacks.length) return;
-        const blob = new Blob([JSON.stringify(feedbacks, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `Receipto_Beta_Feedback_${new Date().toISOString().split('T')[0]}.json`;
-        a.click();
-      };
-
-      // Stats
       const avgRating = feedbacks.length
         ? (feedbacks.reduce((a, b) => a + (b.rating || 5), 0) / feedbacks.length).toFixed(1)
         : '0.0';
       const bugCount = feedbacks.filter(f => f.hasBug || f.bugReport).length;
 
-      // Gate screen
       if (!isAuthenticated) {
         return (
           <div className="min-h-screen flex items-center justify-center p-4">
             <div className="cyber-glass rounded-2xl p-8 max-w-md w-full border-cyan-500/30 text-center shadow-2xl">
-              <div className="w-14 h-14 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-3xl mx-auto mb-4 text-cyan-400">
-                🔐
-              </div>
+              <img
+                src="/logo.png"
+                alt="Receipto"
+                className="w-14 h-14 rounded-2xl object-contain mx-auto mb-4 border border-cyan-500/30 shadow-[0_0_20px_rgba(0,210,255,0.4)]"
+              />
               <h2 className="text-xl font-black text-white mb-1">Receipto Admin Portal</h2>
               <p className="text-xs text-slate-400 mb-6">Enter master passcode to unlock beta testers & feedbacks manager</p>
 
@@ -352,7 +376,7 @@
                 {authError && <div className="text-rose-400 text-xs font-semibold">{authError}</div>}
                 <button
                   type="submit"
-                  className="w-full py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold text-xs shadow-lg transition"
+                  className="w-full py-2.5 rounded-xl brand-gradient hover:opacity-95 text-white font-bold text-xs shadow-lg transition"
                 >
                   UNLOCK COMMAND CONSOLE →
                 </button>
@@ -364,14 +388,14 @@
 
       return (
         <div className="min-h-screen flex flex-col justify-between">
-          {/* Header */}
+          {/* Header with REAL RECEIPTO LOGO */}
           <header className="sticky top-0 z-50 cyber-glass border-b border-cyan-500/20 px-4 lg:px-8 py-3 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-purple-600 p-[2px]">
-                <div className="w-full h-full bg-[#050713] rounded-[10px] flex items-center justify-center font-bold text-cyan-400 text-lg">
-                  R
-                </div>
-              </div>
+              <img
+                src="/logo.png"
+                alt="Receipto"
+                className="w-10 h-10 rounded-xl object-contain shadow-[0_0_20px_rgba(0,210,255,0.4)] border border-cyan-400/30"
+              />
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-extrabold text-white text-base">RECEIPTO ADMIN</span>
@@ -392,9 +416,10 @@
               </a>
               <button
                 onClick={handleLogout}
-                className="text-xs px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 transition"
+                className="text-xs px-3 py-1.5 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-500/30 transition flex items-center gap-1.5"
               >
-                Lock 🔒
+                <Icons.Lock className="w-3.5 h-3.5" />
+                <span>Lock</span>
               </button>
             </div>
           </header>
@@ -409,7 +434,10 @@
               </div>
               <div className="cyber-glass rounded-2xl p-4 border-amber-500/20">
                 <div className="text-xs text-slate-400 font-mono uppercase">Average Rating</div>
-                <div className="text-3xl font-black text-amber-400 mt-1">★ {avgRating}</div>
+                <div className="text-3xl font-black text-amber-400 mt-1 flex items-center gap-1">
+                  <Icons.Star className="w-6 h-6 text-amber-400" />
+                  <span>{avgRating}</span>
+                </div>
               </div>
               <div className="cyber-glass rounded-2xl p-4 border-rose-500/20">
                 <div className="text-xs text-slate-400 font-mono uppercase">Bugs Reported</div>
@@ -421,12 +449,13 @@
               </div>
             </div>
 
-            {/* --- BETA TESTER WHITELIST ACCESS MANAGER --- */}
+            {/* BETA TESTER WHITELIST ACCESS MANAGER */}
             <div className="cyber-glass rounded-2xl p-6 border-cyan-500/30">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-800">
                 <div>
                   <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                    <span>🛡️</span> <span>Beta Tester Whitelist Access Manager</span>
+                    <Icons.ShieldCheck className="w-5 h-5 text-cyan-400" />
+                    <span>Beta Tester Whitelist Access Manager</span>
                   </h2>
                   <p className="text-xs text-slate-400 mt-0.5">
                     Only emails listed here are allowed to submit evaluation forms online. Syncs directly to Supabase.
@@ -451,13 +480,13 @@
                 />
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-black font-bold text-xs transition"
+                  className="px-4 py-2 rounded-xl brand-gradient hover:opacity-95 text-white font-bold text-xs transition"
                 >
                   + Add Tester
                 </button>
               </form>
 
-              {/* Whitelist Tags Grid */}
+              {/* Whitelist Tags Grid with REAL VECTOR TRASH CAN */}
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 max-h-60 overflow-y-auto pr-1">
                 {whitelist.map(email => (
                   <div
@@ -468,22 +497,23 @@
                     <button
                       type="button"
                       onClick={() => handleRemoveEmail(email)}
-                      className="text-slate-500 hover:text-rose-400 transition"
+                      className="text-slate-500 hover:text-rose-400 p-1 rounded hover:bg-rose-500/10 transition"
                       title="Revoke access"
                     >
-                      🗑️
+                      <Icons.Trash className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* --- FEEDBACK RESPONSES CONSOLE --- */}
+            {/* FEEDBACK RESPONSES CONSOLE */}
             <div className="cyber-glass rounded-2xl p-6 border-cyan-500/20">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800">
                 <div>
                   <h2 className="text-lg font-bold text-white flex items-center gap-2">
-                    <span>📊</span> <span>Live Cloud Evaluations Console</span>
+                    <Icons.FileText className="w-5 h-5 text-cyan-400" />
+                    <span>Live Cloud Evaluations Console</span>
                   </h2>
                   <p className="text-xs text-slate-400 mt-0.5">
                     Real-time feedback records fetched directly from Supabase.
@@ -493,22 +523,17 @@
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={handleExportExcel}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 transition flex items-center gap-1.5"
+                    className="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/30 hover:bg-emerald-600/50 text-emerald-300 border border-emerald-500/40 transition flex items-center gap-1.5 font-medium"
                   >
-                    <span>📊</span> Export Excel (.xlsx)
-                  </button>
-                  <button
-                    onClick={handleExportJSON}
-                    className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
-                  >
-                    JSON
+                    <Icons.FileText className="w-3.5 h-3.5" />
+                    <span>Export Excel (.xlsx)</span>
                   </button>
                   <button
                     onClick={fetchAdminData}
-                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs transition"
+                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition"
                     title="Refresh from cloud"
                   >
-                    🔄
+                    <Icons.Refresh className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -535,7 +560,7 @@
                 </select>
               </div>
 
-              {/* Records Feed */}
+              {/* Records Feed with REAL VECTOR TRASH CAN */}
               {loading ? (
                 <div className="py-12 text-center text-xs text-slate-400">Loading cloud evaluations...</div>
               ) : filteredFeedbacks.length === 0 ? (
@@ -556,18 +581,21 @@
                           <span className="text-slate-500 text-[11px] font-mono">• {f.device} • {f.date}</span>
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-amber-400 font-bold font-mono">★ {f.rating}.0</span>
+                          <span className="text-amber-400 font-bold font-mono flex items-center gap-1">
+                            <Icons.Star className="w-3.5 h-3.5" />
+                            <span>{f.rating}.0</span>
+                          </span>
                           <button
                             onClick={() => handleDeleteFeedback(f.id)}
-                            className="text-rose-400 hover:text-rose-300 p-1 rounded bg-rose-500/10 border border-rose-500/20"
+                            className="text-rose-400 hover:text-rose-300 p-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition flex items-center gap-1"
                             title="Delete from Supabase"
                           >
-                            🗑️
+                            <Icons.Trash className="w-3.5 h-3.5" />
+                            <span className="text-[11px]">Delete</span>
                           </button>
                         </div>
                       </div>
 
-                      {/* Quotes */}
                       {f.suggestions.favFeature && (
                         <div className="text-slate-300">
                           <span className="text-cyan-400 font-semibold">Fav:</span> "{f.suggestions.favFeature}"
@@ -596,7 +624,6 @@
 
           </main>
 
-          {/* Toast */}
           {toast && (
             <div className={`fixed bottom-5 right-5 z-50 p-3.5 rounded-xl border text-xs shadow-2xl ${
               toast.type === 'success' ? 'bg-emerald-950 border-emerald-500 text-emerald-200' :
@@ -607,7 +634,7 @@
             </div>
           )}
 
-          <footer className="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500 bg-[#04060f]">
+          <footer className="border-t border-slate-800/80 py-4 text-center text-xs text-slate-500 bg-[#050713]">
             Receipto Admin Console • Connected to Supabase
           </footer>
         </div>
@@ -616,7 +643,6 @@
 
     ReactDOM.createRoot(document.getElementById('root')).render(<AdminApp />);
 
-    // Particles
     (function() {
       const canvas = document.getElementById('adminCanvas');
       if (!canvas) return;
@@ -631,12 +657,12 @@
           y: Math.random() * canvas.height,
           vx: (Math.random() - 0.5) * 0.3,
           vy: (Math.random() - 0.5) * 0.3,
-          radius: Math.random() * 1.5 + 0.8
+          radius: Math.random() * 1.5 + 0.8,
+          color: i % 2 === 0 ? 'rgba(0, 210, 255, 0.35)' : 'rgba(224, 64, 251, 0.35)'
         });
       }
       function animate() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = 'rgba(121, 40, 202, 0.4)';
         for (let i = 0; i < particles.length; i++) {
           const p = particles[i];
           p.x += p.vx; p.y += p.vy;
@@ -646,6 +672,7 @@
           if (p.y > canvas.height) p.y = 0;
           ctx.beginPath();
           ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+          ctx.fillStyle = p.color;
           ctx.fill();
         }
         requestAnimationFrame(animate);
