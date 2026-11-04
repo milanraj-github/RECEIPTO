@@ -219,32 +219,45 @@ class NotificationService {
     debugPrint('[NotificationService] Notification channel "$_kChannelId" created/verified.');
   }
 
-  /// Request POST_NOTIFICATIONS permission on Android 13+ and iOS.
+  /// Request POST_NOTIFICATIONS permission on Android 13+ and iOS safely.
   Future<bool> requestPermission() async {
-    final status = await Permission.notification.status;
-    debugPrint('[NotificationService] Notification permission status: $status');
-    if (status.isDenied || status.isProvisional) {
-      final result = await Permission.notification.request();
-      debugPrint('[NotificationService] Permission request result: $result');
+    try {
+      final status = await Permission.notification.status;
+      debugPrint('[NotificationService] Notification permission status: $status');
+      if (status.isDenied || status.isProvisional) {
+        final result = await Permission.notification.request();
+        debugPrint('[NotificationService] Permission request result: $result');
+      }
+    } catch (e) {
+      debugPrint('[NotificationService] Error requesting notification permission: $e');
     }
     
-    // Request exact alarm permission dynamically on Android
+    // Check exact alarm permission safely on Android without blocking UI thread
     if (Platform.isAndroid) {
       try {
         final exactStatus = await Permission.scheduleExactAlarm.status;
         debugPrint('[NotificationService] Exact alarm permission status: $exactStatus');
         if (exactStatus.isDenied) {
-          debugPrint('[NotificationService] Requesting exact alarm permission...');
-          final result = await Permission.scheduleExactAlarm.request();
-          debugPrint('[NotificationService] Exact alarm permission request result: $result');
+          debugPrint('[NotificationService] Requesting exact alarm permission with timeout...');
+          await Permission.scheduleExactAlarm.request().timeout(
+            const Duration(seconds: 3),
+            onTimeout: () {
+              debugPrint('[NotificationService] Exact alarm request timed out safely.');
+              return PermissionStatus.denied;
+            },
+          );
         }
       } catch (e) {
         debugPrint('[NotificationService] Error requesting exact alarm permission: $e');
       }
     }
     
-    final finalStatus = await Permission.notification.status;
-    return finalStatus.isGranted;
+    try {
+      final finalStatus = await Permission.notification.status;
+      return finalStatus.isGranted;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// Shows an immediate local notification.
