@@ -1296,12 +1296,21 @@
       try {
         const cached = localStorage.getItem('receipto_feedbacks');
         if (cached) {
-          feedbackRecords = JSON.parse(cached);
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            const seen = new Set(parsed.map(p => p.id));
+            INITIAL_RECORDS.forEach(init => {
+              if (!seen.has(init.id)) parsed.push(init);
+            });
+            feedbackRecords = parsed;
+          } else {
+            feedbackRecords = [...INITIAL_RECORDS];
+          }
         } else {
-          feedbackRecords = INITIAL_RECORDS;
+          feedbackRecords = [...INITIAL_RECORDS];
         }
       } catch(e) {
-        feedbackRecords = INITIAL_RECORDS;
+        feedbackRecords = [...INITIAL_RECORDS];
       }
 
       // Fetch from Supabase
