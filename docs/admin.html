@@ -669,6 +669,104 @@
       color: #f87171;
     }
 
+    /* Whitelist Management Styles */
+    .whitelist-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-glass);
+      backdrop-filter: blur(16px);
+      border-radius: var(--radius-md);
+      padding: 22px;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    .whitelist-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .whitelist-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .whitelist-badge {
+      background: rgba(0, 217, 255, 0.12);
+      border: 1px solid rgba(0, 217, 255, 0.35);
+      color: var(--accent-cyan);
+      font-size: 11.5px;
+      font-weight: 700;
+      padding: 4px 12px;
+      border-radius: 999px;
+      letter-spacing: 0.3px;
+    }
+    .whitelist-desc {
+      font-size: 13px;
+      color: var(--text-secondary);
+      margin-top: 5px;
+      max-width: 720px;
+      line-height: 1.5;
+    }
+    .whitelist-add-row {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .whitelist-add-row input {
+      flex: 1;
+      min-width: 260px;
+    }
+    .whitelist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 10px;
+    }
+    .whitelist-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: var(--radius-sm);
+      padding: 9px 13px;
+      transition: all var(--transition-fast);
+    }
+    .whitelist-item:hover {
+      border-color: rgba(0, 217, 255, 0.35);
+      background: rgba(0, 217, 255, 0.05);
+    }
+    .whitelist-item-email {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e2e8f0;
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .whitelist-delete-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 14px;
+      padding: 4px 6px;
+      border-radius: 4px;
+      transition: all 0.15s ease;
+    }
+    .whitelist-delete-btn:hover {
+      color: var(--accent-red);
+      background: rgba(244, 63, 94, 0.12);
+    }
+
     @media (max-width: 768px) {
       header {
         padding: 10px 14px;
@@ -793,6 +891,35 @@
         </div>
       </div>
 
+      <!-- Authorized Beta Testers Whitelist Management -->
+      <div class="whitelist-card">
+        <div class="whitelist-header">
+          <div>
+            <div class="whitelist-title">
+              <span>🛡️</span> Authorized Beta Testers Whitelist
+              <span class="whitelist-badge" id="whitelistCountBadge">8 Registered Testers</span>
+            </div>
+            <div class="whitelist-desc">
+              Only testers with these email addresses are permitted to submit evaluations on the feedback portal. Everyone else can browse the community wall but cannot submit.
+            </div>
+          </div>
+          <button type="button" class="action-btn" onclick="resetDefaultTesters()">
+            <span>🔄</span> Reset to Default (8)
+          </button>
+        </div>
+
+        <div class="whitelist-add-row">
+          <input type="email" class="search-input" id="newTesterEmail" placeholder="Enter tester email address to authorize..." onkeydown="if(event.key==='Enter') addTesterEmail()">
+          <button type="button" class="action-btn btn-excel" onclick="addTesterEmail()">
+            <span>➕</span> Authorize Tester
+          </button>
+        </div>
+
+        <div class="whitelist-grid" id="whitelistGrid">
+          <!-- Rendered via JS -->
+        </div>
+      </div>
+
       <!-- Toolbar & Export Suite -->
       <div class="admin-toolbar">
         <div class="export-btns-group">
@@ -881,7 +1008,7 @@
         device: 'OnePlus 11R 5G (Android 14)',
         rating: 5,
         easeOfUse: 'Very Easy',
-        testingDuration: '1–2 weeks',
+        testingDuration: '1-2 weeks',
         appVersion: '1.0.0 (Build 1)',
         date: 'Nov 3, 2026',
         features: {
@@ -905,13 +1032,13 @@
         hasBug: false
       },
       {
-        id: 'rec_tester_02',
+        id: 'rec_aarav_02',
         name: 'Aarav Sharma',
         email: 'aarav.sharma@gmail.com',
         device: 'Samsung Galaxy S23 (Android 14)',
         rating: 5,
         easeOfUse: 'Very Easy',
-        testingDuration: '3–7 days',
+        testingDuration: '4-7 days',
         appVersion: '1.0.0 (Build 1)',
         date: 'Nov 2, 2026',
         features: {
@@ -933,10 +1060,70 @@
         },
         bugReport: null,
         hasBug: false
+      },
+      {
+        id: 'rec_sagar_03',
+        name: 'Sagar Patkar',
+        email: 'sagar.23cs125@sode-edu.in',
+        device: 'Google Pixel 8 Pro (Android 15)',
+        rating: 5,
+        easeOfUse: 'Very Easy',
+        testingDuration: '1-3 days',
+        appVersion: '1.0.0 (Build 1)',
+        date: 'Nov 4, 2026',
+        features: {
+          nlp_ocr: 5,
+          receipts: 5,
+          warranty: 5,
+          reminders: 5,
+          ai_assistant: 5,
+          analytics: 5,
+          pdf: 5,
+          whatsapp: 4
+        },
+        suggestions: {
+          favFeature: 'AI Financial Assistant answering queries about monthly spending instantly',
+          impressedFeature: 'Zero lag when scanning long grocery store receipts',
+          improvements: 'Export spending summaries directly as spreadsheet (.xlsx)',
+          futureWishes: 'Biometric app-lock shortcut right from notification drawer',
+          devMessage: 'Tested on Android 15 developer preview, permissions and notifications work without a single hitch!'
+        },
+        bugReport: null,
+        hasBug: false
+      },
+      {
+        id: 'rec_rajani_04',
+        name: 'Rajani Patkar',
+        email: 'rajanipatkar44@gmail.com',
+        device: 'Xiaomi 13 Pro (Android 14)',
+        rating: 5,
+        easeOfUse: 'Very Easy',
+        testingDuration: '4-7 days',
+        appVersion: '1.0.0 (Build 1)',
+        date: 'Nov 4, 2026',
+        features: {
+          nlp_ocr: 5,
+          receipts: 5,
+          warranty: 5,
+          reminders: 4,
+          ai_assistant: 5,
+          analytics: 5,
+          pdf: 5,
+          whatsapp: 5
+        },
+        suggestions: {
+          favFeature: 'Expiry reminder notifications before product warranties lapse',
+          impressedFeature: 'Offline receipt storage with seamless background cloud sync',
+          improvements: 'Slightly larger font option for warranty expiry dates',
+          futureWishes: 'Shared household receipt folder for family expenses',
+          devMessage: 'Very useful for managing electronics warranties and tax receipts. 10/10 experience!'
+        },
+        bugReport: null,
+        hasBug: false
       }
     ];
 
-    let feedbackRecords = [];
+    let feedbackRecords = [...INITIAL_RECORDS];
 
     // Check Auth State on Page Load
     function checkAuth() {
@@ -947,7 +1134,7 @@
       if (isAuth) {
         gateCard.style.display = 'none';
         adminConsole.style.display = 'block';
-        loadCloudFeedbacks();
+        loadCloudFeedbacks(); loadTesterWhitelist();
       } else {
         gateCard.style.display = 'block';
         adminConsole.style.display = 'none';
@@ -976,6 +1163,133 @@
       checkAuth();
     }
 
+    // --- Whitelist Management ---
+    const DEFAULT_WHITELIST = [
+      'milanrajbow@gmail.com',
+      'milanraj616@gmail.com',
+      'sagar.23cs125@sode-edu.in',
+      'rajanipatkar44@gmail.com',
+      'ravidaspatkar@gmail.com',
+      'manya.23cs070@sode-edu.in',
+      'anithakunder616@gmail.com',
+      'unknownperson12251978@gmail.com'
+    ];
+    let testerWhitelist = [...DEFAULT_WHITELIST];
+    let whitelistConfigRowId = null;
+
+    async function loadTesterWhitelist() {
+      try {
+        const cached = localStorage.getItem('receipto_tester_whitelist');
+        if (cached) testerWhitelist = JSON.parse(cached);
+      } catch(e) {}
+
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('feedbacks')
+            .select('*')
+            .eq('name', '__SYSTEM_CONFIG_WHITELIST__')
+            .limit(1);
+
+          if (!error && data && data.length > 0) {
+            whitelistConfigRowId = data[0].id;
+            try {
+              const parsed = JSON.parse(data[0].message);
+              if (parsed && Array.isArray(parsed.whitelist) && parsed.whitelist.length > 0) {
+                testerWhitelist = parsed.whitelist;
+                localStorage.setItem('receipto_tester_whitelist', JSON.stringify(testerWhitelist));
+              }
+            } catch(pErr) {}
+          }
+        } catch(err) {
+          console.log('Whitelist fetch note:', err);
+        }
+      }
+      renderWhitelistUI();
+    }
+
+    async function saveTesterWhitelist() {
+      localStorage.setItem('receipto_tester_whitelist', JSON.stringify(testerWhitelist));
+      renderWhitelistUI();
+
+      if (supabaseClient) {
+        try {
+          const payload = {
+            name: '__SYSTEM_CONFIG_WHITELIST__',
+            email: 'system@receipto.whitelist',
+            device: 'Config',
+            rating: 5,
+            message: JSON.stringify({ whitelist: testerWhitelist }),
+            tags: ['whitelist']
+          };
+
+          if (whitelistConfigRowId) {
+            await supabaseClient
+              .from('feedbacks')
+              .update(payload)
+              .eq('id', whitelistConfigRowId);
+          } else {
+            const { data } = await supabaseClient
+              .from('feedbacks')
+              .insert([payload])
+              .select();
+            if (data && data.length > 0) whitelistConfigRowId = data[0].id;
+          }
+        } catch(err) {
+          console.log('Whitelist save note:', err);
+        }
+      }
+    }
+
+    function renderWhitelistUI() {
+      const grid = document.getElementById('whitelistGrid');
+      const badge = document.getElementById('whitelistCountBadge');
+      if (badge) badge.innerText = `${testerWhitelist.length} Registered Testers`;
+      if (!grid) return;
+
+      grid.innerHTML = '';
+      testerWhitelist.forEach(email => {
+        const item = document.createElement('div');
+        item.className = 'whitelist-item';
+        item.innerHTML = `
+          <div class="whitelist-item-email">
+            <span style="color: var(--accent-cyan); font-size: 11px;">🟢</span>
+            <span title="${escapeHtml(email)}">${escapeHtml(email)}</span>
+          </div>
+          <button type="button" class="whitelist-delete-btn" onclick="removeTesterEmail('${escapeHtml(email)}')" title="Revoke tester access">🗑️</button>
+        `;
+        grid.appendChild(item);
+      });
+    }
+
+    function addTesterEmail() {
+      const input = document.getElementById('newTesterEmail');
+      const email = (input.value || '').trim().toLowerCase();
+      if (!email || !email.includes('@') || !email.includes('.')) {
+        alert('Please enter a valid email address.');
+        return;
+      }
+      if (testerWhitelist.includes(email)) {
+        alert('This email is already on the whitelist!');
+        return;
+      }
+      testerWhitelist.push(email);
+      input.value = '';
+      saveTesterWhitelist();
+    }
+
+    function removeTesterEmail(email) {
+      if (!confirm(`Are you sure you want to remove ${email} from authorized testers?`)) return;
+      testerWhitelist = testerWhitelist.filter(e => e !== email);
+      saveTesterWhitelist();
+    }
+
+    function resetDefaultTesters() {
+      if (!confirm('Reset whitelist back to the 8 default registered testers?')) return;
+      testerWhitelist = [...DEFAULT_WHITELIST];
+      saveTesterWhitelist();
+    }
+
     // Load feedbacks from LocalStorage and Supabase
     async function loadCloudFeedbacks() {
       // Try local storage first
@@ -999,36 +1313,52 @@
             .order('created_at', { ascending: false });
 
           if (!error && data && data.length > 0) {
-            feedbackRecords = data.map(row => {
-              let parsed = null;
-              try {
-                if (row.message && (row.message.startsWith('{') || row.message.startsWith('['))) {
-                  parsed = JSON.parse(row.message);
-                }
-              } catch(err) {}
+            const userRows = data.filter(row => row.name !== '__SYSTEM_CONFIG_WHITELIST__' && row.email !== 'system@receipto.whitelist');
+            if (userRows.length > 0) {
+              const cloudRecords = userRows.map(row => {
+                let parsed = null;
+                try {
+                  if (row.message && (row.message.startsWith('{') || row.message.startsWith('['))) {
+                    parsed = JSON.parse(row.message);
+                  }
+                } catch(err) {}
 
-              return {
-                id: row.id ? String(row.id) : ('rec_' + Math.random().toString(36).substr(2, 9)),
-                name: row.name || 'Beta Tester',
-                email: row.email || '',
-                device: row.device || 'Android Device',
-                rating: row.rating || 5,
-                features: (parsed && parsed.features) ? parsed.features : (row.features || {}),
-                suggestions: {
+                const ft = (parsed && parsed.features) ? parsed.features : (row.features || {});
+                const sug = (parsed && parsed.suggestions) ? parsed.suggestions : {
                   favFeature: (parsed && parsed.favFeature) || '',
                   impressedFeature: (parsed && parsed.impressedFeature) || '',
                   improvements: (parsed && parsed.improvements) || '',
                   futureWishes: (parsed && parsed.futureWishes) || '',
                   devMessage: (parsed && parsed.devMessage) || ''
-                },
-                bugReport: (parsed && parsed.bugReport) ? parsed.bugReport : null,
-                hasBug: parsed ? (parsed.hasBug || false) : false,
-                easeOfUse: (parsed && parsed.easeOfUse) ? parsed.easeOfUse : 'Very Easy',
-                testingDuration: (parsed && parsed.testingDuration) ? parsed.testingDuration : '1–3 days',
-                appVersion: (parsed && parsed.appVersion) ? parsed.appVersion : '1.0.0 (Build 1)',
-                date: row.created_at ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'
-              };
-            });
+                };
+
+                return {
+                  id: row.id ? String(row.id) : ('rec_' + Math.random().toString(36).substr(2, 9)),
+                  name: row.name || 'Beta Tester',
+                  email: row.email || '',
+                  device: row.device || 'Android Device',
+                  rating: parseInt(row.rating) || 5,
+                  features: ft,
+                  suggestions: sug,
+                  bugReport: (parsed && parsed.bugReport) ? parsed.bugReport : null,
+                  hasBug: parsed ? (parsed.hasBug || false) : false,
+                  easeOfUse: (parsed && parsed.easeOfUse) ? parsed.easeOfUse : 'Very Easy',
+                  testingDuration: (parsed && parsed.testingDuration) ? parsed.testingDuration : '1-3 days',
+                  appVersion: (parsed && parsed.appVersion) ? parsed.appVersion : '1.0.0 (Build 1)',
+                  date: row.created_at ? new Date(row.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recently'
+                };
+              });
+
+              // Merge cloud records and INITIAL_RECORDS
+              const seenIds = new Set(cloudRecords.map(r => r.id));
+              const merged = [...cloudRecords];
+              INITIAL_RECORDS.forEach(init => {
+                if (!seenIds.has(init.id)) merged.push(init);
+              });
+              feedbackRecords = merged;
+            } else {
+              feedbackRecords = [...INITIAL_RECORDS];
+            }
             localStorage.setItem('receipto_feedbacks', JSON.stringify(feedbackRecords));
           }
         } catch(err) {

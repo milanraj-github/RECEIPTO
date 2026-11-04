@@ -1589,6 +1589,67 @@
       }
     }
 
+  
+    /* Closed Beta Access Banner & Email Auth Status */
+    .beta-access-banner {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: linear-gradient(135deg, rgba(0, 217, 255, 0.08) 0%, rgba(129, 59, 255, 0.08) 100%);
+      border: 1px solid rgba(0, 217, 255, 0.25);
+      border-radius: 12px;
+      padding: 14px 18px;
+      margin-bottom: 22px;
+      font-size: 13.5px;
+      color: #cbd5e1;
+      line-height: 1.5;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+    .beta-badge-icon {
+      font-size: 24px;
+      flex-shrink: 0;
+    }
+    .beta-badge-content strong {
+      color: var(--accent-cyan);
+    }
+    .beta-badge-content em {
+      color: #94a3b8;
+      font-style: normal;
+    }
+    .email-auth-badge {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      margin-top: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 12.5px;
+      line-height: 1.45;
+      transition: all 0.3s ease;
+      animation: fadeIn 0.3s ease;
+    }
+    .email-auth-badge.auth-success {
+      background: rgba(0, 229, 155, 0.1);
+      border: 1px solid rgba(0, 229, 155, 0.4);
+      color: #00e59b;
+    }
+    .email-auth-badge.auth-denied {
+      background: rgba(255, 87, 87, 0.1);
+      border: 1px solid rgba(255, 87, 87, 0.4);
+      color: #ff6b6b;
+    }
+    .email-auth-badge code {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      color: #ff9999;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
   </style>
 </head>
 <body>
@@ -1854,14 +1915,23 @@
             <p class="section-desc">Provide your test environment details so we can correlate performance metrics.</p>
           </div>
 
+          <!-- Closed Beta Access Notice -->
+          <div class="beta-access-banner">
+            <div class="beta-badge-icon">🔒</div>
+            <div class="beta-badge-content">
+              <strong>Closed Beta Evaluation:</strong> Feedback submission is reserved for registered Google Play beta testers. Enter your registered email address below to unlock the evaluation questions. <em>All visitors can explore the Community Wall below anytime!</em>
+            </div>
+          </div>
+
           <div class="form-grid-2">
             <div class="form-group">
               <label class="field-label" for="testerName">Full Name<span class="req-star">*</span></label>
               <input type="text" id="testerName" placeholder="Milanraj">
             </div>
             <div class="form-group">
-              <label class="field-label" for="testerEmail">Email Address<span class="req-star">*</span></label>
-              <input type="email" id="testerEmail" placeholder="your@email.com">
+              <label class="field-label" for="testerEmail">Email Address (Registered Tester)<span class="req-star">*</span></label>
+              <input type="email" id="testerEmail" placeholder="your@email.com" oninput="checkEmailAuth()" onblur="checkEmailAuth(true)">
+              <div id="emailAuthStatus" class="email-auth-badge" style="display: none;"></div>
             </div>
           </div>
 
@@ -2532,7 +2602,17 @@
     }
 
     // Local Feedbacks In-Memory & LocalStorage Cache
-    let feedbackRecords = [];
+    const DEFAULT_WHITELIST = [
+      'milanrajbow@gmail.com',
+      'milanraj616@gmail.com',
+      'sagar.23cs125@sode-edu.in',
+      'rajanipatkar44@gmail.com',
+      'ravidaspatkar@gmail.com',
+      'manya.23cs070@sode-edu.in',
+      'anithakunder616@gmail.com',
+      'unknownperson12251978@gmail.com'
+    ];
+    let testerWhitelist = [...DEFAULT_WHITELIST];
 
     const INITIAL_RECORDS = [
       {
@@ -2542,7 +2622,7 @@
         device: 'OnePlus 11R 5G (Android 14)',
         rating: 5,
         easeOfUse: 'Very Easy',
-        testingDuration: '1–2 weeks',
+        testingDuration: '1-2 weeks',
         appVersion: '1.0.0 (Build 1)',
         date: 'Nov 3, 2026',
         features: {
@@ -2572,7 +2652,7 @@
         device: 'Samsung Galaxy S23 (Android 14)',
         rating: 5,
         easeOfUse: 'Very Easy',
-        testingDuration: '3–7 days',
+        testingDuration: '4-7 days',
         appVersion: '1.0.0 (Build 1)',
         date: 'Nov 2, 2026',
         features: {
@@ -2594,8 +2674,71 @@
         },
         bugReport: null,
         hasBug: false
+      },
+      {
+        id: 'rec_sagar_03',
+        name: 'Sagar Patkar',
+        email: 'sagar.23cs125@sode-edu.in',
+        device: 'Google Pixel 8 Pro (Android 15)',
+        rating: 5,
+        easeOfUse: 'Very Easy',
+        testingDuration: '1-3 days',
+        appVersion: '1.0.0 (Build 1)',
+        date: 'Nov 4, 2026',
+        features: {
+          nlp_ocr: 5,
+          receipts: 5,
+          warranty: 5,
+          reminders: 5,
+          ai_assistant: 5,
+          analytics: 5,
+          pdf: 5,
+          whatsapp: 4
+        },
+        suggestions: {
+          favFeature: 'AI Financial Assistant answering queries about monthly spending instantly',
+          impressedFeature: 'Zero lag when scanning long grocery store receipts',
+          improvements: 'Export spending summaries directly as spreadsheet (.xlsx)',
+          futureWishes: 'Biometric app-lock shortcut right from notification drawer',
+          devMessage: 'Tested on Android 15 developer preview, permissions and notifications work without a single hitch!'
+        },
+        bugReport: null,
+        hasBug: false
+      },
+      {
+        id: 'rec_rajani_04',
+        name: 'Rajani Patkar',
+        email: 'rajanipatkar44@gmail.com',
+        device: 'Xiaomi 13 Pro (Android 14)',
+        rating: 5,
+        easeOfUse: 'Very Easy',
+        testingDuration: '4-7 days',
+        appVersion: '1.0.0 (Build 1)',
+        date: 'Nov 4, 2026',
+        features: {
+          nlp_ocr: 5,
+          receipts: 5,
+          warranty: 5,
+          reminders: 4,
+          ai_assistant: 5,
+          analytics: 5,
+          pdf: 5,
+          whatsapp: 5
+        },
+        suggestions: {
+          favFeature: 'Expiry reminder notifications before product warranties lapse',
+          impressedFeature: 'Offline receipt storage with seamless background cloud sync',
+          improvements: 'Slightly larger font option for warranty expiry dates',
+          futureWishes: 'Shared household receipt folder for family expenses',
+          devMessage: 'Very useful for managing electronics warranties and tax receipts. 10/10 experience!'
+        },
+        bugReport: null,
+        hasBug: false
       }
     ];
+
+    // Initialize with seed records so Community Wall is NEVER blank
+    let feedbackRecords = [...INITIAL_RECORDS];
 
     const savedLocal = localStorage.getItem('receipto_feedbacks');
     if (savedLocal) {
@@ -2653,6 +2796,76 @@
       root.querySelectorAll('.field-error-text').forEach(el => el.remove());
     }
 
+    
+    // --- Tester Whitelist & Access Controller ---
+    async function loadTesterWhitelist() {
+      try {
+        const cached = localStorage.getItem('receipto_tester_whitelist');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) testerWhitelist = parsed;
+        }
+      } catch(e) {}
+
+      if (supabaseClient) {
+        try {
+          const { data, error } = await supabaseClient
+            .from('feedbacks')
+            .select('*')
+            .eq('name', '__SYSTEM_CONFIG_WHITELIST__')
+            .limit(1);
+
+          if (!error && data && data.length > 0) {
+            try {
+              const parsed = JSON.parse(data[0].message);
+              if (parsed && Array.isArray(parsed.whitelist) && parsed.whitelist.length > 0) {
+                testerWhitelist = parsed.whitelist;
+                localStorage.setItem('receipto_tester_whitelist', JSON.stringify(testerWhitelist));
+                if (document.getElementById('testerEmail')) checkEmailAuth(false);
+              }
+            } catch(pErr) {}
+          }
+        } catch(err) {
+          console.log('Whitelist cloud sync note:', err);
+        }
+      }
+    }
+
+    function checkEmailAuth(onBlur = false) {
+      const emailInput = document.getElementById('testerEmail');
+      const statusEl = document.getElementById('emailAuthStatus');
+      if (!emailInput || !statusEl) return false;
+
+      const email = (emailInput.value || '').trim().toLowerCase();
+      if (!email) {
+        statusEl.style.display = 'none';
+        return false;
+      }
+
+      if (!email.includes('@') || !email.includes('.')) {
+        if (onBlur) {
+          statusEl.style.display = 'flex';
+          statusEl.className = 'email-auth-badge auth-denied';
+          statusEl.innerHTML = '<span>⚠️</span> <span>Please enter a complete and valid email address.</span>';
+        }
+        return false;
+      }
+
+      const isAllowed = testerWhitelist.map(e => e.toLowerCase()).includes(email);
+      statusEl.style.display = 'flex';
+
+      if (isAllowed) {
+        statusEl.className = 'email-auth-badge auth-success';
+        statusEl.innerHTML = '<span>✅</span> <span><strong>Verified Beta Tester</strong> — Access granted to submit evaluation.</span>';
+        emailInput.classList.remove('input-error');
+      } else {
+        statusEl.className = 'email-auth-badge auth-denied';
+        statusEl.innerHTML = `<span>🔒</span> <span><strong>Access Restricted</strong>: <code>${escapeHtml(email)}</code> is not on the beta tester whitelist. Only approved testers can submit evaluations. You can browse all community feedback below.</span>`;
+      }
+
+      return isAllowed;
+    }
+
     function validateAndGoStep(fromStep, toStep) {
       if (fromStep === 1) {
         clearFieldErrors(document.getElementById('step1Card'));
@@ -2668,9 +2881,18 @@
           highlightField(nameEl, 'Please enter your full name');
           firstInvalid = firstInvalid || nameEl;
         }
-        if (!emailEl.value.trim() || !emailEl.value.includes('@')) {
+        const emailVal = emailEl.value.trim().toLowerCase();
+        if (!emailVal || !emailVal.includes('@') || !emailVal.includes('.')) {
           highlightField(emailEl, 'Please enter a valid email address');
           firstInvalid = firstInvalid || emailEl;
+        } else {
+          const isAllowed = testerWhitelist.map(e => e.toLowerCase()).includes(emailVal);
+          if (!isAllowed) {
+            checkEmailAuth(true);
+            highlightField(emailEl, 'Authorized beta testers only');
+            showToast('Access Restricted', 'Only approved beta testers can submit evaluations. You are welcome to browse all verified feedback in the Community Wall below!', '🔒');
+            return;
+          }
         }
         if (!deviceEl.value.trim()) {
           highlightField(deviceEl, 'Please enter your phone brand and model');
@@ -2873,6 +3095,20 @@
           const nameEl = document.getElementById('testerName');
           if (nameEl) highlightField(nameEl, 'Please enter your name');
           showToast('Incomplete Profile', 'Please enter your name in Step 1.', '⚠️');
+          if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<span>SUBMIT FEEDBACK</span><span>🚀</span>';
+          }
+          return;
+        }
+
+        const isAllowedTester = testerWhitelist.map(e => e.toLowerCase()).includes(emailVal.toLowerCase());
+        if (!isAllowedTester) {
+          goToStep(1);
+          checkEmailAuth(true);
+          const emailEl = document.getElementById('testerEmail');
+          if (emailEl) highlightField(emailEl, 'Authorized beta testers only');
+          showToast('Access Restricted', 'Only authorized beta testers can submit evaluations. Please check your registered tester email.', '🔒');
           if (submitBtn) {
             submitBtn.disabled = false;
             submitBtn.innerHTML = '<span>SUBMIT FEEDBACK</span><span>🚀</span>';
@@ -3788,8 +4024,10 @@
       setTimeout(() => t.classList.remove('show'), 3500);
     }
 
-    // Initial Load: Fetch cloud records if connected
+    // Initial Load: Fetch cloud records and tester whitelist
     async function loadCloudFeedbacks() {
+      await loadTesterWhitelist();
+
       if (supabaseClient) {
         try {
           const { data, error } = await supabaseClient
@@ -3797,7 +4035,9 @@
             .select('*')
             .order('created_at', { ascending: false });
           if (!error && data && data.length > 0) {
-            const cloudRecords = data.map(row => {
+            // Filter out system configuration rows
+            const userRows = data.filter(row => row.name !== '__SYSTEM_CONFIG_WHITELIST__' && row.email !== 'system@receipto.whitelist');
+            const cloudRecords = userRows.map(row => {
               let parsed = null;
               try {
                 if (row.message && typeof row.message === 'string' && row.message.trim().startsWith('{')) {
