@@ -190,14 +190,19 @@
     const supabase = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON) : null;
 
     const DEFAULT_WHITELIST = [
-      'milanrajbow@gmail.com',
+      'ajayjkprabhu@gmail.com',
+      'akshayjkprabhu@gmail.com',
+      'ananyanayak802@gmail.com',
+      'manjunathapatkarcs@gmail.com',
+      'manyapatkar@gmail.com',
       'milanraj616@gmail.com',
-      'sagar.23cs125@sode-edu.in',
-      'rajanipatkar44@gmail.com',
+      'nishanthpoojary572@gmail.com',
+      'prashanth.23cs098@sode-edu.in',
       'ravidaspatkar@gmail.com',
-      'manya.23cs070@sode-edu.in',
-      'anithakunder616@gmail.com',
-      'unknownperson12251978@gmail.com'
+      'sagar.23cs125@sode-edu.in',
+      'sahanakaranth.cs@sode-edu.in',
+      'sharanya8693@gmail.com',
+      'shettymaithri7@gmail.com'
     ];
 
     const FEATURE_CONFIG = [
@@ -536,25 +541,25 @@
         <div className="min-h-screen text-slate-100 flex flex-col justify-between">
           
           {/* Header with REAL RECEIPTO LOGO */}
-          <header className="sticky top-0 z-50 cyber-glass border-b border-cyan-500/20 px-4 lg:px-8 py-3 flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <header className="sticky top-0 z-50 cyber-glass border-b border-cyan-500/20 px-3 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
               <img
                 src="/logo.png"
                 alt="Receipto"
-                className="w-10 h-10 rounded-xl object-contain shadow-[0_0_20px_rgba(0,210,255,0.4)] border border-cyan-400/30"
+                className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl object-contain shadow-[0_0_20px_rgba(0,210,255,0.4)] border border-cyan-400/30 shrink-0"
               />
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="font-extrabold tracking-wider text-white text-base">RECEIPTO</span>
-                  <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30">
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="font-extrabold tracking-wider text-white text-sm sm:text-base truncate">RECEIPTO</span>
+                  <span className="hidden sm:inline-flex text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 shrink-0">
                     BETA 1.0.0
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 hidden sm:block">Financial Intelligence & Automated Warranty Vault</p>
+                <p className="text-xs text-slate-400 hidden sm:block truncate">Financial Intelligence & Automated Warranty Vault</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3 shrink-0">
               <div className="hidden md:flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 text-xs font-mono">
                 <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
                 <span>Supabase Live Cloud</span>
@@ -562,16 +567,18 @@
 
               <a
                 href="#communityWall"
-                className="text-xs px-3 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition"
+                className="text-xs px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 border border-slate-700 transition whitespace-nowrap flex items-center gap-1 shrink-0"
               >
-                Community Wall ({stats.total})
+                <span className="hidden sm:inline">Community Wall</span>
+                <span className="sm:hidden">Wall</span>
+                <span>({stats.total})</span>
               </a>
 
               <a
                 href="/admin"
-                className="text-xs px-3 py-1.5 rounded-lg bg-purple-950/40 hover:bg-purple-900/60 text-purple-300 border border-purple-500/30 transition flex items-center gap-1.5 font-medium"
+                className="text-xs px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg bg-purple-950/50 hover:bg-purple-900/60 text-purple-300 border border-purple-500/30 transition flex items-center gap-1 font-medium whitespace-nowrap shrink-0"
               >
-                <Icons.Settings className="w-3.5 h-3.5 text-purple-400" />
+                <Icons.Settings className="w-3.5 h-3.5 text-purple-400 shrink-0" />
                 <span>Admin</span>
               </a>
             </div>
@@ -1515,16 +1522,6 @@
                           className="text-cyan-400 hover:text-cyan-300 transition flex items-center gap-1 font-medium"
                         >
                           <span>{expandedCardId === item.id ? 'Hide Details ▲' : 'View Full Details ▼'}</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteFeedback(item.id)}
-                          className="text-rose-400 hover:text-rose-300 px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition text-[11px] flex items-center gap-1 font-medium"
-                          title="Delete from Supabase"
-                        >
-                          <Icons.Trash className="w-3.5 h-3.5" />
-                          <span>Delete</span>
                         </button>
                       </div>
                     </div>
